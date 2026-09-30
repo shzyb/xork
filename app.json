@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Hisaab",
-    "slug": "hisaab",
+    "name": "Xork",
+    "slug": "xork",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "hisaab",
+    "scheme": "xork",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon"
@@ -17,7 +17,9 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.shahzaibali.xork",
+      "versionCode": 1
     },
     "web": {
       "output": "static",

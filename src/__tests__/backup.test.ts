@@ -40,15 +40,15 @@ describe('parseBackup', () => {
     expect(result).toEqual({ ok: true, backup: valid() });
   });
 
-  it('rejects text that is not JSON or not a Hisaab file', () => {
-    const notBackup = { ok: false, error: "This isn't a Hisaab backup file." };
+  it('rejects text that is not JSON or not a Xork file', () => {
+    const notBackup = { ok: false, error: "This isn't a Xork backup file." };
     expect(parseBackup('hello')).toEqual(notBackup);
     expect(parseBackup('[]')).toEqual(notBackup);
     expect(parse({ app: 'other' })).toEqual(notBackup);
   });
 
   it('rejects a newer or unknown version', () => {
-    expect(change((b) => { b.version = 2; })).toEqual({ ok: false, error: 'This backup is from a newer version of Hisaab.' });
+    expect(change((b) => { b.version = 2; })).toEqual({ ok: false, error: 'This backup is from a newer version of Xork.' });
     expect(change((b) => { (b as unknown as { version: string }).version = 'one'; })).toEqual({ ok: false, error: 'This backup file is damaged.' });
   });
 

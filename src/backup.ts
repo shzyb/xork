@@ -5,7 +5,7 @@ export const BACKUP_VERSION = 1;
 
 // The whole app as one JSON file. Ids are kept so transactions still point at their accounts and categories.
 export type Backup = {
-  app: 'hisaab';
+  app: 'hisaab'; // the file's internal marker; it stays 'hisaab' so backups made before the rename still import
   version: number;
   exported_at: string;
   currency: string;
@@ -31,13 +31,13 @@ export function parseBackup(text: string): ParseResult {
   try {
     data = JSON.parse(text);
   } catch {
-    return fail("This isn't a Hisaab backup file.");
+    return fail("This isn't a Xork backup file.");
   }
-  if (!isRecord(data) || data.app !== 'hisaab') return fail("This isn't a Hisaab backup file.");
-  if (isInt(data.version) && data.version > BACKUP_VERSION) return fail('This backup is from a newer version of Hisaab.');
+  if (!isRecord(data) || data.app !== 'hisaab') return fail("This isn't a Xork backup file.");
+  if (isInt(data.version) && data.version > BACKUP_VERSION) return fail('This backup is from a newer version of Xork.');
   if (data.version !== BACKUP_VERSION) return fail('This backup file is damaged.');
   if (!isStr(data.currency) || !CURRENCIES.some((c) => c.code === data.currency)) {
-    return fail('This backup uses a currency Hisaab does not support.');
+    return fail('This backup uses a currency Xork does not support.');
   }
   const { accounts, categories, transactions, recurring } = data;
   if (![accounts, categories, transactions, recurring].every(Array.isArray)) return fail('This backup file is damaged.');

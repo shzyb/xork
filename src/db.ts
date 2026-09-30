@@ -82,6 +82,7 @@ async function migrateToV2(handle: Db) {
 export async function openDb(handle?: Db) {
   // A new connection per app session. expo-sqlite otherwise reuses one native connection across JS reloads
   // (Expo Go, Fast Refresh) and closes it when the old session's object is released, which crashes the next query.
+  // The file is still called hisaab.db so phones that already have data keep it.
   db = handle ?? (await openDatabaseAsync('hisaab.db', { useNewConnection: true }));
   await migrate(db);
   setAppCurrency((await getSetting('currency')) ?? 'USD');
