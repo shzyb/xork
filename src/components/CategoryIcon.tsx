@@ -16,6 +16,8 @@ const ICONS: Record<string, LucideIcon> = {
   'undo-2': Undo2, users: Users, utensils: Utensils, wifi: Wifi, wrench: Wrench,
 };
 
+export const CATEGORY_ICONS = Object.keys(ICONS);
+
 // A round coloured circle with the category's Lucide icon in white.
 export function CategoryIcon({ name, color, size = 44 }: {
   name: string | null;

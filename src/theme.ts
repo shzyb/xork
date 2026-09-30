@@ -49,3 +49,10 @@ export const sheet = {
   btnBg: '#FFFFFF',
   btnFg: '#000000',
 };
+
+export const accountColors = ['#111111', '#FF9F0A', '#3B82F6', '#8B5CF6', '#EC4899', '#14B8A6', '#EF4444'];
+
+export const categoryColors = [
+  '#34A853', '#FF8A00', '#3B82F6', '#EF4444', '#A0714F', '#14B8A6',
+  '#8B5CF6', '#EC4899', '#EAB308', '#64748B', '#0EA5E9', '#84CC16',
+];

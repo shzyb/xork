@@ -224,3 +224,79 @@ export async function updateTransaction(id: number, t: NewTransaction) {
 export async function deleteTransaction(id: number) {
   await write((handle) => handle.runAsync('DELETE FROM transactions WHERE id = ?', id));
 }
+
+export type NewAccount = Pick<Account, 'name' | 'opening_minor' | 'color'>;
+
+export async function getAccount(id: number): Promise<Account | null> {
+  return db!.getFirstAsync('SELECT * FROM accounts WHERE id = ?', id);
+}
+
+export async function addAccount(a: NewAccount) {
+  await write((handle) =>
+    handle.runAsync(
+      'INSERT INTO accounts (name, opening_minor, color, created_at) VALUES (?, ?, ?, ?)',
+      a.name, a.opening_minor, a.color, new Date().toISOString(),
+    ),
+  );
+}
+
+export async function updateAccount(id: number, a: NewAccount) {
+  await write((handle) =>
+    handle.runAsync('UPDATE accounts SET name = ?, opening_minor = ?, color = ? WHERE id = ?', a.name, a.opening_minor, a.color, id),
+  );
+}
+
+// Removes the account together with every transaction and recurring item that uses it.
+export async function deleteAccount(id: number) {
+  await write((handle) =>
+    handle.withTransactionAsync(async () => {
+      await handle.runAsync('DELETE FROM transactions WHERE account_id = ? OR to_account_id = ?', id, id);
+      await handle.runAsync('DELETE FROM recurring WHERE account_id = ?', id);
+      await handle.runAsync('DELETE FROM accounts WHERE id = ?', id);
+    }),
+  );
+}
+
+export type NewCategory = Pick<Category, 'name' | 'kind' | 'icon' | 'color' | 'budget_minor'>;
+
+export async function getCategory(id: number): Promise<Category | null> {
+  return db!.getFirstAsync('SELECT * FROM categories WHERE id = ?', id);
+}
+
+export async function addCategory(c: NewCategory) {
+  await write((handle) =>
+    handle.runAsync(
+      'INSERT INTO categories (name, kind, icon, color, budget_minor, is_default) VALUES (?, ?, ?, ?, ?, 0)',
+      c.name, c.kind, c.icon, c.color, c.budget_minor,
+    ),
+  );
+}
+
+// The kind of a category never changes after it is created.
+export async function updateCategory(id: number, c: Omit<NewCategory, 'kind'>) {
+  await write((handle) =>
+    handle.runAsync(
+      'UPDATE categories SET name = ?, icon = ?, color = ?, budget_minor = ? WHERE id = ?',
+      c.name, c.icon, c.color, c.budget_minor, id,
+    ),
+  );
+}
+
+// Its transactions and recurring items move to the "Other" category of the same kind.
+export async function deleteCategory(id: number) {
+  await write(async (handle) => {
+    const category = await handle.getFirstAsync<{ kind: string; is_default: number }>(
+      'SELECT kind, is_default FROM categories WHERE id = ?', id,
+    );
+    if (!category || category.is_default) throw new Error('This category cannot be deleted.');
+    const other = await handle.getFirstAsync<{ id: number }>(
+      'SELECT id FROM categories WHERE kind = ? AND is_default = 1', category.kind,
+    );
+    if (!other) throw new Error('The Other category is missing.');
+    await handle.withTransactionAsync(async () => {
+      await handle.runAsync('UPDATE transactions SET category_id = ? WHERE category_id = ?', other.id, id);
+      await handle.runAsync('UPDATE recurring SET category_id = ? WHERE category_id = ?', other.id, id);
+      await handle.runAsync('DELETE FROM categories WHERE id = ?', id);
+    });
+  });
+}

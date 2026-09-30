@@ -1,4 +1,5 @@
-import { ArrowDown, ArrowUp } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { ArrowDown, ArrowUp, Plus, Settings } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,6 +14,7 @@ type Tab = 'recent' | 'accounts';
 
 export default function Home() {
   const colors = useColors();
+  const router = useRouter();
   const [tab, setTab] = useState<Tab>('recent');
   const accounts = useData(getAccountsWithBalance);
   const month = useData(() => getMonthSummary(currentMonth()));
@@ -23,7 +25,12 @@ export default function Home() {
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={[styles.brand, { color: colors.ink }]}>Hisaab</Text>
+        <View style={styles.topbar}>
+          <Text style={[styles.brand, { color: colors.ink }]}>Hisaab</Text>
+          <Pressable accessibilityRole="button" accessibilityLabel="Settings" onPress={() => router.push('/settings')} style={styles.iconButton}>
+            <Settings color={colors.ink} size={22} />
+          </Pressable>
+        </View>
 
         <Text style={{ color: colors.ink2, fontSize: fontSize.body, marginTop: spacing.lg }}>Total balance</Text>
         {total !== undefined && <Text style={[styles.balance, { color: colors.ink }]}>{formatMoney(total)}</Text>}
@@ -63,15 +70,34 @@ export default function Home() {
           <TransactionList rows={recent} />
         ))}
 
-        {tab === 'accounts' && accounts?.map((a) => (
-          <View key={a.id} style={styles.row}>
-            <View style={[styles.initial, { backgroundColor: a.color }]}>
-              <Text style={styles.initialText}>{a.name.trim().charAt(0).toUpperCase() || '?'}</Text>
-            </View>
-            <Text style={[styles.title, { color: colors.ink }]} numberOfLines={1}>{a.name}</Text>
-            <Text style={[styles.amount, { color: colors.ink }]}>{formatMoney(a.balance_minor)}</Text>
-          </View>
-        ))}
+        {tab === 'accounts' && accounts && (
+          <>
+            {accounts.map((a) => (
+              <Pressable
+                key={a.id}
+                accessibilityRole="button"
+                onPress={() => router.push({ pathname: '/account/[id]', params: { id: String(a.id) } })}
+                style={styles.row}
+              >
+                <View style={[styles.initial, { backgroundColor: a.color }]}>
+                  <Text style={styles.initialText}>{a.name.trim().charAt(0).toUpperCase() || '?'}</Text>
+                </View>
+                <Text style={[styles.title, { color: colors.ink }]} numberOfLines={1}>{a.name}</Text>
+                <Text style={[styles.amount, { color: colors.ink }]}>{formatMoney(a.balance_minor)}</Text>
+              </Pressable>
+            ))}
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push({ pathname: '/account/[id]', params: { id: 'new' } })}
+              style={styles.row}
+            >
+              <View style={[styles.initial, { backgroundColor: colors.fill }]}>
+                <Plus color={colors.ink} size={20} />
+              </View>
+              <Text style={[styles.title, { color: colors.ink }]}>Add an account</Text>
+            </Pressable>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -80,7 +106,9 @@ export default function Home() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingHorizontal: spacing.xl, paddingBottom: 140 },
-  brand: { fontSize: 25, fontWeight: '700', marginTop: spacing.md },
+  topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md },
+  brand: { fontSize: 25, fontWeight: '700' },
+  iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -10 },
   balance: { fontSize: fontSize.big, fontWeight: '800', letterSpacing: -1.5 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 5, height: 32, paddingHorizontal: 11, borderRadius: 16 },

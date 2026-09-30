@@ -33,14 +33,9 @@ function Routes() {
       </Stack.Protected>
       <Stack.Protected guard={onboarded}>
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="add"
-          options={{ presentation: 'modal', contentStyle: { backgroundColor: sheet.bg } }}
-        />
-        <Stack.Screen
-          name="transaction/[id]"
-          options={{ presentation: 'modal', contentStyle: { backgroundColor: sheet.bg } }}
-        />
+        {['add', 'transaction/[id]', 'account/[id]', 'category/[id]', 'settings'].map((name) => (
+          <Stack.Screen key={name} name={name} options={{ presentation: 'modal', contentStyle: { backgroundColor: sheet.bg } }} />
+        ))}
       </Stack.Protected>
     </Stack>
   );

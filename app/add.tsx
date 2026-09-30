@@ -215,6 +215,7 @@ function AddForm({ accounts, categories, editing }: {
                   categories={kindCategories}
                   selectedId={categoryId}
                   onSelect={(id) => { setCategoryId(id); setError(''); }}
+                  onNew={() => router.push({ pathname: '/category/[id]', params: { id: 'new', kind: type } })}
                 />
               </>
             )}

@@ -1,4 +1,4 @@
-import { addTransaction, buildFilter, completeWelcome, Db, deleteTransaction, getVersion, openDb, setCurrency, subscribe, updateTransaction } from '../db';
+import { addAccount, addCategory, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, updateAccount, updateCategory, updateTransaction } from '../db';
 import { formatMoney } from '../money';
 
 function fakeDb(overrides: Partial<Db> = {}): Db {
@@ -135,6 +135,122 @@ describe.each([
 
     await expect(run()).rejects.toThrow('disk full');
 
+    expect(getVersion()).toBe(before);
+    expect(listener).not.toHaveBeenCalled();
+    off();
+  });
+});
+
+const FOOD = { name: 'Food', kind: 'expense' as const, icon: 'utensils', color: '#FF8A00', budget_minor: null };
+
+describe.each([
+  ['addAccount', () => addAccount({ name: 'Bank', opening_minor: 5000, color: '#3B82F6' }), 'INSERT INTO accounts'],
+  ['updateAccount', () => updateAccount(3, { name: 'Bank', opening_minor: 5000, color: '#3B82F6' }), 'UPDATE accounts'],
+  ['addCategory', () => addCategory(FOOD), 'INSERT INTO categories'],
+  ['updateCategory', () => updateCategory(3, FOOD), 'UPDATE categories'],
+])('%s', (_name, run, sql) => {
+  it('bumps version and calls listeners', async () => {
+    const db = fakeDb();
+    await openDb(db);
+    const listener = jest.fn();
+    const off = subscribe(listener);
+    const before = getVersion();
+
+    await run();
+
+    expect((db.runAsync as jest.Mock).mock.calls[0][0]).toContain(sql);
+    expect(getVersion()).toBe(before + 1);
+    expect(listener).toHaveBeenCalledTimes(1);
+    off();
+  });
+
+  it('a failed write changes nothing and calls no listeners', async () => {
+    await openDb(fakeDb({ runAsync: jest.fn().mockRejectedValue(new Error('disk full')) }));
+    const listener = jest.fn();
+    const off = subscribe(listener);
+    const before = getVersion();
+
+    await expect(run()).rejects.toThrow('disk full');
+
+    expect(getVersion()).toBe(before);
+    expect(listener).not.toHaveBeenCalled();
+    off();
+  });
+});
+
+describe('deleteAccount', () => {
+  it('deletes its transactions, recurring items and the account in one SQL transaction', async () => {
+    const db = fakeDb();
+    await openDb(db);
+    const listener = jest.fn();
+    const off = subscribe(listener);
+
+    await deleteAccount(4);
+
+    expect(db.withTransactionAsync).toHaveBeenCalledTimes(1);
+    const sql = (db.runAsync as jest.Mock).mock.calls.map((call) => call[0] as string);
+    expect(sql).toEqual([
+      expect.stringContaining('DELETE FROM transactions WHERE account_id = ? OR to_account_id = ?'),
+      expect.stringContaining('DELETE FROM recurring'),
+      expect.stringContaining('DELETE FROM accounts'),
+    ]);
+    expect(listener).toHaveBeenCalledTimes(1);
+    off();
+  });
+
+  it('a failure part-way changes nothing and calls no listeners', async () => {
+    const runAsync = jest.fn().mockResolvedValueOnce({}).mockRejectedValueOnce(new Error('disk full'));
+    await openDb(fakeDb({ runAsync }));
+    const listener = jest.fn();
+    const off = subscribe(listener);
+    const before = getVersion();
+
+    await expect(deleteAccount(4)).rejects.toThrow('disk full');
+
+    expect(getVersion()).toBe(before);
+    expect(listener).not.toHaveBeenCalled();
+    off();
+  });
+});
+
+describe('deleteCategory', () => {
+  it('moves transactions and recurring items to Other, then deletes, in one SQL transaction', async () => {
+    const getFirstAsync = jest
+      .fn()
+      .mockResolvedValueOnce({ user_version: 2 })
+      .mockResolvedValueOnce(null) // currency setting during openDb
+      .mockResolvedValueOnce({ kind: 'expense', is_default: 0 })
+      .mockResolvedValueOnce({ id: 24 });
+    const db = fakeDb({ getFirstAsync });
+    await openDb(db);
+    const listener = jest.fn();
+    const off = subscribe(listener);
+
+    await deleteCategory(9);
+
+    expect(db.withTransactionAsync).toHaveBeenCalledTimes(1);
+    expect(db.runAsync).toHaveBeenNthCalledWith(1, expect.stringContaining('UPDATE transactions SET category_id'), 24, 9);
+    expect(db.runAsync).toHaveBeenNthCalledWith(2, expect.stringContaining('UPDATE recurring SET category_id'), 24, 9);
+    expect(db.runAsync).toHaveBeenNthCalledWith(3, expect.stringContaining('DELETE FROM categories'), 9);
+    expect(listener).toHaveBeenCalledTimes(1);
+    off();
+  });
+
+  it('refuses to delete an Other category and changes nothing', async () => {
+    const getFirstAsync = jest
+      .fn()
+      .mockResolvedValueOnce({ user_version: 2 })
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ kind: 'expense', is_default: 1 });
+    const db = fakeDb({ getFirstAsync });
+    await openDb(db);
+    const listener = jest.fn();
+    const off = subscribe(listener);
+    const before = getVersion();
+
+    await expect(deleteCategory(24)).rejects.toThrow('cannot be deleted');
+
+    expect(db.runAsync).not.toHaveBeenCalled();
     expect(getVersion()).toBe(before);
     expect(listener).not.toHaveBeenCalled();
     off();
