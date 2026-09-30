@@ -45,21 +45,16 @@ function Line({ t }: { t: TransactionRow }) {
         <CategoryIcon name={t.category_icon} color={t.category_color} />
       )}
       <View style={styles.main}>
-        <Text style={{ color: colors.ink2, fontSize: fontSize.small }} numberOfLines={1}>
-          {transfer ? `Moved from ${t.account_name}` : `${income ? 'Received' : 'Paid'} · ${t.category_name ?? 'Other'}`}
-        </Text>
         <Text style={[styles.title, { color: colors.ink }]} numberOfLines={1}>
-          {transfer ? `To ${t.to_account_name ?? 'deleted account'}` : t.note || t.category_name || 'Other'}
+          {transfer ? 'Transfer' : t.category_name ?? 'Other'}
+        </Text>
+        <Text style={{ color: colors.ink2, fontSize: fontSize.small }} numberOfLines={1}>
+          {transfer ? `${t.account_name} → ${t.to_account_name ?? 'deleted account'}` : t.account_name}
         </Text>
       </View>
-      <View style={styles.end}>
-        <Text style={[styles.amount, { color: income ? colors.pos : colors.ink }]}>
-          {income ? '+ ' : ''}{formatMoney(t.amount_minor)}
-        </Text>
-        {!transfer && (
-          <Text style={{ color: colors.ink2, fontSize: fontSize.small }} numberOfLines={1}>{t.account_name}</Text>
-        )}
-      </View>
+      <Text style={[styles.amount, { color: income ? colors.pos : colors.ink }]}>
+        {income ? '+ ' : ''}{formatMoney(t.amount_minor)}
+      </Text>
     </Pressable>
   );
 }
@@ -69,7 +64,6 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64 },
   transferIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   main: { flex: 1 },
-  end: { alignItems: 'flex-end', maxWidth: '45%' },
   title: { fontSize: 16.5, fontWeight: '600' },
   amount: { fontSize: 16.5, fontWeight: '600' },
 });
