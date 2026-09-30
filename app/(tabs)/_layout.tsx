@@ -8,6 +8,7 @@ import { tabBarHeight, useColors } from '../../src/theme';
 
 type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
 
+const TAB_ORDER = ['index', 'activity', 'recurring', 'insights'];
 const TABS: Record<string, { Icon: LucideIcon; label: string }> = {
   index: { Icon: Wallet, label: 'Home' },
   activity: { Icon: Clock, label: 'Activity' },
@@ -27,9 +28,11 @@ function TabBar({ state, navigation }: TabBarProps) {
         { backgroundColor: colors.bg, borderTopColor: colors.line, height: tabBarHeight + insets.bottom, paddingBottom: insets.bottom },
       ]}
     >
-      {state.routes.map((route, index) => {
-        const tab = TABS[route.name];
-        if (!tab) return null;
+      {TAB_ORDER.map((name) => {
+        const index = state.routes.findIndex((r) => r.name === name);
+        const route = state.routes[index];
+        const tab = TABS[name];
+        if (!route) return null;
         const focused = state.index === index;
         const onPress = () => {
           const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
@@ -78,7 +81,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   bar: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth },
   item: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  icon: { width: 44, height: 32, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  icon: { width: 48, height: 32, borderRadius: 16, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   fab: {
     position: 'absolute',
     right: 18,
