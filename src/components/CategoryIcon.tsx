@@ -5,6 +5,7 @@ import {
 } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
+import { useColors } from '../theme';
 
 const ICONS: Record<string, LucideIcon> = {
   'book-open': BookOpen, briefcase: Briefcase, bus: Bus, clapperboard: Clapperboard,
@@ -18,20 +19,36 @@ const ICONS: Record<string, LucideIcon> = {
 
 export const CATEGORY_ICONS = Object.keys(ICONS);
 
-// A round coloured circle with the category's Lucide icon in white.
-export function CategoryIcon({ name, color, size = 44 }: {
+// A round coloured circle with the category's Lucide icon in white. `recurring` adds a small repeat badge;
+// `surface` is the colour behind the icon, used for the badge's ring.
+export function CategoryIcon({ name, color, size = 44, recurring, surface }: {
   name: string | null;
   color: string | null;
   size?: number;
+  recurring?: boolean;
+  surface?: string;
 }) {
+  const colors = useColors();
   const Icon = (name && ICONS[name]) || Tag;
+  const badge = size > 50 ? 24 : 19;
   return (
     <View style={[styles.circle, { width: size, height: size, borderRadius: size / 2, backgroundColor: color ?? '#64748B' }]}>
       <Icon color="#FFFFFF" size={size * 0.46} strokeWidth={2.1} />
+      {recurring && (
+        <View
+          style={[
+            styles.badge,
+            { width: badge + 5, height: badge + 5, borderRadius: (badge + 5) / 2, borderColor: surface ?? colors.bg, borderWidth: 2.5 },
+          ]}
+        >
+          <Repeat color="#FFFFFF" size={badge * 0.52} strokeWidth={2.6} />
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   circle: { alignItems: 'center', justifyContent: 'center' },
+  badge: { position: 'absolute', right: -4, bottom: -4, backgroundColor: '#6C6C70', alignItems: 'center', justifyContent: 'center' },
 });

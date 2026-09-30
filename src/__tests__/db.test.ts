@@ -1,4 +1,4 @@
-import { deleteAllData, exportAll, NO_FILTER, replaceAllData, addAccount, addCategory, addRecurring, deleteRecurring, logDueRecurring, updateRecurring, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, updateAccount, updateCategory, updateTransaction } from '../db';
+import { getRecurringActivity, logRecurringNow, setRecurringActive, skipRecurring, deleteAllData, exportAll, NO_FILTER, replaceAllData, addAccount, addCategory, addRecurring, deleteRecurring, logDueRecurring, updateRecurring, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, updateAccount, updateCategory, updateTransaction } from '../db';
 import { formatMoney } from '../money';
 
 function fakeDb(overrides: Partial<Db> = {}): Db {
@@ -320,6 +320,95 @@ describe('logDueRecurring', () => {
     expect(getVersion()).toBe(before);
     expect(listener).not.toHaveBeenCalled();
     off();
+  });
+});
+
+describe('recurring detail actions', () => {
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 3, 30, 12)); // 30 April 2026, local time
+  });
+  afterEach(() => jest.useRealTimers());
+
+  const item = (next_date: string, active = 1) => ({ id: 7, ...RENT, next_date, active });
+  const dbWith = (found: unknown) =>
+    fakeDb({ getFirstAsync: jest.fn().mockResolvedValueOnce({ user_version: 2 }).mockResolvedValueOnce(null).mockResolvedValue(found) });
+  const statements = (db: Db) => (db.runAsync as jest.Mock).mock.calls;
+
+  it('logRecurringNow logs today for a future payment and moves to the one after, in one SQL transaction', async () => {
+    const db = dbWith(item('2026-05-31'));
+    await openDb(db);
+    const listener = jest.fn();
+    const off = subscribe(listener);
+
+    await logRecurringNow(7);
+
+    expect(db.withTransactionAsync).toHaveBeenCalledTimes(1);
+    const [insert, update] = statements(db);
+    expect(insert[0]).toContain('INSERT INTO transactions');
+    expect(insert.slice(1, 8)).toEqual(['expense', 8500000, 1, 5, 'Rent', '2026-04-30', 7]);
+    expect(update).toEqual([expect.stringContaining('UPDATE recurring SET next_date'), '2026-06-30', 7]);
+    expect(listener).toHaveBeenCalledTimes(1);
+    off();
+  });
+
+  it('logRecurringNow logs a payment that is already due on its own date', async () => {
+    const db = dbWith(item('2026-04-15'));
+    await openDb(db);
+
+    await logRecurringNow(7);
+
+    const [insert, update] = statements(db);
+    expect(insert[6]).toBe('2026-04-15');
+    expect(update[1]).toBe('2026-05-31');
+  });
+
+  it('skipRecurring moves to the next date without logging anything', async () => {
+    const db = dbWith(item('2026-05-31'));
+    await openDb(db);
+
+    await skipRecurring(7);
+
+    expect(statements(db)).toEqual([[expect.stringContaining('UPDATE recurring SET next_date'), '2026-06-30', 7]]);
+  });
+
+  it('pausing keeps the next date, and resuming moves it to today or later', async () => {
+    const paused = dbWith(item('2026-05-31'));
+    await openDb(paused);
+    await setRecurringActive(7, false);
+    expect(statements(paused)).toEqual([[expect.stringContaining('UPDATE recurring SET active'), 0, '2026-05-31', 7]]);
+
+    const resumed = dbWith(item('2026-01-31', 0));
+    await openDb(resumed);
+    await setRecurringActive(7, true);
+    expect(statements(resumed)).toEqual([[expect.stringContaining('UPDATE recurring SET active'), 1, '2026-04-30', 7]]);
+  });
+
+  it('an item that no longer exists changes nothing and calls no listeners', async () => {
+    await openDb(dbWith(null));
+    const listener = jest.fn();
+    const off = subscribe(listener);
+    const before = getVersion();
+
+    await expect(skipRecurring(7)).rejects.toThrow('no longer exists');
+
+    expect(getVersion()).toBe(before);
+    expect(listener).not.toHaveBeenCalled();
+    off();
+  });
+
+  it('getRecurringActivity returns the history and this year’s total', async () => {
+    const getFirstAsync = jest
+      .fn()
+      .mockResolvedValueOnce({ user_version: 2 })
+      .mockResolvedValueOnce(null)
+      .mockResolvedValue({ count: 4, total: 34000000 });
+    const db = fakeDb({ getFirstAsync, getAllAsync: jest.fn().mockResolvedValue([{ id: 1 }]) });
+    await openDb(db);
+
+    const activity = await getRecurringActivity(7);
+
+    expect(activity).toEqual({ history: [{ id: 1 }], yearCount: 4, yearTotal: 34000000 });
+    expect((db.getFirstAsync as jest.Mock).mock.calls.pop().slice(1)).toEqual([7, '2026-01-01', '2026-12-31']);
   });
 });
 

@@ -1,5 +1,5 @@
 import { openDatabaseAsync } from 'expo-sqlite';
-import { currentMonth, lastMonths, monthRange, nextOccurrence, shiftMonth, today } from './dates';
+import { currentMonth, firstOnOrAfter, lastMonths, monthRange, nextOccurrence, shiftMonth, today } from './dates';
 import { setAppCurrency } from './money';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, SCHEMA } from './seed';
 import { BACKUP_VERSION } from './backup';
@@ -346,6 +346,16 @@ export async function getRecurringItem(id: number): Promise<Recurring | null> {
   return db!.getFirstAsync('SELECT * FROM recurring WHERE id = ?', id);
 }
 
+// One transaction for a recurring item on the given date.
+async function insertOccurrence(handle: Db, item: Recurring, date: string) {
+  await handle.runAsync(
+    `INSERT INTO transactions (type, amount_minor, account_id, to_account_id, category_id, note, date, recurring_id, created_at)
+     VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?)`,
+    item.type, item.amount_minor, item.account_id, item.category_id, item.name, date, item.id,
+    new Date().toISOString(),
+  );
+}
+
 // Logs one transaction for every date an active item has come due, then moves its next_date past today.
 // Runs inside the caller's SQL transaction.
 async function logDue(handle: Db) {
@@ -354,12 +364,7 @@ async function logDue(handle: Db) {
   for (const item of due) {
     let next = item.next_date;
     while (next <= day) {
-      await handle.runAsync(
-        `INSERT INTO transactions (type, amount_minor, account_id, to_account_id, category_id, note, date, recurring_id, created_at)
-         VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?)`,
-        item.type, item.amount_minor, item.account_id, item.category_id, item.name, next, item.id,
-        new Date().toISOString(),
-      );
+      await insertOccurrence(handle, item, next);
       next = nextOccurrence(item.freq, item.anchor_day, next);
     }
     await handle.runAsync('UPDATE recurring SET next_date = ? WHERE id = ?', next, item.id);
@@ -541,4 +546,57 @@ export async function deleteAllData() {
     });
     setAppCurrency('USD');
   });
+}
+
+async function findRecurring(handle: Db, id: number): Promise<Recurring> {
+  const item = await handle.getFirstAsync<Recurring>('SELECT * FROM recurring WHERE id = ?', id);
+  if (!item) throw new Error('This recurring item no longer exists.');
+  return item;
+}
+
+// Logs the next payment now (today, or its own date if that is already due) and moves on to the one after.
+export async function logRecurringNow(id: number) {
+  await write((handle) =>
+    handle.withTransactionAsync(async () => {
+      const item = await findRecurring(handle, id);
+      const day = today();
+      await insertOccurrence(handle, item, item.next_date <= day ? item.next_date : day);
+      await handle.runAsync('UPDATE recurring SET next_date = ? WHERE id = ?', nextOccurrence(item.freq, item.anchor_day, item.next_date), id);
+    }),
+  );
+}
+
+// Skips the next payment without logging it.
+export async function skipRecurring(id: number) {
+  await write((handle) =>
+    handle.withTransactionAsync(async () => {
+      const item = await findRecurring(handle, id);
+      await handle.runAsync('UPDATE recurring SET next_date = ? WHERE id = ?', nextOccurrence(item.freq, item.anchor_day, item.next_date), id);
+    }),
+  );
+}
+
+// Resuming moves the next date forward to today or later, so the paused period is not logged.
+export async function setRecurringActive(id: number, active: boolean) {
+  await write((handle) =>
+    handle.withTransactionAsync(async () => {
+      const item = await findRecurring(handle, id);
+      const next = active ? firstOnOrAfter(item.freq, item.anchor_day, item.next_date, today()) : item.next_date;
+      await handle.runAsync('UPDATE recurring SET active = ?, next_date = ? WHERE id = ?', active ? 1 : 0, next, id);
+    }),
+  );
+}
+
+// The last four logged payments of an item, and what it added up to this year.
+export async function getRecurringActivity(id: number): Promise<{ history: TransactionRow[]; yearCount: number; yearTotal: number }> {
+  const year = today().slice(0, 4);
+  const history = await db!.getAllAsync<TransactionRow>(
+    `${TX_SELECT} ${TX_FROM} WHERE t.recurring_id = ? ORDER BY t.date DESC, t.id DESC LIMIT 4`, id,
+  );
+  const sum = await db!.getFirstAsync<{ count: number; total: number }>(
+    `SELECT COUNT(*) AS count, COALESCE(SUM(amount_minor), 0) AS total FROM transactions
+     WHERE recurring_id = ? AND date BETWEEN ? AND ?`,
+    id, `${year}-01-01`, `${year}-12-31`,
+  );
+  return { history, yearCount: sum?.count ?? 0, yearTotal: sum?.total ?? 0 };
 }

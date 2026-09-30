@@ -33,7 +33,7 @@ export default function TransactionDetail() {
     details.push({
       label: 'Repeats',
       value: `${t.recurring_name} · ${FREQUENCY_LABEL[t.recurring_freq]}`,
-      onPress: () => router.push({ pathname: '/recurring/[id]', params: { id: String(recurringId) } }),
+      onPress: () => router.push({ pathname: '/recurring/detail/[id]', params: { id: String(recurringId) } }),
     });
   }
 

@@ -42,7 +42,7 @@ function Line({ t }: { t: TransactionRow }) {
           <ArrowLeftRight color={colors.bg} size={20} />
         </View>
       ) : (
-        <CategoryIcon name={t.category_icon} color={t.category_color} />
+        <CategoryIcon name={t.category_icon} color={t.category_color} recurring={t.recurring_id !== null} />
       )}
       <View style={styles.main}>
         <Text style={[styles.title, { color: colors.ink }]} numberOfLines={1}>

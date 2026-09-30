@@ -1,4 +1,4 @@
-import { currentMonth, daysInMonth, fullDate, lastMonths, monthName, monthShort, tomorrow, upcomingOccurrences, monthLabel, monthRange, nextOccurrence, prettyDate, shiftMonth, today, yesterday } from '../dates';
+import { currentMonth, daysInMonth, firstOnOrAfter, fullDate, lastMonths, monthName, monthShort, tomorrow, upcomingOccurrences, monthLabel, monthRange, nextOccurrence, prettyDate, shiftMonth, today, yesterday } from '../dates';
 
 describe('today', () => {
   it('is a local YYYY-MM-DD string', () => {
@@ -130,5 +130,19 @@ describe('month helpers for Insights', () => {
     expect(daysInMonth('2026-09')).toBe(30);
     expect(daysInMonth('2028-02')).toBe(29);
     expect(daysInMonth('2027-02')).toBe(28);
+  });
+});
+
+describe('firstOnOrAfter', () => {
+  it('keeps a date that is already today or later', () => {
+    expect(firstOnOrAfter('monthly', 15, '2026-05-15', '2026-04-30')).toBe('2026-05-15');
+    expect(firstOnOrAfter('weekly', 3, '2026-04-30', '2026-04-30')).toBe('2026-04-30');
+  });
+
+  it('skips forward past a paused period, keeping the anchor day at month ends', () => {
+    expect(firstOnOrAfter('monthly', 31, '2026-01-31', '2026-04-30')).toBe('2026-04-30');
+    expect(firstOnOrAfter('monthly', 31, '2026-01-31', '2026-05-01')).toBe('2026-05-31');
+    expect(firstOnOrAfter('weekly', 3, '2026-01-01', '2026-01-20')).toBe('2026-01-22');
+    expect(firstOnOrAfter('yearly', 29, '2024-02-29', '2026-03-01')).toBe('2027-02-28');
   });
 });

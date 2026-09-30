@@ -15,7 +15,7 @@ export function RecurringRow({ item, date }: { item: RecurringItem; date?: strin
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={() => router.push({ pathname: '/recurring/[id]', params: { id: String(item.id) } })}
+      onPress={() => router.push({ pathname: '/recurring/detail/[id]', params: { id: String(item.id) } })}
       style={[styles.row, !item.active && { opacity: 0.55 }]}
     >
       <CategoryIcon name={item.category_icon} color={item.category_color} />

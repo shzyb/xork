@@ -100,3 +100,11 @@ export function monthName(month: string): string {
 export function daysInMonth(month: string): number {
   return getDaysInMonth(parseISO(month + '-01'));
 }
+
+// The first occurrence of a recurring item on or after `from`, counting on from `date`.
+// Used when resuming a paused item, so the days it was paused are skipped rather than logged.
+export function firstOnOrAfter(freq: Frequency, anchorDay: number, date: string, from: string): string {
+  let next = date;
+  while (next < from) next = nextOccurrence(freq, anchorDay, next);
+  return next;
+}
