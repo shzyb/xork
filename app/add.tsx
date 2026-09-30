@@ -102,9 +102,7 @@ export default function Add() {
       DateTimePickerAndroid.open({
         value: fromDay(date),
         mode: 'date',
-        onChange: (event, picked) => {
-          if (event.type === 'set' && picked) setDate(toDay(picked));
-        },
+        onValueChange: (_, picked) => setDate(toDay(picked)),
       });
     } else {
       setShowPicker(!showPicker);
@@ -262,7 +260,7 @@ export default function Add() {
                   display="inline"
                   themeVariant="dark"
                   accentColor={sheet.ink}
-                  onChange={(_, picked) => picked && setDate(toDay(picked))}
+                  onValueChange={(_, picked) => setDate(toDay(picked))}
                 />
               </View>
             )}
