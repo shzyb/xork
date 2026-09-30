@@ -1,4 +1,4 @@
-import { formatMoney, guessCurrency, parseAmount, setAppCurrency } from '../money';
+import { formatMoney, formatTyped, guessCurrency, parseAmount, setAppCurrency } from '../money';
 
 describe('formatMoney', () => {
   it('shows no decimals for PKR', () => {
@@ -62,5 +62,14 @@ describe('guessCurrency', () => {
   it('falls back to USD', () => {
     expect(guessCurrency({ currencyCode: 'CHF', regionCode: 'CH' })).toBe('USD');
     expect(guessCurrency({})).toBe('USD');
+  });
+});
+
+describe('formatTyped', () => {
+  it('adds thousands separators to what was typed', () => {
+    expect(formatTyped('')).toBe('0');
+    expect(formatTyped('2450')).toBe('2,450');
+    expect(formatTyped('1234567.5')).toBe('1,234,567.5');
+    expect(formatTyped('12.')).toBe('12.');
   });
 });

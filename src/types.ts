@@ -47,3 +47,11 @@ export type Recurring = {
   next_date: string;
   active: number;
 };
+
+export type TransactionRow = Transaction & {
+  category_name: string | null;
+  category_icon: string | null;
+  category_color: string | null;
+  account_name: string;
+  to_account_name: string | null;
+};

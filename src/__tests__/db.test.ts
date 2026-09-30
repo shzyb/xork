@@ -1,4 +1,4 @@
-import { completeWelcome, Db, getVersion, openDb, setCurrency, subscribe } from '../db';
+import { addTransaction, completeWelcome, Db, getVersion, openDb, setCurrency, subscribe } from '../db';
 import { formatMoney } from '../money';
 
 function fakeDb(overrides: Partial<Db> = {}): Db {
@@ -62,6 +62,49 @@ describe('change listeners', () => {
     expect(db.withTransactionAsync).toHaveBeenCalledTimes(1);
     expect(db.runAsync).toHaveBeenCalledWith(expect.any(String), 'currency', 'AED');
     expect(db.runAsync).toHaveBeenCalledWith(expect.any(String), 'onboarded', '1');
+  });
+});
+
+const LUNCH = {
+  type: 'expense' as const,
+  amount_minor: 45000,
+  account_id: 1,
+  to_account_id: null,
+  category_id: 2,
+  note: 'Lunch',
+  date: '2026-09-30',
+};
+
+describe('addTransaction', () => {
+  it('inserts the row, bumps version and calls listeners', async () => {
+    const db = fakeDb();
+    await openDb(db);
+    const listener = jest.fn();
+    const off = subscribe(listener);
+    const before = getVersion();
+
+    await addTransaction(LUNCH);
+
+    expect(db.runAsync).toHaveBeenCalledWith(
+      expect.stringContaining('INSERT INTO transactions'),
+      'expense', 45000, 1, null, 2, 'Lunch', '2026-09-30', expect.any(String),
+    );
+    expect(getVersion()).toBe(before + 1);
+    expect(listener).toHaveBeenCalledTimes(1);
+    off();
+  });
+
+  it('a failed insert changes nothing and calls no listeners', async () => {
+    await openDb(fakeDb({ runAsync: jest.fn().mockRejectedValue(new Error('disk full')) }));
+    const listener = jest.fn();
+    const off = subscribe(listener);
+    const before = getVersion();
+
+    await expect(addTransaction(LUNCH)).rejects.toThrow('disk full');
+
+    expect(getVersion()).toBe(before);
+    expect(listener).not.toHaveBeenCalled();
+    off();
   });
 });
 

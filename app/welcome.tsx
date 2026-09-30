@@ -2,6 +2,8 @@ import { getLocales } from 'expo-localization';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Check } from 'lucide-react-native';
+import { Button } from '../src/components/Button';
 import { completeWelcome } from '../src/db';
 import { CURRENCIES, guessCurrency } from '../src/money';
 import { fontSize, spacing, useColors } from '../src/theme';
@@ -29,18 +31,14 @@ export default function Welcome() {
                 <Text style={[styles.code, { color: colors.ink }]}>{currency.code}</Text>
                 <Text style={{ color: colors.ink2, fontSize: fontSize.small }}>{currency.name}</Text>
               </View>
-              {on && <Text style={{ color: colors.ink, fontSize: fontSize.title }}>✓</Text>}
+              {on && <Check color={colors.ink} size={22} />}
             </Pressable>
           );
         })}
       </ScrollView>
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => completeWelcome(selected)}
-        style={[styles.button, { backgroundColor: colors.btnBg }]}
-      >
-        <Text style={[styles.buttonText, { color: colors.btnFg }]}>Continue</Text>
-      </Pressable>
+      <View style={styles.footer}>
+        <Button title="Continue" background={colors.btnBg} color={colors.btnFg} onPress={() => completeWelcome(selected)} />
+      </View>
     </SafeAreaView>
   );
 }
@@ -53,6 +51,5 @@ const styles = StyleSheet.create({
   symbol: { width: 48, fontSize: fontSize.title, fontWeight: '700', textAlign: 'center' },
   names: { flex: 1 },
   code: { fontSize: fontSize.body, fontWeight: '600' },
-  button: { height: 54, borderRadius: 27, alignItems: 'center', justifyContent: 'center', marginTop: spacing.md },
-  buttonText: { fontSize: 17, fontWeight: '600' },
+  footer: { marginTop: spacing.md },
 });

@@ -1,4 +1,4 @@
-import { currentMonth, monthLabel, monthRange, nextOccurrence, shiftMonth, today } from '../dates';
+import { currentMonth, monthLabel, monthRange, nextOccurrence, prettyDate, shiftMonth, today, yesterday } from '../dates';
 
 describe('today', () => {
   it('is a local YYYY-MM-DD string', () => {
@@ -40,5 +40,16 @@ describe('nextOccurrence', () => {
     expect(nextOccurrence('yearly', 10, '2026-05-10')).toBe('2027-05-10');
     expect(nextOccurrence('yearly', 29, '2028-02-29')).toBe('2029-02-28');
     expect(nextOccurrence('yearly', 29, '2027-02-28')).toBe('2028-02-29');
+  });
+});
+
+describe('prettyDate', () => {
+  it('names today and yesterday', () => {
+    expect(prettyDate(today())).toBe('Today');
+    expect(prettyDate(yesterday())).toBe('Yesterday');
+  });
+
+  it('shows weekday, day and month, adding the year for other years', () => {
+    expect(prettyDate('2020-03-04')).toBe('Wed, 4 Mar 2020');
   });
 });

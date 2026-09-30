@@ -60,3 +60,18 @@ export function parseAmount(text: string): number {
   const [whole, frac = ''] = text.split('.');
   return Number(whole || '0') * 100 + Number(frac.slice(0, 2).padEnd(2, '0'));
 }
+
+export function currentDecimals(): number {
+  return currencyOf(appCurrency).decimals;
+}
+
+export function currentSymbol(): string {
+  return currencyOf(appCurrency).symbol;
+}
+
+// The amount as typed on the keypad, with thousands separators: "2450.5" -> "2,450.5".
+export function formatTyped(text: string): string {
+  const [whole, frac] = text.split('.');
+  const grouped = (whole || '0').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return frac === undefined ? grouped : grouped + '.' + frac;
+}

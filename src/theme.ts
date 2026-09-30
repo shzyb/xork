@@ -35,3 +35,17 @@ export function useColors() {
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 32 };
 
 export const fontSize = { small: 13, body: 16, title: 22, screen: 32, big: 52 };
+
+// Every action opens in this black sheet, in light and dark mode alike.
+export const sheet = {
+  bg: '#0B0B0C',
+  card: '#1C1C1E',
+  card2: '#2C2C2E',
+  ink: '#FFFFFF',
+  ink2: '#A1A1A6',
+  ink3: '#636366',
+  neg: '#FF6B61',
+  pos: '#4ADE80',
+  btnBg: '#FFFFFF',
+  btnFg: '#000000',
+};

@@ -1,5 +1,7 @@
 import { openDatabaseAsync } from 'expo-sqlite';
+import { monthRange } from './dates';
 import { setAppCurrency } from './money';
+import type { Account, Category, Transaction, TransactionRow } from './types';
 
 // The small part of expo-sqlite that we use, so tests can pass a fake.
 export type Db = {
@@ -81,43 +83,43 @@ CREATE TABLE settings (
 );
 `;
 
-// name, icon, colour. The two "Other" categories are is_default: they can't be deleted.
+// name, Lucide icon name, colour. The two "Other" categories are is_default: they can't be deleted.
 const EXPENSE_CATEGORIES = [
-  ['Groceries', '🛒', '#34A853'],
-  ['Dining out', '🍽️', '#FF8A00'],
-  ['Transport', '🚌', '#3B82F6'],
-  ['Bills', '🧾', '#EAB308'],
-  ['Rent', '🏠', '#A0714F'],
-  ['Mobile', '📱', '#14B8A6'],
-  ['Internet', '🌐', '#0EA5E9'],
-  ['Subscriptions', '🔁', '#8B5CF6'],
-  ['Shopping', '🛍️', '#EC4899'],
-  ['Health', '💊', '#EF4444'],
-  ['Family', '👨‍👩‍👧', '#64748B'],
-  ['Education', '📚', '#16A34A'],
-  ['Entertainment', '🎬', '#0284C7'],
-  ['Fuel', '⛽', '#F97316'],
-  ['Travel', '✈️', '#2563EB'],
-  ['Personal', '🧴', '#D946EF'],
-  ['Fitness', '🏋️', '#EA580C'],
-  ['Charity', '🤲', '#059669'],
-  ['Home', '🛋️', '#B45309'],
-  ['Maintenance', '🔧', '#78716C'],
-  ['Insurance', '🛡️', '#4F46E5'],
-  ['Loans', '🏦', '#7C3AED'],
-  ['EMI', '💳', '#DB2777'],
-  ['Other', '🏷️', '#64748B'],
+  ['Groceries', 'shopping-cart', '#34A853'],
+  ['Dining out', 'utensils', '#FF8A00'],
+  ['Transport', 'bus', '#3B82F6'],
+  ['Bills', 'receipt', '#EAB308'],
+  ['Rent', 'house', '#A0714F'],
+  ['Mobile', 'smartphone', '#14B8A6'],
+  ['Internet', 'wifi', '#0EA5E9'],
+  ['Subscriptions', 'repeat', '#8B5CF6'],
+  ['Shopping', 'shopping-bag', '#EC4899'],
+  ['Health', 'heart-pulse', '#EF4444'],
+  ['Family', 'users', '#64748B'],
+  ['Education', 'book-open', '#16A34A'],
+  ['Entertainment', 'clapperboard', '#0284C7'],
+  ['Fuel', 'fuel', '#F97316'],
+  ['Travel', 'plane', '#2563EB'],
+  ['Personal', 'sparkles', '#D946EF'],
+  ['Fitness', 'dumbbell', '#EA580C'],
+  ['Charity', 'hand-heart', '#059669'],
+  ['Home', 'sofa', '#B45309'],
+  ['Maintenance', 'wrench', '#78716C'],
+  ['Insurance', 'shield-check', '#4F46E5'],
+  ['Loans', 'landmark', '#7C3AED'],
+  ['EMI', 'credit-card', '#DB2777'],
+  ['Other', 'tag', '#64748B'],
 ];
 
 const INCOME_CATEGORIES = [
-  ['Salary', '💼', '#16A34A'],
-  ['Freelance', '💻', '#14B8A6'],
-  ['Business', '🏪', '#F59E0B'],
-  ['Investments', '📈', '#8B5CF6'],
-  ['Rental income', '🔑', '#A0714F'],
-  ['Refunds', '↩️', '#0EA5E9'],
-  ['Gifts', '🎁', '#EC4899'],
-  ['Other income', '✨', '#64748B'],
+  ['Salary', 'briefcase', '#16A34A'],
+  ['Freelance', 'laptop', '#14B8A6'],
+  ['Business', 'store', '#F59E0B'],
+  ['Investments', 'trending-up', '#8B5CF6'],
+  ['Rental income', 'key-round', '#A0714F'],
+  ['Refunds', 'undo-2', '#0EA5E9'],
+  ['Gifts', 'gift', '#EC4899'],
+  ['Other income', 'sparkle', '#64748B'],
 ];
 
 // Migrations only add things. Each step runs once, guarded by PRAGMA user_version.
@@ -176,12 +178,60 @@ export async function isOnboarded(): Promise<boolean> {
   return (await getSetting('onboarded')) === '1';
 }
 
-// Opening balances plus income minus expenses. Transfers cancel out across accounts.
-export async function getTotalBalance(): Promise<number> {
-  const row = await db!.getFirstAsync<{ total: number }>(
-    `SELECT (SELECT COALESCE(SUM(opening_minor), 0) FROM accounts)
-          + (SELECT COALESCE(SUM(CASE type WHEN 'income' THEN amount_minor WHEN 'expense' THEN -amount_minor ELSE 0 END), 0)
-             FROM transactions) AS total`,
+export type NewTransaction = Pick<
+  Transaction,
+  'type' | 'amount_minor' | 'account_id' | 'to_account_id' | 'category_id' | 'note' | 'date'
+>;
+
+export async function addTransaction(t: NewTransaction) {
+  await write((handle) =>
+    handle.runAsync(
+      `INSERT INTO transactions (type, amount_minor, account_id, to_account_id, category_id, note, date, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      t.type, t.amount_minor, t.account_id, t.to_account_id, t.category_id, t.note, t.date,
+      new Date().toISOString(),
+    ),
   );
-  return row?.total ?? 0;
+}
+
+// Balance = opening + income - expense - transfers out + transfers in. Never stored.
+export async function getAccountsWithBalance(): Promise<(Account & { balance_minor: number })[]> {
+  return db!.getAllAsync(
+    `SELECT a.*,
+       a.opening_minor
+       + COALESCE((SELECT SUM(CASE WHEN t.type = 'income' THEN t.amount_minor ELSE -t.amount_minor END)
+                   FROM transactions t WHERE t.account_id = a.id), 0)
+       + COALESCE((SELECT SUM(t.amount_minor) FROM transactions t
+                   WHERE t.type = 'transfer' AND t.to_account_id = a.id), 0) AS balance_minor
+     FROM accounts a ORDER BY a.id`,
+  );
+}
+
+export async function getCategories(): Promise<Category[]> {
+  return db!.getAllAsync('SELECT * FROM categories ORDER BY id');
+}
+
+// Transfers are not income or spending, so they are left out.
+export async function getMonthSummary(month: string): Promise<{ in_minor: number; out_minor: number }> {
+  const { start, end } = monthRange(month);
+  const row = await db!.getFirstAsync<{ in_minor: number; out_minor: number }>(
+    `SELECT COALESCE(SUM(CASE WHEN type = 'income' THEN amount_minor END), 0) AS in_minor,
+            COALESCE(SUM(CASE WHEN type = 'expense' THEN amount_minor END), 0) AS out_minor
+     FROM transactions WHERE date BETWEEN ? AND ?`,
+    start, end,
+  );
+  return row ?? { in_minor: 0, out_minor: 0 };
+}
+
+export async function getRecent(limit: number): Promise<TransactionRow[]> {
+  return db!.getAllAsync(
+    `SELECT t.*, c.name AS category_name, c.icon AS category_icon, c.color AS category_color,
+            a.name AS account_name, b.name AS to_account_name
+     FROM transactions t
+     JOIN accounts a ON a.id = t.account_id
+     LEFT JOIN accounts b ON b.id = t.to_account_id
+     LEFT JOIN categories c ON c.id = t.category_id
+     ORDER BY t.date DESC, t.id DESC LIMIT ?`,
+    limit,
+  );
 }

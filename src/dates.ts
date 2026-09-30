@@ -1,4 +1,4 @@
-import { addDays, addMonths, format, getDaysInMonth, parseISO } from 'date-fns';
+import { addDays, addMonths, format, getDaysInMonth, parseISO, subDays } from 'date-fns';
 import type { Frequency } from './types';
 
 const DAY = 'yyyy-MM-dd';
@@ -33,4 +33,23 @@ export function nextOccurrence(freq: Frequency, anchorDay: number, from: string)
   const target = addMonths(new Date(date.getFullYear(), date.getMonth(), 1), freq === 'yearly' ? 12 : 1);
   const day = Math.min(anchorDay, getDaysInMonth(target));
   return format(new Date(target.getFullYear(), target.getMonth(), day), DAY);
+}
+
+export function yesterday(): string {
+  return format(subDays(new Date(), 1), DAY);
+}
+
+export function prettyDate(date: string): string {
+  if (date === today()) return 'Today';
+  if (date === yesterday()) return 'Yesterday';
+  const d = parseISO(date);
+  return format(d, d.getFullYear() === new Date().getFullYear() ? 'EEE, d MMM' : 'EEE, d MMM yyyy');
+}
+
+export function toDay(date: Date): string {
+  return format(date, DAY);
+}
+
+export function fromDay(day: string): Date {
+  return parseISO(day);
 }
