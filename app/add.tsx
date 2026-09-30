@@ -1,12 +1,14 @@
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Calendar, ChevronLeft, Delete, X } from 'lucide-react-native';
+import { Calendar, ChevronLeft, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AccountChips } from '../src/components/AccountChips';
 import { Button } from '../src/components/Button';
-import { CategoryIcon } from '../src/components/CategoryIcon';
+import { CategoryGrid } from '../src/components/CategoryGrid';
+import { Keypad } from '../src/components/Keypad';
 import { addTransaction, getAccountsWithBalance, getCategories } from '../src/db';
 import { fromDay, prettyDate, toDay, today, yesterday } from '../src/dates';
 import { currentDecimals, currentSymbol, formatMoney, formatTyped, parseAmount } from '../src/money';
@@ -21,7 +23,6 @@ const TYPES: { key: TransactionType; label: string }[] = [
 ];
 const TITLES = { expense: 'Expense', income: 'Income', transfer: 'Move money' };
 const SAVE_LABELS = { expense: 'Add expense', income: 'Add income', transfer: 'Move money' };
-const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'back'];
 
 export default function Add() {
   const router = useRouter();
@@ -173,23 +174,7 @@ export default function Add() {
           </View>
 
           <View style={styles.footer}>
-            <View style={styles.keypad}>
-              {KEYS.map((key) =>
-                key === '.' && decimals === 0 ? (
-                  <View key={key} style={styles.key} />
-                ) : (
-                  <Pressable
-                    key={key}
-                    accessibilityRole="button"
-                    accessibilityLabel={key === 'back' ? 'Delete' : key}
-                    onPress={() => pressKey(key)}
-                    style={styles.key}
-                  >
-                    {key === 'back' ? <Delete color={sheet.ink} size={26} /> : <Text style={styles.keyText}>{key}</Text>}
-                  </Pressable>
-                ),
-              )}
-            </View>
+            <Keypad onKey={pressKey} decimals={decimals} />
             <Button
               title="Continue"
               onPress={goToDetails}
@@ -213,24 +198,11 @@ export default function Add() {
             {type !== 'transfer' && (
               <>
                 <Text style={styles.label}>Category</Text>
-                <View style={styles.grid}>
-                  {kindCategories.map((c) => (
-                    <Pressable
-                      key={c.id}
-                      accessibilityRole="button"
-                      accessibilityState={{ selected: categoryId === c.id }}
-                      onPress={() => { setCategoryId(c.id); setError(''); }}
-                      style={styles.cell}
-                    >
-                      <View style={categoryId === c.id && styles.cellSelected}>
-                        <CategoryIcon name={c.icon} color={c.color} size={48} />
-                      </View>
-                      <Text style={[styles.cellText, categoryId === c.id && { color: sheet.ink }]} numberOfLines={2}>
-                        {c.name}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
+                <CategoryGrid
+                  categories={kindCategories}
+                  selectedId={categoryId}
+                  onSelect={(id) => { setCategoryId(id); setError(''); }}
+                />
               </>
             )}
 
@@ -284,35 +256,6 @@ function RoundButton({ label, onPress, children }: { label: string; onPress: () 
   );
 }
 
-function AccountChips({ label, accounts, selectedId, onSelect }: {
-  label: string;
-  accounts: { id: number; name: string; color: string }[];
-  selectedId: number;
-  onSelect: (id: number) => void;
-}) {
-  return (
-    <View style={styles.accountRow}>
-      <Text style={styles.accountLabel}>{label}</Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.accountChips}>
-        {accounts.map((a) => (
-          <Pressable
-            key={a.id}
-            accessibilityRole="button"
-            accessibilityState={{ selected: a.id === selectedId }}
-            onPress={() => onSelect(a.id)}
-            style={[styles.accountChip, { backgroundColor: a.id === selectedId ? sheet.card2 : sheet.card }]}
-          >
-            <View style={[styles.accountDot, { backgroundColor: a.color }]}>
-              <Text style={styles.accountInitial}>{a.name.trim().charAt(0).toUpperCase() || '?'}</Text>
-            </View>
-            <Text style={[styles.accountName, a.id !== selectedId && { color: sheet.ink2 }]} numberOfLines={1}>{a.name}</Text>
-          </Pressable>
-        ))}
-      </ScrollView>
-    </View>
-  );
-}
-
 function DateChip({ label, on, icon, onPress }: { label: string; on: boolean; icon?: boolean; onPress: () => void }) {
   return (
     <Pressable
@@ -338,30 +281,16 @@ const styles = StyleSheet.create({
   segment: { flexDirection: 'row', backgroundColor: sheet.card, borderRadius: 22, padding: 3, gap: 3 },
   segmentItem: { flex: 1, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   segmentText: { color: sheet.ink2, fontSize: 14.5, fontWeight: '600' },
-  accountRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: sheet.card, borderRadius: 16, marginTop: 10, paddingLeft: 14, minHeight: 54 },
-  accountLabel: { color: sheet.ink2, fontSize: 15, minWidth: 44 },
-  accountChips: { gap: 6, paddingVertical: 6, paddingRight: 8 },
-  accountChip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 42, paddingLeft: 4, paddingRight: 12, borderRadius: 21 },
-  accountDot: { width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
-  accountInitial: { color: '#FFFFFF', fontSize: 13, fontWeight: '700' },
-  accountName: { color: sheet.ink, fontSize: 15, fontWeight: '600', maxWidth: 140 },
   amountBox: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 14 },
   amount: { color: sheet.ink, fontSize: 68, fontWeight: '800', letterSpacing: -2, maxWidth: '100%' },
   symbol: { color: sheet.ink2, fontSize: 32, fontWeight: '700', letterSpacing: 0 },
   under: { color: sheet.ink2, fontSize: 15, marginTop: 10, textAlign: 'center' },
   error: { color: sheet.neg, fontSize: 14.5, fontWeight: '600', marginTop: 10, textAlign: 'center' },
   footer: { paddingTop: 6, paddingBottom: spacing.lg },
-  keypad: { flexDirection: 'row', flexWrap: 'wrap', marginBottom: 10 },
-  key: { width: '33.333%', height: 56, alignItems: 'center', justifyContent: 'center' },
-  keyText: { color: sheet.ink, fontSize: 27, fontWeight: '500' },
   details: { paddingBottom: spacing.lg },
   hero: { alignItems: 'center', paddingVertical: 4 },
   heroAmount: { color: sheet.ink, fontSize: 40, fontWeight: '800', letterSpacing: -1 },
   label: { color: sheet.ink2, fontSize: 14, fontWeight: '600', marginTop: 20, marginBottom: 8 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  cell: { width: '25%', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 2 },
-  cellSelected: { padding: 3, borderRadius: 30, borderWidth: 2, borderColor: sheet.ink, margin: -5 },
-  cellText: { color: sheet.ink2, fontSize: 12, fontWeight: '600', textAlign: 'center' },
   input: { height: 50, borderRadius: 16, backgroundColor: sheet.card, paddingHorizontal: 14, color: sheet.ink, fontSize: 16 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   dateChip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 40, paddingHorizontal: 14, borderRadius: 20 },
