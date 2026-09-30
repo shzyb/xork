@@ -40,12 +40,28 @@ function FilledClock({ ink, bg }: { ink: string; bg: string }) {
   );
 }
 
+// The big arc stays an outline; only the detached right-hand slice is solid.
+function FilledPie({ ink }: { ink: string }) {
+  return (
+    <Svg width={SIZE} height={SIZE} viewBox="0 0 24 24">
+      <G strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <Path d="M21.21 15.89A10 10 0 1 1 8 2.83" fill="none" stroke={ink} />
+        <Path
+          d="M21 12c.552 0 1.005-.449.95-.998a10 10 0 0 0-8.953-8.951c-.55-.055-.998.398-.998.95v8a1 1 0 0 0 1 1z"
+          fill={ink}
+          stroke={ink}
+        />
+      </G>
+    </Svg>
+  );
+}
+
 const TABS: Record<string, { label: string; icon: (c: Colors) => ReactNode }> = {
   index: { label: 'Home', icon: (c) => (c.focused ? <FilledHome ink={c.ink} bg={c.bg} /> : <House size={SIZE} color={c.grey} strokeWidth={2} />) },
   activity: { label: 'Activity', icon: (c) => (c.focused ? <FilledClock ink={c.ink} bg={c.bg} /> : <Clock size={SIZE} color={c.grey} strokeWidth={2} />) },
   // Line icons have nothing to fill, so selected they turn black and bold.
   recurring: { label: 'Recurring', icon: (c) => <Repeat size={SIZE} color={c.focused ? c.ink : c.grey} strokeWidth={c.focused ? 2.8 : 2} /> },
-  insights: { label: 'Insights', icon: (c) => <ChartPie size={SIZE} color={c.focused ? c.ink : c.grey} fill={c.focused ? c.ink : 'none'} strokeWidth={2} /> },
+  insights: { label: 'Insights', icon: (c) => (c.focused ? <FilledPie ink={c.ink} /> : <ChartPie size={SIZE} color={c.grey} strokeWidth={2} />) },
 };
 
 // Our own bar: the built-in one lines icons up at the top of each item, and we want them centred.
