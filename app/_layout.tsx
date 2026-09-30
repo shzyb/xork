@@ -47,7 +47,7 @@ function Routes() {
           name="add-menu"
           options={{ presentation: 'transparentModal', animation: 'fade', contentStyle: { backgroundColor: 'rgba(0,0,0,0.32)' } }}
         />
-        {['add', 'transaction/[id]', 'account/[id]', 'category/[id]', 'recurring/[id]', 'settings'].map((name) => (
+        {['add', 'transaction/[id]', 'account/[id]', 'category/[id]', 'recurring/[id]', 'settings', 'accounts', 'categories', 'currency'].map((name) => (
           <Stack.Screen key={name} name={name} options={{ presentation: 'modal', contentStyle: { backgroundColor: sheet.bg } }} />
         ))}
       </Stack.Protected>

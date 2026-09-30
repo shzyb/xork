@@ -3,20 +3,17 @@ import { File, Paths } from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { StatusBar } from 'expo-status-bar';
-import { Check, ChevronDown, ChevronRight, Download, Globe, Trash2, Upload } from 'lucide-react-native';
+import { ChevronRight, Download, Globe, Landmark, Tag, Trash2, Upload } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { parseBackup } from '../src/backup';
-import { Button } from '../src/components/Button';
-import { CategoryIcon } from '../src/components/CategoryIcon';
 import { SheetHeader } from '../src/components/SheetHeader';
-import { deleteAllData, exportAll, getCategories, getSetting, replaceAllData, setCurrency } from '../src/db';
+import { deleteAllData, exportAll, getSetting, replaceAllData } from '../src/db';
 import { today } from '../src/dates';
-import { CURRENCIES, currencyOf, formatMoney } from '../src/money';
+import { currencyOf } from '../src/money';
 import { sheet, spacing } from '../src/theme';
-import type { CategoryKind } from '../src/types';
 import { useData } from '../src/useData';
 
 const confirm = (title: string, message: string, action: string) =>
@@ -34,31 +31,11 @@ const confirm = (title: string, message: string, action: string) =>
 
 export default function Settings() {
   const router = useRouter();
-  const categories = useData(getCategories);
   const currencyCode = useData(() => getSetting('currency'));
-  const [kind, setKind] = useState<CategoryKind>('expense');
-  const [showCurrencies, setShowCurrencies] = useState(false);
   const [busy, setBusy] = useState<'export' | 'import' | null>(null);
   const [message, setMessage] = useState('');
 
   const current = currencyOf(currencyCode ?? 'USD');
-
-  async function changeCurrency(code: string) {
-    if (code === current.code) return;
-    const next = currencyOf(code);
-    const ok = await confirm(
-      `Change to ${next.name}?`,
-      `Amounts are not converted: 5,000 ${current.code} becomes 5,000 ${next.code}. Only the symbol and formatting change.`,
-      'Change',
-    );
-    if (!ok) return;
-    try {
-      await setCurrency(code);
-      setShowCurrencies(false);
-    } catch {
-      setMessage('Could not change the currency. Try again.');
-    }
-  }
 
   async function exportBackup() {
     setMessage('');
@@ -120,62 +97,27 @@ export default function Settings() {
       <StatusBar style="light" />
       <SheetHeader title="Settings" onClose={() => router.back()} />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.section}>Currency</Text>
+        <ActionRow
+          Icon={Landmark}
+          title="Accounts"
+          subtitle="Add, edit or remove accounts"
+          onPress={() => router.push('/accounts')}
+          end={<ChevronRight color={sheet.ink3} size={20} />}
+        />
+        <ActionRow
+          Icon={Tag}
+          title="Categories & budgets"
+          subtitle="Create categories, set monthly limits"
+          onPress={() => router.push('/categories')}
+          end={<ChevronRight color={sheet.ink3} size={20} />}
+        />
         <ActionRow
           Icon={Globe}
-          title={current.name}
-          subtitle={`${current.code} · ${formatMoney(123456)}`}
-          onPress={() => setShowCurrencies(!showCurrencies)}
-          end={showCurrencies ? <ChevronDown color={sheet.ink3} size={20} /> : <ChevronRight color={sheet.ink3} size={20} />}
+          title="Currency"
+          subtitle={`${current.name} (${current.code})`}
+          onPress={() => router.push('/currency')}
+          end={<ChevronRight color={sheet.ink3} size={20} />}
         />
-        {showCurrencies && CURRENCIES.map((c) => (
-          <Pressable key={c.code} accessibilityRole="button" onPress={() => changeCurrency(c.code)} style={styles.currencyRow}>
-            <Text style={styles.currencySymbol}>{c.symbol}</Text>
-            <Text style={[styles.rowTitle, { flex: 1 }]}>{c.name} <Text style={styles.rowSub}>{c.code}</Text></Text>
-            {c.code === current.code && <Check color={sheet.ink} size={20} />}
-          </Pressable>
-        ))}
-
-        <Text style={styles.section}>Categories</Text>
-        <View style={styles.segment}>
-          {([['expense', 'Spending'], ['income', 'Income']] as const).map(([key, label]) => (
-            <Pressable
-              key={key}
-              accessibilityRole="button"
-              accessibilityState={{ selected: kind === key }}
-              onPress={() => setKind(key)}
-              style={[styles.segmentItem, kind === key && { backgroundColor: sheet.card2 }]}
-            >
-              <Text style={[styles.segmentText, kind === key && { color: sheet.ink }]}>{label}</Text>
-            </Pressable>
-          ))}
-        </View>
-        {categories?.filter((c) => c.kind === kind).map((c) => (
-          <Pressable
-            key={c.id}
-            accessibilityRole="button"
-            onPress={() => router.push({ pathname: '/category/[id]', params: { id: String(c.id) } })}
-            style={styles.row}
-          >
-            <CategoryIcon name={c.icon} color={c.color} />
-            <View style={styles.main}>
-              <Text style={styles.rowTitle} numberOfLines={1}>{c.name}</Text>
-              {c.budget_minor !== null && <Text style={styles.rowSub}>Budget {formatMoney(c.budget_minor)}</Text>}
-            </View>
-            <ChevronRight color={sheet.ink3} size={20} />
-          </Pressable>
-        ))}
-        <View style={styles.footer}>
-          <Button
-            title={kind === 'income' ? 'New income category' : 'New spending category'}
-            onPress={() => router.push({ pathname: '/category/[id]', params: { id: 'new', kind } })}
-            background={sheet.btnBg}
-            color={sheet.btnFg}
-          />
-        </View>
-
-        <Text style={styles.section}>Backup</Text>
-        <Text style={styles.hint}>Your data lives only on this phone. Export a backup to keep it safe, and import it to restore.</Text>
         <ActionRow
           Icon={Download}
           title={busy === 'export' ? 'Exporting…' : 'Export backup'}
@@ -190,9 +132,6 @@ export default function Settings() {
           disabled={busy !== null}
           onPress={importBackup}
         />
-        {message !== '' && <Text style={styles.message}>{message}</Text>}
-
-        <Text style={styles.section}>Danger zone</Text>
         <ActionRow
           Icon={Trash2}
           title="Delete all data"
@@ -200,6 +139,10 @@ export default function Settings() {
           danger
           onPress={deleteEverything}
         />
+        {message !== '' && <Text style={styles.message}>{message}</Text>}
+        <Text style={styles.note}>
+          Your data lives only on this phone. Nothing is sent anywhere. Export a backup to keep it safe.
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
@@ -236,18 +179,11 @@ function ActionRow({ Icon, title, subtitle, onPress, end, disabled, danger }: {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: sheet.bg, paddingHorizontal: spacing.xl },
   content: { paddingBottom: spacing.xxl },
-  section: { color: sheet.ink2, fontSize: 14, fontWeight: '600', marginTop: 26, marginBottom: 8 },
-  hint: { color: sheet.ink2, fontSize: 14, lineHeight: 20, marginBottom: 6 },
-  message: { color: sheet.ink, fontSize: 14.5, fontWeight: '600', marginTop: 8 },
-  segment: { flexDirection: 'row', backgroundColor: sheet.card, borderRadius: 22, padding: 3, gap: 3, marginBottom: 8 },
-  segmentItem: { flex: 1, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
-  segmentText: { color: sheet.ink2, fontSize: 14.5, fontWeight: '600' },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64 },
+  message: { color: sheet.ink, fontSize: 14.5, fontWeight: '600', marginTop: 10 },
+  note: { color: sheet.ink2, fontSize: 13.5, lineHeight: 20, marginTop: 16 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 68 },
   main: { flex: 1 },
   rowTitle: { color: sheet.ink, fontSize: 16.5, fontWeight: '600' },
-  rowSub: { color: sheet.ink2, fontSize: 13, fontWeight: '400' },
+  rowSub: { color: sheet.ink2, fontSize: 14 },
   actionIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: sheet.card, alignItems: 'center', justifyContent: 'center' },
-  currencyRow: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 52, paddingLeft: 4 },
-  currencySymbol: { color: sheet.ink, fontSize: 17, fontWeight: '700', width: 40, textAlign: 'center' },
-  footer: { marginTop: spacing.md },
 });

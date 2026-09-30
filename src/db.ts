@@ -398,7 +398,7 @@ export async function deleteRecurring(id: number) {
 }
 
 // Spending (or income) per category for a month, biggest first. `throughDay` stops at that day of the month.
-async function getTotalsByCategory(kind: 'expense' | 'income', month: string, throughDay?: number): Promise<CategorySpend[]> {
+export async function getTotalsByCategory(kind: 'expense' | 'income', month: string, throughDay?: number): Promise<CategorySpend[]> {
   const { start, end } = monthRange(month);
   const last = throughDay ? `${month}-${String(throughDay).padStart(2, '0')}` : end;
   return db!.getAllAsync(
