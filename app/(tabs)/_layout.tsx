@@ -9,11 +9,12 @@ import { tabBarHeight, useColors } from '../../src/theme';
 type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
 
 const TAB_ORDER = ['index', 'activity', 'recurring', 'insights'];
-const TABS: Record<string, { Icon: LucideIcon; label: string }> = {
-  index: { Icon: Wallet, label: 'Home' },
-  activity: { Icon: Clock, label: 'Activity' },
-  recurring: { Icon: Repeat, label: 'Recurring' },
-  insights: { Icon: ChartNoAxesColumn, label: 'Insights' },
+// `filled` icons become solid shapes when selected; the others are line icons, so they turn black and bold instead.
+const TABS: Record<string, { Icon: LucideIcon; label: string; filled: boolean }> = {
+  index: { Icon: Wallet, label: 'Home', filled: true },
+  activity: { Icon: Clock, label: 'Activity', filled: true },
+  recurring: { Icon: Repeat, label: 'Recurring', filled: false },
+  insights: { Icon: ChartNoAxesColumn, label: 'Insights', filled: false },
 };
 
 // Our own bar: the built-in one lines icons up at the top of each item, and we want them centred.
@@ -47,9 +48,12 @@ function TabBar({ state, navigation }: TabBarProps) {
             onPress={onPress}
             style={styles.item}
           >
-            <View style={[styles.icon, focused && { backgroundColor: colors.ink }]}>
-              <tab.Icon color={focused ? colors.bg : colors.ink3} size={22} />
-            </View>
+            <tab.Icon
+              size={25}
+              color={focused ? (tab.filled ? colors.bg : colors.ink) : colors.ink3}
+              fill={focused && tab.filled ? colors.ink : 'none'}
+              strokeWidth={focused && !tab.filled ? 2.8 : 2}
+            />
           </Pressable>
         );
       })}
@@ -81,7 +85,6 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   bar: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth },
   item: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  icon: { width: 48, height: 32, borderRadius: 16, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   fab: {
     position: 'absolute',
     right: 18,
