@@ -56,7 +56,7 @@ export function fromDay(day: string): Date {
 }
 
 export function fullDate(day: string): string {
-  return format(parseISO(day), 'EEEE, d MMMM yyyy');
+  return format(parseISO(day), 'EEE, d MMM yyyy');
 }
 
 export function tomorrow(): string {

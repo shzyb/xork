@@ -72,8 +72,8 @@ describe('prettyDate', () => {
 });
 
 describe('fullDate', () => {
-  it('writes the weekday, day, month and year', () => {
-    expect(fullDate('2026-09-29')).toBe('Tuesday, 29 September 2026');
+  it('writes the short weekday, day, short month and year', () => {
+    expect(fullDate('2026-09-29')).toBe('Tue, 29 Sep 2026');
   });
 });
 
