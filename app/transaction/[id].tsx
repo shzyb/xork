@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/Button';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
 import { deleteTransaction, getTransaction } from '../../src/db';
-import { fullDate } from '../../src/dates';
+import { FREQUENCY_LABEL, fullDate } from '../../src/dates';
 import { formatMoney } from '../../src/money';
 import { sheet, spacing } from '../../src/theme';
 import { useData } from '../../src/useData';
@@ -22,12 +22,20 @@ export default function TransactionDetail() {
 
   const income = t.type === 'income';
   const transfer = t.type === 'transfer';
-  const details: [string, string][] = [];
-  if (t.note) details.push([transfer ? 'Note' : income ? 'From' : 'Place', t.note]);
-  if (t.category_name) details.push(['Category', t.category_name]);
-  details.push(['Date', fullDate(t.date)]);
-  details.push([transfer ? 'From' : income ? 'Into' : 'Paid from', t.account_name]);
-  if (transfer) details.push(['To', t.to_account_name ?? 'Deleted account']);
+  const details: { label: string; value: string; onPress?: () => void }[] = [];
+  if (t.note) details.push({ label: transfer ? 'Note' : income ? 'From' : 'Place', value: t.note });
+  if (t.category_name) details.push({ label: 'Category', value: t.category_name });
+  details.push({ label: 'Date', value: fullDate(t.date) });
+  details.push({ label: transfer ? 'From' : income ? 'Into' : 'Paid from', value: t.account_name });
+  if (transfer) details.push({ label: 'To', value: t.to_account_name ?? 'Deleted account' });
+  if (t.recurring_id !== null && t.recurring_name && t.recurring_freq) {
+    const recurringId = t.recurring_id;
+    details.push({
+      label: 'Repeats',
+      value: `${t.recurring_name} · ${FREQUENCY_LABEL[t.recurring_freq]}`,
+      onPress: () => router.push({ pathname: '/recurring/[id]', params: { id: String(recurringId) } }),
+    });
+  }
 
   function confirmDelete() {
     Alert.alert('Delete this transaction?', 'This cannot be undone.', [
@@ -71,11 +79,17 @@ export default function TransactionDetail() {
         </View>
 
         <View style={styles.card}>
-          {details.map(([label, value], i) => (
-            <View key={label} style={[styles.detailRow, i > 0 && styles.detailDivider]}>
+          {details.map(({ label, value, onPress }, i) => (
+            <Pressable
+              key={label}
+              disabled={!onPress}
+              accessibilityRole={onPress ? 'button' : undefined}
+              onPress={onPress}
+              style={[styles.detailRow, i > 0 && styles.detailDivider]}
+            >
               <Text style={styles.detailLabel}>{label}</Text>
-              <Text style={styles.detailValue}>{value}</Text>
-            </View>
+              <Text style={[styles.detailValue, onPress && styles.detailLink]}>{value}</Text>
+            </Pressable>
           ))}
         </View>
 
@@ -110,6 +124,7 @@ const styles = StyleSheet.create({
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 16, paddingVertical: 13 },
   detailDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: sheet.card2 },
   detailLabel: { color: sheet.ink2, fontSize: 16 },
+  detailLink: { textDecorationLine: 'underline' },
   detailValue: { color: sheet.ink, fontSize: 16, fontWeight: '600', flex: 1, textAlign: 'right' },
   error: { color: sheet.neg, fontSize: 14.5, fontWeight: '600', marginTop: 14, textAlign: 'center' },
   footer: { gap: 10, paddingTop: 6, paddingBottom: spacing.lg },

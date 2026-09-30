@@ -42,6 +42,7 @@ export function yesterday(): string {
 export function prettyDate(date: string): string {
   if (date === today()) return 'Today';
   if (date === yesterday()) return 'Yesterday';
+  if (date === tomorrow()) return 'Tomorrow';
   const d = parseISO(date);
   return format(d, d.getFullYear() === new Date().getFullYear() ? 'EEE, d MMM' : 'EEE, d MMM yyyy');
 }
@@ -57,3 +58,28 @@ export function fromDay(day: string): Date {
 export function fullDate(day: string): string {
   return format(parseISO(day), 'EEEE, d MMMM yyyy');
 }
+
+export function tomorrow(): string {
+  return format(addDays(new Date(), 1), DAY);
+}
+
+// Every occurrence of the active items from `from` up to `days` days later, soonest first.
+export function upcomingOccurrences<T extends { freq: Frequency; anchor_day: number; next_date: string; active: number }>(
+  items: T[],
+  from: string,
+  days: number,
+): { item: T; date: string }[] {
+  const end = format(addDays(parseISO(from), days), DAY);
+  const found: { item: T; date: string }[] = [];
+  for (const item of items) {
+    if (!item.active) continue;
+    let date = item.next_date;
+    while (date <= end) {
+      if (date >= from) found.push({ item, date });
+      date = nextOccurrence(item.freq, item.anchor_day, date);
+    }
+  }
+  return found.sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export const FREQUENCY_LABEL: Record<Frequency, string> = { weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };

@@ -1,4 +1,4 @@
-import { formatMoney, formatTyped, guessCurrency, minorToTyped, parseAmount, setAppCurrency } from '../money';
+import { formatMoney, formatTyped, guessCurrency, minorToTyped, monthlyMinor, parseAmount, setAppCurrency } from '../money';
 
 describe('formatMoney', () => {
   it('shows no decimals for PKR', () => {
@@ -83,5 +83,13 @@ describe('minorToTyped', () => {
     for (const minor of [0, 5, 50, 1250, 1205, 245000]) {
       expect(parseAmount(minorToTyped(minor))).toBe(minor);
     }
+  });
+});
+
+describe('monthlyMinor', () => {
+  it('turns a recurring amount into an average month', () => {
+    expect(monthlyMinor(120000, 'monthly')).toBe(120000);
+    expect(monthlyMinor(120000, 'yearly')).toBe(10000);
+    expect(monthlyMinor(100000, 'weekly')).toBe(433333);
   });
 });

@@ -1,4 +1,4 @@
-import { addAccount, addCategory, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, updateAccount, updateCategory, updateTransaction } from '../db';
+import { addAccount, addCategory, addRecurring, deleteRecurring, logDueRecurring, updateRecurring, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, updateAccount, updateCategory, updateTransaction } from '../db';
 import { formatMoney } from '../money';
 
 function fakeDb(overrides: Partial<Db> = {}): Db {
@@ -251,6 +251,108 @@ describe('deleteCategory', () => {
     await expect(deleteCategory(24)).rejects.toThrow('cannot be deleted');
 
     expect(db.runAsync).not.toHaveBeenCalled();
+    expect(getVersion()).toBe(before);
+    expect(listener).not.toHaveBeenCalled();
+    off();
+  });
+});
+
+const RENT = {
+  name: 'Rent', type: 'expense' as const, amount_minor: 8500000, account_id: 1, category_id: 5,
+  freq: 'monthly' as const, anchor_day: 31, next_date: '2026-10-31', active: 1,
+};
+
+describe('logDueRecurring', () => {
+  beforeEach(() => {
+    jest.useFakeTimers().setSystemTime(new Date(2026, 3, 30, 12)); // 30 April 2026, local time
+  });
+  afterEach(() => jest.useRealTimers());
+
+  const due = (next_date: string) => ({ id: 7, ...RENT, next_date });
+  const dbWith = (rows: unknown[], count: number) =>
+    fakeDb({
+      getFirstAsync: jest.fn().mockResolvedValueOnce({ user_version: 2 }).mockResolvedValueOnce(null).mockResolvedValue({ count }),
+      getAllAsync: jest.fn().mockResolvedValue(rows),
+    });
+
+  it('does nothing, and does not notify, when nothing is due', async () => {
+    const db = dbWith([], 0);
+    await openDb(db);
+    const listener = jest.fn();
+    const off = subscribe(listener);
+
+    await logDueRecurring();
+
+    expect(db.withTransactionAsync).not.toHaveBeenCalled();
+    expect(listener).not.toHaveBeenCalled();
+    off();
+  });
+
+  it('logs one transaction per missed date and moves next_date past today, in one SQL transaction', async () => {
+    // Rent is due on the 31st: missed 31 Jan, 28 Feb (clamped), 31 Mar. Next is 30 April, which is today, so it is logged too.
+    const db = dbWith([due('2026-01-31')], 1);
+    await openDb(db);
+    const listener = jest.fn();
+    const off = subscribe(listener);
+
+    await logDueRecurring();
+
+    expect(db.withTransactionAsync).toHaveBeenCalledTimes(1);
+    const calls = (db.runAsync as jest.Mock).mock.calls;
+    const inserted = calls.filter((c) => (c[0] as string).includes('INSERT INTO transactions'));
+    expect(inserted.map((c) => c[6])).toEqual(['2026-01-31', '2026-02-28', '2026-03-31', '2026-04-30']);
+    expect(inserted[0].slice(1, 8)).toEqual(['expense', 8500000, 1, 5, 'Rent', '2026-01-31', 7]);
+    expect(calls[calls.length - 1]).toEqual([expect.stringContaining('UPDATE recurring SET next_date'), '2026-05-31', 7]);
+    expect(listener).toHaveBeenCalledTimes(1);
+    off();
+  });
+
+  it('a failure part-way changes nothing and calls no listeners', async () => {
+    const db = dbWith([due('2026-03-31')], 1);
+    (db.runAsync as jest.Mock).mockResolvedValueOnce({}).mockRejectedValueOnce(new Error('disk full'));
+    await openDb(db);
+    const listener = jest.fn();
+    const off = subscribe(listener);
+    const before = getVersion();
+
+    await expect(logDueRecurring()).rejects.toThrow('disk full');
+
+    expect(getVersion()).toBe(before);
+    expect(listener).not.toHaveBeenCalled();
+    off();
+  });
+});
+
+describe('recurring writes', () => {
+  it.each([
+    ['addRecurring', () => addRecurring(RENT), 'INSERT INTO recurring'],
+    ['updateRecurring', () => updateRecurring(7, RENT), 'UPDATE recurring SET name'],
+    ['deleteRecurring', () => deleteRecurring(7), 'DELETE FROM recurring'],
+  ])('%s runs in one SQL transaction and bumps version once', async (_name, run, sql) => {
+    const db = fakeDb();
+    await openDb(db);
+    const listener = jest.fn();
+    const off = subscribe(listener);
+    const before = getVersion();
+
+    await run();
+
+    expect(db.withTransactionAsync).toHaveBeenCalledTimes(1);
+    const statements = (db.runAsync as jest.Mock).mock.calls.map((c) => c[0] as string);
+    expect(statements.some((s) => s.includes(sql))).toBe(true);
+    expect(getVersion()).toBe(before + 1);
+    expect(listener).toHaveBeenCalledTimes(1);
+    off();
+  });
+
+  it('a failed write changes nothing and calls no listeners', async () => {
+    await openDb(fakeDb({ runAsync: jest.fn().mockRejectedValue(new Error('disk full')) }));
+    const listener = jest.fn();
+    const off = subscribe(listener);
+    const before = getVersion();
+
+    await expect(addRecurring(RENT)).rejects.toThrow('disk full');
+
     expect(getVersion()).toBe(before);
     expect(listener).not.toHaveBeenCalled();
     off();

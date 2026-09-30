@@ -1,16 +1,16 @@
-import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { Calendar, ChevronLeft, X } from 'lucide-react-native';
+import { ChevronLeft, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AccountChips } from '../src/components/AccountChips';
 import { Button } from '../src/components/Button';
 import { CategoryGrid } from '../src/components/CategoryGrid';
+import { DateChips } from '../src/components/DateChips';
 import { Keypad } from '../src/components/Keypad';
 import { addTransaction, getAccountsWithBalance, getCategories, getTransaction, updateTransaction } from '../src/db';
-import { fromDay, prettyDate, toDay, today, yesterday } from '../src/dates';
+import { today, yesterday } from '../src/dates';
 import { currentDecimals, currentSymbol, formatMoney, formatTyped, minorToTyped, parseAmount } from '../src/money';
 import { sheet, spacing } from '../src/theme';
 import type { Account, Category, TransactionRow, TransactionType } from '../src/types';
@@ -50,7 +50,6 @@ function AddForm({ accounts, categories, editing }: {
   const [categoryId, setCategoryId] = useState<number | null>(editing?.category_id ?? null);
   const [note, setNote] = useState(editing?.note ?? '');
   const [date, setDate] = useState(editing?.date ?? today());
-  const [showPicker, setShowPicker] = useState(false);
   const [error, setError] = useState('');
 
   const fromId = fromSel ?? accounts[0].id;
@@ -111,19 +110,6 @@ function AddForm({ accounts, categories, editing }: {
     }
   }
 
-  function pickDate() {
-    if (Platform.OS === 'android') {
-      DateTimePickerAndroid.open({
-        value: fromDay(date),
-        mode: 'date',
-        onValueChange: (_, picked) => setDate(toDay(picked)),
-      });
-    } else {
-      setShowPicker(!showPicker);
-    }
-  }
-
-  const customDate = date !== today() && date !== yesterday();
   const kindCategories = categories.filter((c) => c.kind === type);
 
   return (
@@ -233,23 +219,11 @@ function AddForm({ accounts, categories, editing }: {
             />
 
             <Text style={styles.label}>Date</Text>
-            <View style={styles.chips}>
-              <DateChip label="Today" on={date === today()} onPress={() => { setDate(today()); setShowPicker(false); }} />
-              <DateChip label="Yesterday" on={date === yesterday()} onPress={() => { setDate(yesterday()); setShowPicker(false); }} />
-              <DateChip label={customDate ? prettyDate(date) : 'Pick a date'} on={customDate} icon onPress={pickDate} />
-            </View>
-            {showPicker && Platform.OS === 'ios' && (
-              <View style={styles.pickerCard}>
-                <DateTimePicker
-                  value={fromDay(date)}
-                  mode="date"
-                  display="inline"
-                  themeVariant="dark"
-                  accentColor={sheet.ink}
-                  onValueChange={(_, picked) => setDate(toDay(picked))}
-                />
-              </View>
-            )}
+            <DateChips
+              value={date}
+              onChange={setDate}
+              presets={[{ label: 'Today', date: today() }, { label: 'Yesterday', date: yesterday() }]}
+            />
 
             {error !== '' && <Text style={styles.error}>{error}</Text>}
           </ScrollView>
@@ -266,20 +240,6 @@ function RoundButton({ label, onPress, children }: { label: string; onPress: () 
   return (
     <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={styles.round}>
       {children}
-    </Pressable>
-  );
-}
-
-function DateChip({ label, on, icon, onPress }: { label: string; on: boolean; icon?: boolean; onPress: () => void }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected: on }}
-      onPress={onPress}
-      style={[styles.dateChip, on ? { backgroundColor: sheet.btnBg } : { backgroundColor: sheet.card }]}
-    >
-      {icon && <Calendar color={on ? sheet.btnFg : sheet.ink2} size={15} />}
-      <Text style={[styles.dateChipText, { color: on ? sheet.btnFg : sheet.ink }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -306,8 +266,4 @@ const styles = StyleSheet.create({
   heroAmount: { color: sheet.ink, fontSize: 40, fontWeight: '800', letterSpacing: -1 },
   label: { color: sheet.ink2, fontSize: 14, fontWeight: '600', marginTop: 20, marginBottom: 8 },
   input: { height: 50, borderRadius: 16, backgroundColor: sheet.card, paddingHorizontal: 14, color: sheet.ink, fontSize: 16 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  dateChip: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 40, paddingHorizontal: 14, borderRadius: 20 },
-  dateChipText: { fontSize: 14.5, fontWeight: '600' },
-  pickerCard: { backgroundColor: sheet.card, borderRadius: 20, marginTop: 10, padding: 8 },
 });

@@ -3,14 +3,16 @@ import { ArrowDown, ArrowUp, Plus, Settings } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { RecurringRow } from '../../src/components/RecurringRow';
 import { TransactionList } from '../../src/components/TransactionList';
-import { getAccountsWithBalance, getMonthSummary, getTransactions, NO_FILTER } from '../../src/db';
-import { currentMonth, monthLabel } from '../../src/dates';
+import { getAccountsWithBalance, getMonthSummary, getRecurring, getTransactions, NO_FILTER } from '../../src/db';
+import { currentMonth, monthLabel, today, upcomingOccurrences } from '../../src/dates';
 import { formatMoney } from '../../src/money';
 import { fontSize, spacing, useColors } from '../../src/theme';
 import { useData } from '../../src/useData';
 
-type Tab = 'recent' | 'accounts';
+type Tab = 'recent' | 'accounts' | 'upcoming';
+const TAB_LABELS: Record<Tab, string> = { recent: 'Recent', accounts: 'Accounts', upcoming: 'Upcoming' };
 
 export default function Home() {
   const colors = useColors();
@@ -19,6 +21,8 @@ export default function Home() {
   const accounts = useData(getAccountsWithBalance);
   const month = useData(() => getMonthSummary(currentMonth()));
   const recent = useData(() => getTransactions(NO_FILTER, 8));
+  const recurring = useData(getRecurring);
+  const upcoming = recurring ? upcomingOccurrences(recurring, today(), 7) : [];
 
   const total = accounts?.reduce((sum, a) => sum + a.balance_minor, 0);
 
@@ -52,10 +56,10 @@ export default function Home() {
         )}
 
         <View style={[styles.tabs, { borderBottomColor: colors.line }]}>
-          {(['recent', 'accounts'] as const).map((key) => (
+          {(['recent', 'accounts', 'upcoming'] as const).map((key) => (
             <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected: tab === key }} onPress={() => setTab(key)}>
               <Text style={[styles.tab, { color: tab === key ? colors.ink : colors.ink3 }]}>
-                {key === 'recent' ? 'Recent' : 'Accounts'}
+                {TAB_LABELS[key]}
               </Text>
             </Pressable>
           ))}
@@ -68,6 +72,14 @@ export default function Home() {
           </View>
         ) : (
           <TransactionList rows={recent} />
+        ))}
+
+        {tab === 'upcoming' && recurring && (upcoming.length === 0 ? (
+          <View style={styles.empty}>
+            <Text style={{ color: colors.ink2 }}>Nothing due in the next 7 days.</Text>
+          </View>
+        ) : (
+          upcoming.map(({ item, date }) => <RecurringRow key={`${item.id}-${date}`} item={item} date={date} />)
         ))}
 
         {tab === 'accounts' && accounts && (

@@ -54,6 +54,15 @@ export type TransactionRow = Transaction & {
   category_color: string | null;
   account_name: string;
   to_account_name: string | null;
+  recurring_name: string | null;
+  recurring_freq: Frequency | null;
+};
+
+export type RecurringRow = Recurring & {
+  account_name: string;
+  category_name: string;
+  category_icon: string;
+  category_color: string;
 };
 
 export type TransactionFilter = {

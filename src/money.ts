@@ -1,3 +1,5 @@
+import type { Frequency } from './types';
+
 export type Currency = { code: string; symbol: string; decimals: number; name: string };
 
 export const CURRENCIES: Currency[] = [
@@ -81,4 +83,11 @@ export function minorToTyped(minor: number): string {
   const frac = minor % 100;
   const whole = String(Math.floor(minor / 100));
   return frac === 0 ? whole : whole + '.' + String(frac).padStart(2, '0').replace(/0$/, '');
+}
+
+// What a recurring amount comes to in an average month.
+export function monthlyMinor(minor: number, freq: Frequency): number {
+  if (freq === 'weekly') return Math.round((minor * 52) / 12);
+  if (freq === 'yearly') return Math.round(minor / 12);
+  return minor;
 }

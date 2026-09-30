@@ -1,5 +1,5 @@
 import { Tabs, useRouter } from 'expo-router';
-import { Clock, Plus, Wallet } from 'lucide-react-native';
+import { Clock, Plus, Repeat, Wallet } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -37,6 +37,7 @@ export default function TabsLayout() {
       >
         <Tabs.Screen name="index" options={{ tabBarAccessibilityLabel: 'Home', tabBarIcon: ({ focused }) => <TabIcon Icon={Wallet} focused={focused} /> }} />
         <Tabs.Screen name="activity" options={{ tabBarAccessibilityLabel: 'Activity', tabBarIcon: ({ focused }) => <TabIcon Icon={Clock} focused={focused} /> }} />
+        <Tabs.Screen name="recurring" options={{ tabBarAccessibilityLabel: 'Recurring', tabBarIcon: ({ focused }) => <TabIcon Icon={Repeat} focused={focused} /> }} />
       </Tabs>
       <Pressable
         accessibilityRole="button"

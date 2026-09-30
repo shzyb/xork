@@ -1,8 +1,8 @@
 import { openDatabaseAsync } from 'expo-sqlite';
-import { monthRange } from './dates';
+import { monthRange, nextOccurrence, today } from './dates';
 import { setAppCurrency } from './money';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, SCHEMA } from './seed';
-import type { Account, Category, Transaction, TransactionFilter, TransactionRow } from './types';
+import type { Account, Category, Recurring, RecurringRow, Transaction, TransactionFilter, TransactionRow } from './types';
 
 // The small part of expo-sqlite that we use, so tests can pass a fake.
 export type Db = {
@@ -153,11 +153,12 @@ export async function getMonthSummary(month: string): Promise<{ in_minor: number
 }
 
 const TX_SELECT = `SELECT t.*, c.name AS category_name, c.icon AS category_icon, c.color AS category_color,
-       a.name AS account_name, b.name AS to_account_name`;
+       a.name AS account_name, b.name AS to_account_name, rc.name AS recurring_name, rc.freq AS recurring_freq`;
 const TX_FROM = `FROM transactions t
   JOIN accounts a ON a.id = t.account_id
   LEFT JOIN accounts b ON b.id = t.to_account_id
-  LEFT JOIN categories c ON c.id = t.category_id`;
+  LEFT JOIN categories c ON c.id = t.category_id
+  LEFT JOIN recurring rc ON rc.id = t.recurring_id`;
 
 export const NO_FILTER: TransactionFilter = { search: '', type: 'all', month: null };
 
@@ -299,4 +300,90 @@ export async function deleteCategory(id: number) {
       await handle.runAsync('DELETE FROM categories WHERE id = ?', id);
     });
   });
+}
+
+export type NewRecurring = Pick<
+  Recurring,
+  'name' | 'type' | 'amount_minor' | 'account_id' | 'category_id' | 'freq' | 'anchor_day' | 'next_date' | 'active'
+>;
+
+export async function getRecurring(): Promise<RecurringRow[]> {
+  return db!.getAllAsync(
+    `SELECT r.*, a.name AS account_name, c.name AS category_name, c.icon AS category_icon, c.color AS category_color
+     FROM recurring r
+     JOIN accounts a ON a.id = r.account_id
+     JOIN categories c ON c.id = r.category_id
+     ORDER BY r.active DESC, r.next_date, r.id`,
+  );
+}
+
+export async function getRecurringItem(id: number): Promise<Recurring | null> {
+  return db!.getFirstAsync('SELECT * FROM recurring WHERE id = ?', id);
+}
+
+// Logs one transaction for every date an active item has come due, then moves its next_date past today.
+// Runs inside the caller's SQL transaction.
+async function logDue(handle: Db) {
+  const day = today();
+  const due = await handle.getAllAsync<Recurring>('SELECT * FROM recurring WHERE active = 1 AND next_date <= ?', day);
+  for (const item of due) {
+    let next = item.next_date;
+    while (next <= day) {
+      await handle.runAsync(
+        `INSERT INTO transactions (type, amount_minor, account_id, to_account_id, category_id, note, date, recurring_id, created_at)
+         VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?)`,
+        item.type, item.amount_minor, item.account_id, item.category_id, item.name, next, item.id,
+        new Date().toISOString(),
+      );
+      next = nextOccurrence(item.freq, item.anchor_day, next);
+    }
+    await handle.runAsync('UPDATE recurring SET next_date = ? WHERE id = ?', next, item.id);
+  }
+}
+
+// Called when the app opens or comes back to the foreground. Writes (and notifies) only if something is due.
+export async function logDueRecurring() {
+  const row = await db!.getFirstAsync<{ count: number }>(
+    'SELECT COUNT(*) AS count FROM recurring WHERE active = 1 AND next_date <= ?', today(),
+  );
+  if (!row || row.count === 0) return;
+  await write((handle) => handle.withTransactionAsync(() => logDue(handle)));
+}
+
+const INSERT_RECURRING = `INSERT INTO recurring (name, type, amount_minor, account_id, category_id, freq, anchor_day, next_date, active)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+export async function addRecurring(r: NewRecurring) {
+  await write((handle) =>
+    handle.withTransactionAsync(async () => {
+      await handle.runAsync(
+        INSERT_RECURRING,
+        r.name, r.type, r.amount_minor, r.account_id, r.category_id, r.freq, r.anchor_day, r.next_date, r.active,
+      );
+      await logDue(handle);
+    }),
+  );
+}
+
+export async function updateRecurring(id: number, r: NewRecurring) {
+  await write((handle) =>
+    handle.withTransactionAsync(async () => {
+      await handle.runAsync(
+        `UPDATE recurring SET name = ?, type = ?, amount_minor = ?, account_id = ?, category_id = ?, freq = ?,
+                anchor_day = ?, next_date = ?, active = ? WHERE id = ?`,
+        r.name, r.type, r.amount_minor, r.account_id, r.category_id, r.freq, r.anchor_day, r.next_date, r.active, id,
+      );
+      await logDue(handle);
+    }),
+  );
+}
+
+// Transactions it already logged stay; they just stop pointing at it.
+export async function deleteRecurring(id: number) {
+  await write((handle) =>
+    handle.withTransactionAsync(async () => {
+      await handle.runAsync('UPDATE transactions SET recurring_id = NULL WHERE recurring_id = ?', id);
+      await handle.runAsync('DELETE FROM recurring WHERE id = ?', id);
+    }),
+  );
 }
