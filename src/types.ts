@@ -70,3 +70,29 @@ export type TransactionFilter = {
   type: TransactionType | 'all';
   month: string | null;
 };
+
+export type CategorySpend = {
+  id: number;
+  name: string;
+  icon: string;
+  color: string;
+  budget_minor: number | null;
+  total_minor: number;
+};
+
+export type MonthTotals = { month: string; in_minor: number; out_minor: number };
+
+export type DaySpend = { day: number; total_minor: number };
+
+// Everything the Insights screen shows for one month. "prev" is the month before it.
+export type InsightsData = {
+  summary: { in_minor: number; out_minor: number };
+  prevSummary: { in_minor: number; out_minor: number };
+  spending: CategorySpend[];
+  prevSpending: CategorySpend[]; // same point in the month when `month` is the current one
+  income: CategorySpend[];
+  daily: DaySpend[];
+  prevDaily: DaySpend[];
+  recurringOut: number;
+  monthly: MonthTotals[];
+};

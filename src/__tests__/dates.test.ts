@@ -1,4 +1,4 @@
-import { currentMonth, fullDate, tomorrow, upcomingOccurrences, monthLabel, monthRange, nextOccurrence, prettyDate, shiftMonth, today, yesterday } from '../dates';
+import { currentMonth, daysInMonth, fullDate, lastMonths, monthName, monthShort, tomorrow, upcomingOccurrences, monthLabel, monthRange, nextOccurrence, prettyDate, shiftMonth, today, yesterday } from '../dates';
 
 describe('today', () => {
   it('is a local YYYY-MM-DD string', () => {
@@ -113,5 +113,22 @@ describe('upcomingOccurrences', () => {
       30,
     );
     expect(found).toEqual([]);
+  });
+});
+
+describe('month helpers for Insights', () => {
+  it('lists the last months, oldest first, across a year end', () => {
+    expect(lastMonths('2026-02', 6)).toEqual(['2025-09', '2025-10', '2025-11', '2025-12', '2026-01', '2026-02']);
+  });
+
+  it('names a month', () => {
+    expect(monthShort('2026-09')).toBe('Sep');
+    expect(monthName('2026-09')).toBe('September');
+  });
+
+  it('knows how long a month is, including leap February', () => {
+    expect(daysInMonth('2026-09')).toBe(30);
+    expect(daysInMonth('2028-02')).toBe(29);
+    expect(daysInMonth('2027-02')).toBe(28);
   });
 });

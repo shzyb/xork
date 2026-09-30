@@ -10,6 +10,7 @@ const light = {
   line: '#EDEDF0',
   pos: '#18913F',
   neg: '#E5342A',
+  warn: '#C27400',
   btnBg: '#0A0A0A',
   btnFg: '#FFFFFF',
 };
@@ -24,6 +25,7 @@ const dark: typeof light = {
   line: '#1C1C1E',
   pos: '#4ADE80',
   neg: '#FF6B61',
+  warn: '#FFB340',
   btnBg: '#F5F5F7',
   btnFg: '#000000',
 };

@@ -33,11 +33,12 @@ i18n, onboarding carousels (the single currency-picker screen is the only first-
 - **expo-localization** to preselect the currency on first launch
 - **expo-splash-screen** to hold the splash until data is ready
 - Styling with React Native `StyleSheet` and one `theme.ts` file
+- **react-native-gifted-charts** (with `expo-linear-gradient`) for the Insights charts; it draws with `react-native-svg`, which Lucide already needs
 
 ### Approved packages
 Only the ones above plus what `create-expo-app` installs. **Ask me before adding any other package.**
 Specifically do NOT add: Redux, Zustand, TanStack Query, Drizzle or any ORM, NativeWind/Tailwind,
-UI kits, chart libraries, bottom-sheet libraries, form libraries, Axios, lodash, moment.
+UI kits, other chart libraries, bottom-sheet libraries, form libraries, Axios, lodash, moment.
 
 ## Architecture rules
 
@@ -79,7 +80,7 @@ UI kits, chart libraries, bottom-sheet libraries, form libraries, Axios, lodash,
   due recurring items are logged. Then hide it, so Home appears already filled in. While `useData` is
   still loading, render nothing for that section (no spinner, no skeleton), so there's no flash.
   The only visible progress is for import and export: the button shows "Importing…" / "Exporting…".
-- **Charts:** plain `View`s with widths/heights as percentages. No chart library.
+- **Charts:** Insights uses `react-native-gifted-charts` only. Simple bars elsewhere (e.g. the category split bar) stay plain `View`s.
 - **Sheets/modals:** use Expo Router's modal presentation. No custom animation work.
 - No network calls anywhere. No `fetch`.
 

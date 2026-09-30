@@ -83,3 +83,20 @@ export function upcomingOccurrences<T extends { freq: Frequency; anchor_day: num
 }
 
 export const FREQUENCY_LABEL: Record<Frequency, string> = { weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };
+
+// The last `count` month keys ending at `month`, oldest first.
+export function lastMonths(month: string, count: number): string[] {
+  return Array.from({ length: count }, (_, i) => shiftMonth(month, i - count + 1));
+}
+
+export function monthShort(month: string): string {
+  return format(parseISO(month + '-01'), 'MMM');
+}
+
+export function monthName(month: string): string {
+  return format(parseISO(month + '-01'), 'MMMM');
+}
+
+export function daysInMonth(month: string): number {
+  return getDaysInMonth(parseISO(month + '-01'));
+}

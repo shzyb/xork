@@ -91,3 +91,17 @@ export function monthlyMinor(minor: number, freq: Frequency): number {
   if (freq === 'yearly') return Math.round(minor / 12);
   return minor;
 }
+
+// Short amount for chart axes, without the symbol: 85000 -> "85k", 250000 -> "2.5L" (lakh currencies) or "250k".
+export function compactMoney(minor: number): string {
+  const value = Math.abs(minor) / 100;
+  const lakh = appCurrency === 'PKR' || appCurrency === 'INR';
+  const trim = (n: number) => String(+n.toFixed(1));
+  let text: string;
+  if (lakh && value >= 1e7) text = trim(value / 1e7) + 'Cr';
+  else if (lakh && value >= 1e5) text = trim(value / 1e5) + 'L';
+  else if (!lakh && value >= 1e6) text = trim(value / 1e6) + 'M';
+  else if (value >= 1e3) text = Math.round(value / 1e3) + 'k';
+  else text = String(Math.round(value));
+  return (minor < 0 ? '−' : '') + text;
+}

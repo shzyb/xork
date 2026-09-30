@@ -1,8 +1,8 @@
 import { openDatabaseAsync } from 'expo-sqlite';
-import { monthRange, nextOccurrence, today } from './dates';
+import { currentMonth, lastMonths, monthRange, nextOccurrence, shiftMonth, today } from './dates';
 import { setAppCurrency } from './money';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, SCHEMA } from './seed';
-import type { Account, Category, Recurring, RecurringRow, Transaction, TransactionFilter, TransactionRow } from './types';
+import type { Account, Category, CategorySpend, DaySpend, InsightsData, MonthTotals, Recurring, RecurringRow, Transaction, TransactionFilter, TransactionRow } from './types';
 
 // The small part of expo-sqlite that we use, so tests can pass a fake.
 export type Db = {
@@ -386,4 +386,61 @@ export async function deleteRecurring(id: number) {
       await handle.runAsync('DELETE FROM recurring WHERE id = ?', id);
     }),
   );
+}
+
+// Spending (or income) per category for a month, biggest first. `throughDay` stops at that day of the month.
+async function getTotalsByCategory(kind: 'expense' | 'income', month: string, throughDay?: number): Promise<CategorySpend[]> {
+  const { start, end } = monthRange(month);
+  const last = throughDay ? `${month}-${String(throughDay).padStart(2, '0')}` : end;
+  return db!.getAllAsync(
+    `SELECT c.id, c.name, c.icon, c.color, c.budget_minor, SUM(t.amount_minor) AS total_minor
+     FROM transactions t JOIN categories c ON c.id = t.category_id
+     WHERE t.type = ? AND t.date BETWEEN ? AND ?
+     GROUP BY c.id ORDER BY total_minor DESC`,
+    kind, start, last,
+  );
+}
+
+async function getDailySpending(month: string): Promise<DaySpend[]> {
+  const { start, end } = monthRange(month);
+  return db!.getAllAsync(
+    `SELECT CAST(substr(date, 9, 2) AS INTEGER) AS day, SUM(amount_minor) AS total_minor
+     FROM transactions WHERE type = 'expense' AND date BETWEEN ? AND ? GROUP BY date`,
+    start, end,
+  );
+}
+
+// Money in and out for the six months ending at `endMonth`. Months with nothing are zero.
+async function getMonthlyTotals(endMonth: string): Promise<MonthTotals[]> {
+  const months = lastMonths(endMonth, 6);
+  const rows = await db!.getAllAsync<MonthTotals>(
+    `SELECT substr(date, 1, 7) AS month,
+            COALESCE(SUM(CASE WHEN type = 'income' THEN amount_minor END), 0) AS in_minor,
+            COALESCE(SUM(CASE WHEN type = 'expense' THEN amount_minor END), 0) AS out_minor
+     FROM transactions WHERE date BETWEEN ? AND ? GROUP BY month`,
+    monthRange(months[0]).start, monthRange(endMonth).end,
+  );
+  return months.map((month) => rows.find((r) => r.month === month) ?? { month, in_minor: 0, out_minor: 0 });
+}
+
+// One call per screen load. Queries run one after another on purpose (see useData).
+export async function getInsights(month: string): Promise<InsightsData> {
+  const prev = shiftMonth(month, -1);
+  const isCurrent = month === currentMonth();
+  const throughDay = isCurrent ? Number(today().slice(8)) : undefined;
+  const summary = await getMonthSummary(month);
+  const prevSummary = await getMonthSummary(prev);
+  const spending = await getTotalsByCategory('expense', month);
+  const prevSpending = await getTotalsByCategory('expense', prev, throughDay);
+  const income = await getTotalsByCategory('income', month);
+  const daily = await getDailySpending(month);
+  const prevDaily = await getDailySpending(prev);
+  const { start, end } = monthRange(month);
+  const recurring = await db!.getFirstAsync<{ total: number }>(
+    `SELECT COALESCE(SUM(amount_minor), 0) AS total FROM transactions
+     WHERE type = 'expense' AND recurring_id IS NOT NULL AND date BETWEEN ? AND ?`,
+    start, end,
+  );
+  const monthly = await getMonthlyTotals(currentMonth());
+  return { summary, prevSummary, spending, prevSpending, income, daily, prevDaily, recurringOut: recurring?.total ?? 0, monthly };
 }

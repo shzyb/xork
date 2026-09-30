@@ -1,4 +1,4 @@
-import { formatMoney, formatTyped, guessCurrency, minorToTyped, monthlyMinor, parseAmount, setAppCurrency } from '../money';
+import { compactMoney, formatMoney, formatTyped, guessCurrency, minorToTyped, monthlyMinor, parseAmount, setAppCurrency } from '../money';
 
 describe('formatMoney', () => {
   it('shows no decimals for PKR', () => {
@@ -91,5 +91,23 @@ describe('monthlyMinor', () => {
     expect(monthlyMinor(120000, 'monthly')).toBe(120000);
     expect(monthlyMinor(120000, 'yearly')).toBe(10000);
     expect(monthlyMinor(100000, 'weekly')).toBe(433333);
+  });
+});
+
+describe('compactMoney', () => {
+  it('uses lakh and crore for PKR and INR', () => {
+    setAppCurrency('PKR');
+    expect(compactMoney(50000)).toBe('500');
+    expect(compactMoney(8500000)).toBe('85k');
+    expect(compactMoney(25000000)).toBe('2.5L');
+    expect(compactMoney(1000000000)).toBe('1Cr');
+  });
+
+  it('uses k and M elsewhere', () => {
+    setAppCurrency('USD');
+    expect(compactMoney(8500000)).toBe('85k');
+    expect(compactMoney(25000000)).toBe('250k');
+    expect(compactMoney(150000000)).toBe('1.5M');
+    expect(compactMoney(-8500000)).toBe('−85k');
   });
 });
