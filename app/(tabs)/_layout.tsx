@@ -25,6 +25,8 @@ export default function TabsLayout() {
         screenOptions={{
           headerShown: false,
           tabBarShowLabel: false,
+          // The default item lines its content up at the top even with no label, so centre the icon in the bar.
+          tabBarItemStyle: { height: tabBarHeight, justifyContent: 'center', paddingVertical: 0 },
           tabBarStyle: {
             backgroundColor: colors.bg,
             borderTopColor: colors.line,
