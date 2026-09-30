@@ -10,7 +10,7 @@ type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>
 type Colors = { focused: boolean; ink: string; bg: string; grey: string };
 
 const SIZE = 25;
-const TAB_ORDER = ['index', 'activity', 'recurring', 'insights'];
+const TAB_ORDER = ['index', 'insights', 'activity', 'recurring'];
 
 // Selected icons are filled black. Home, Clock and Pie are drawn here so their outer outline stays solid and only
 // inner details (the clock hands) are cut out in the background colour, so they don't look smaller.
