@@ -2,6 +2,8 @@ import { openDatabaseAsync } from 'expo-sqlite';
 import { currentMonth, lastMonths, monthRange, nextOccurrence, shiftMonth, today } from './dates';
 import { setAppCurrency } from './money';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, SCHEMA } from './seed';
+import { BACKUP_VERSION } from './backup';
+import type { Backup } from './backup';
 import type { Account, Category, CategorySpend, DaySpend, InsightsData, MonthTotals, Recurring, RecurringRow, Transaction, TransactionFilter, TransactionRow } from './types';
 
 // The small part of expo-sqlite that we use, so tests can pass a fake.
@@ -44,20 +46,25 @@ async function migrate(handle: Db) {
   if (version < 2) await migrateToV2(handle);
 }
 
+// The default categories and the "Cash" account. Used for a new database and after "Delete all data".
+async function seedDefaults(handle: Db) {
+  const insertCategory = 'INSERT INTO categories (name, kind, icon, color, is_default) VALUES (?, ?, ?, ?, ?)';
+  for (const [name, icon, color] of EXPENSE_CATEGORIES) {
+    await handle.runAsync(insertCategory, name, 'expense', icon, color, name === 'Other' ? 1 : 0);
+  }
+  for (const [name, icon, color] of INCOME_CATEGORIES) {
+    await handle.runAsync(insertCategory, name, 'income', icon, color, name === 'Other income' ? 1 : 0);
+  }
+  await handle.runAsync(
+    'INSERT INTO accounts (name, opening_minor, color, created_at) VALUES (?, ?, ?, ?)',
+    'Cash', 0, '#FF9F0A', new Date().toISOString(),
+  );
+}
+
 async function migrateToV1(handle: Db) {
   await handle.withTransactionAsync(async () => {
     await handle.execAsync(SCHEMA);
-    const insertCategory = 'INSERT INTO categories (name, kind, icon, color, is_default) VALUES (?, ?, ?, ?, ?)';
-    for (const [name, icon, color] of EXPENSE_CATEGORIES) {
-      await handle.runAsync(insertCategory, name, 'expense', icon, color, name === 'Other' ? 1 : 0);
-    }
-    for (const [name, icon, color] of INCOME_CATEGORIES) {
-      await handle.runAsync(insertCategory, name, 'income', icon, color, name === 'Other income' ? 1 : 0);
-    }
-    await handle.runAsync(
-      'INSERT INTO accounts (name, opening_minor, color, created_at) VALUES (?, ?, ?, ?)',
-      'Cash', 0, '#FF9F0A', new Date().toISOString(),
-    );
+    await seedDefaults(handle);
     await handle.execAsync('PRAGMA user_version = 1');
   });
 }
@@ -447,4 +454,73 @@ export async function getInsights(month: string): Promise<InsightsData> {
     summary, prevSummary, spending, prevSpending, income, daily, prevDaily,
     recurringOut: recurring?.total ?? 0, monthly, earliestMonth: earliest?.month ?? null,
   };
+}
+
+export async function exportAll(): Promise<Backup> {
+  const handle = db!;
+  return {
+    app: 'hisaab',
+    version: BACKUP_VERSION,
+    exported_at: new Date().toISOString(),
+    currency: (await getSetting('currency')) ?? 'USD',
+    accounts: await handle.getAllAsync('SELECT * FROM accounts ORDER BY id'),
+    categories: await handle.getAllAsync('SELECT * FROM categories ORDER BY id'),
+    transactions: await handle.getAllAsync('SELECT * FROM transactions ORDER BY id'),
+    recurring: await handle.getAllAsync('SELECT * FROM recurring ORDER BY id'),
+  };
+}
+
+async function clearAll(handle: Db) {
+  for (const table of ['transactions', 'recurring', 'categories', 'accounts', 'settings']) {
+    await handle.runAsync(`DELETE FROM ${table}`);
+  }
+}
+
+// Replaces everything with a backup that already passed parseBackup. All or nothing.
+export async function replaceAllData(backup: Backup) {
+  await write(async (handle) => {
+    await handle.withTransactionAsync(async () => {
+      await clearAll(handle);
+      for (const a of backup.accounts) {
+        await handle.runAsync(
+          'INSERT INTO accounts (id, name, opening_minor, color, created_at) VALUES (?, ?, ?, ?, ?)',
+          a.id, a.name, a.opening_minor, a.color, a.created_at,
+        );
+      }
+      for (const c of backup.categories) {
+        await handle.runAsync(
+          'INSERT INTO categories (id, name, kind, icon, color, budget_minor, is_default) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          c.id, c.name, c.kind, c.icon, c.color, c.budget_minor, c.is_default,
+        );
+      }
+      for (const r of backup.recurring) {
+        await handle.runAsync(
+          `INSERT INTO recurring (id, name, type, amount_minor, account_id, category_id, freq, anchor_day, next_date, active)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          r.id, r.name, r.type, r.amount_minor, r.account_id, r.category_id, r.freq, r.anchor_day, r.next_date, r.active,
+        );
+      }
+      for (const t of backup.transactions) {
+        await handle.runAsync(
+          `INSERT INTO transactions (id, type, amount_minor, account_id, to_account_id, category_id, note, date, recurring_id, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          t.id, t.type, t.amount_minor, t.account_id, t.to_account_id, t.category_id, t.note, t.date, t.recurring_id, t.created_at,
+        );
+      }
+      await handle.runAsync(UPSERT_SETTING, 'currency', backup.currency);
+      await handle.runAsync(UPSERT_SETTING, 'onboarded', '1');
+    });
+    setAppCurrency(backup.currency);
+  });
+}
+
+// Back to a brand-new app: default categories, a "Cash" account, and the currency screen again.
+export async function deleteAllData() {
+  await write(async (handle) => {
+    await handle.withTransactionAsync(async () => {
+      await clearAll(handle);
+      await seedDefaults(handle);
+    });
+    setAppCurrency('USD');
+  });
 }

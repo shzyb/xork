@@ -1,4 +1,4 @@
-import { addAccount, addCategory, addRecurring, deleteRecurring, logDueRecurring, updateRecurring, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, updateAccount, updateCategory, updateTransaction } from '../db';
+import { deleteAllData, exportAll, replaceAllData, addAccount, addCategory, addRecurring, deleteRecurring, logDueRecurring, updateRecurring, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, updateAccount, updateCategory, updateTransaction } from '../db';
 import { formatMoney } from '../money';
 
 function fakeDb(overrides: Partial<Db> = {}): Db {
@@ -356,6 +356,105 @@ describe('recurring writes', () => {
     expect(getVersion()).toBe(before);
     expect(listener).not.toHaveBeenCalled();
     off();
+  });
+});
+
+const BACKUP = {
+  app: 'hisaab' as const, version: 1, exported_at: 'x', currency: 'PKR',
+  accounts: [{ id: 1, name: 'Cash', opening_minor: 0, color: '#FF9F0A', created_at: 'x' }],
+  categories: [
+    { id: 1, name: 'Groceries', kind: 'expense' as const, icon: 'tag', color: '#000', budget_minor: null, is_default: 0 },
+    { id: 2, name: 'Other', kind: 'expense' as const, icon: 'tag', color: '#000', budget_minor: null, is_default: 1 },
+  ],
+  recurring: [],
+  transactions: [
+    { id: 1, type: 'expense' as const, amount_minor: 45000, account_id: 1, to_account_id: null, category_id: 1, note: 'Lunch', date: '2026-09-30', recurring_id: null, created_at: 'x' },
+  ],
+};
+
+describe('replaceAllData', () => {
+  it('clears everything and restores the backup in one SQL transaction, then notifies once', async () => {
+    const db = fakeDb();
+    await openDb(db);
+    const listener = jest.fn();
+    const off = subscribe(listener);
+
+    await replaceAllData(BACKUP);
+
+    expect(db.withTransactionAsync).toHaveBeenCalledTimes(1);
+    const statements = (db.runAsync as jest.Mock).mock.calls.map((c) => c[0] as string);
+    expect(statements.slice(0, 5).every((s) => s.startsWith('DELETE FROM'))).toBe(true);
+    expect(statements.filter((s) => s.includes('INSERT INTO accounts'))).toHaveLength(1);
+    expect(statements.filter((s) => s.includes('INSERT INTO categories'))).toHaveLength(2);
+    expect(statements.filter((s) => s.includes('INSERT INTO transactions'))).toHaveLength(1);
+    expect(db.runAsync).toHaveBeenCalledWith(expect.any(String), 'currency', 'PKR');
+    expect(db.runAsync).toHaveBeenCalledWith(expect.any(String), 'onboarded', '1');
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(formatMoney(100)).toBe('Rs 1');
+    off();
+  });
+
+  it('a failure part-way changes nothing and does not touch the currency', async () => {
+    const runAsync = jest.fn().mockResolvedValue({});
+    await openDb(fakeDb({ runAsync }));
+    await setCurrency('USD');
+    runAsync.mockReset().mockResolvedValueOnce({}).mockRejectedValueOnce(new Error('disk full'));
+    const listener = jest.fn();
+    const off = subscribe(listener);
+    const before = getVersion();
+
+    await expect(replaceAllData(BACKUP)).rejects.toThrow('disk full');
+
+    expect(getVersion()).toBe(before);
+    expect(listener).not.toHaveBeenCalled();
+    expect(formatMoney(100)).toBe('$1.00');
+    off();
+  });
+});
+
+describe('deleteAllData', () => {
+  it('clears every table and re-seeds the defaults in one SQL transaction, then notifies once', async () => {
+    const db = fakeDb();
+    await openDb(db);
+    const listener = jest.fn();
+    const off = subscribe(listener);
+
+    await deleteAllData();
+
+    expect(db.withTransactionAsync).toHaveBeenCalledTimes(1);
+    const statements = (db.runAsync as jest.Mock).mock.calls.map((c) => c[0] as string);
+    expect(statements.slice(0, 5)).toEqual([
+      'DELETE FROM transactions', 'DELETE FROM recurring', 'DELETE FROM categories', 'DELETE FROM accounts', 'DELETE FROM settings',
+    ]);
+    expect(statements.filter((s) => s.includes('INSERT INTO categories'))).toHaveLength(32);
+    expect(statements.filter((s) => s.includes('INSERT INTO accounts'))).toHaveLength(1);
+    expect(listener).toHaveBeenCalledTimes(1);
+    off();
+  });
+
+  it('a failure changes nothing and calls no listeners', async () => {
+    await openDb(fakeDb({ runAsync: jest.fn().mockRejectedValue(new Error('disk full')) }));
+    const listener = jest.fn();
+    const off = subscribe(listener);
+    const before = getVersion();
+
+    await expect(deleteAllData()).rejects.toThrow('disk full');
+
+    expect(getVersion()).toBe(before);
+    expect(listener).not.toHaveBeenCalled();
+    off();
+  });
+});
+
+describe('exportAll', () => {
+  it('returns every table with the currency and a version marker', async () => {
+    const rows = [{ id: 1 }];
+    const getFirstAsync = jest.fn().mockResolvedValueOnce({ user_version: 2 }).mockResolvedValueOnce(null).mockResolvedValue({ value: 'AED' });
+    await openDb(fakeDb({ getFirstAsync, getAllAsync: jest.fn().mockResolvedValue(rows) }));
+
+    const backup = await exportAll();
+
+    expect(backup).toMatchObject({ app: 'hisaab', version: 1, currency: 'AED', accounts: rows, categories: rows, transactions: rows, recurring: rows });
   });
 });
 
