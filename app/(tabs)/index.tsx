@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { ArrowDown, ArrowUp, Plus, Settings } from 'lucide-react-native';
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RecurringRow } from '../../src/components/RecurringRow';
 import { TransactionList } from '../../src/components/TransactionList';
@@ -12,12 +12,16 @@ import { fontSize, spacing, useColors } from '../../src/theme';
 import { useData } from '../../src/useData';
 
 type Tab = 'recent' | 'accounts' | 'upcoming';
+const TABS: Tab[] = ['recent', 'accounts', 'upcoming'];
 const TAB_LABELS: Record<Tab, string> = { recent: 'Recent', accounts: 'Accounts', upcoming: 'Upcoming' };
 
 export default function Home() {
   const colors = useColors();
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const pager = useRef<ScrollView>(null);
   const [tab, setTab] = useState<Tab>('recent');
+  const [heights, setHeights] = useState<Record<Tab, number>>({ recent: 0, accounts: 0, upcoming: 0 });
   const accounts = useData(getAccountsWithBalance);
   const month = useData(() => getMonthSummary(currentMonth()));
   const recent = useData(() => getTransactions(NO_FILTER, 8));
@@ -25,6 +29,12 @@ export default function Home() {
   const upcoming = recurring ? upcomingOccurrences(recurring, today(), 7) : [];
 
   const total = accounts?.reduce((sum, a) => sum + a.balance_minor, 0);
+  const pageWidth = width - spacing.xl * 2;
+
+  function goTo(key: Tab) {
+    setTab(key);
+    pager.current?.scrollTo({ x: TABS.indexOf(key) * pageWidth, animated: true });
+  }
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
@@ -56,8 +66,8 @@ export default function Home() {
         )}
 
         <View style={[styles.tabs, { borderBottomColor: colors.line }]}>
-          {(['recent', 'accounts', 'upcoming'] as const).map((key) => (
-            <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected: tab === key }} onPress={() => setTab(key)}>
+          {TABS.map((key) => (
+            <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected: tab === key }} onPress={() => goTo(key)}>
               <Text style={[styles.tab, { color: tab === key ? colors.ink : colors.ink3 }]}>
                 {TAB_LABELS[key]}
               </Text>
@@ -65,51 +75,72 @@ export default function Home() {
           ))}
         </View>
 
-        {tab === 'recent' && recent && (recent.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={[styles.emptyTitle, { color: colors.ink }]}>No transactions yet</Text>
-            <Text style={{ color: colors.ink2 }}>Tap + to log your first expense or income.</Text>
-          </View>
-        ) : (
-          <TransactionList rows={recent} />
-        ))}
-
-        {tab === 'upcoming' && recurring && (upcoming.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={{ color: colors.ink2 }}>Nothing due in the next 7 days.</Text>
-          </View>
-        ) : (
-          upcoming.map(({ item, date }) => <RecurringRow key={`${item.id}-${date}`} item={item} date={date} />)
-        ))}
-
-        {tab === 'accounts' && accounts && (
-          <>
-            {accounts.map((a) => (
-              <Pressable
-                key={a.id}
-                accessibilityRole="button"
-                onPress={() => router.push({ pathname: '/account/[id]', params: { id: String(a.id) } })}
-                style={styles.row}
-              >
-                <View style={[styles.initial, { backgroundColor: a.color }]}>
-                  <Text style={styles.initialText}>{a.name.trim().charAt(0).toUpperCase() || '?'}</Text>
-                </View>
-                <Text style={[styles.title, { color: colors.ink }]} numberOfLines={1}>{a.name}</Text>
-                <Text style={[styles.amount, { color: colors.ink }]}>{formatMoney(a.balance_minor)}</Text>
-              </Pressable>
-            ))}
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push({ pathname: '/account/[id]', params: { id: 'new' } })}
-              style={styles.row}
+        <ScrollView
+          ref={pager}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={(e) => setTab(TABS[Math.round(e.nativeEvent.contentOffset.x / pageWidth)] ?? tab)}
+          contentContainerStyle={styles.pages}
+          style={heights[tab] > 0 ? { height: heights[tab] } : undefined}
+        >
+          {TABS.map((key) => (
+            <View
+              key={key}
+              style={{ width: pageWidth }}
+              onLayout={(e) => {
+                const height = e.nativeEvent.layout.height;
+                setHeights((prev) => (prev[key] === height ? prev : { ...prev, [key]: height }));
+              }}
             >
-              <View style={[styles.initial, { backgroundColor: colors.fill }]}>
-                <Plus color={colors.ink} size={20} />
-              </View>
-              <Text style={[styles.title, { color: colors.ink }]}>Add an account</Text>
-            </Pressable>
-          </>
-        )}
+              {key === 'recent' && recent && (recent.length === 0 ? (
+                <View style={styles.empty}>
+                  <Text style={[styles.emptyTitle, { color: colors.ink }]}>No transactions yet</Text>
+                  <Text style={{ color: colors.ink2 }}>Tap + to log your first expense or income.</Text>
+                </View>
+              ) : (
+                <TransactionList rows={recent} />
+              ))}
+
+              {key === 'accounts' && accounts && (
+                <>
+                  {accounts.map((a) => (
+                    <Pressable
+                      key={a.id}
+                      accessibilityRole="button"
+                      onPress={() => router.push({ pathname: '/account/[id]', params: { id: String(a.id) } })}
+                      style={styles.row}
+                    >
+                      <View style={[styles.initial, { backgroundColor: a.color }]}>
+                        <Text style={styles.initialText}>{a.name.trim().charAt(0).toUpperCase() || '?'}</Text>
+                      </View>
+                      <Text style={[styles.title, { color: colors.ink }]} numberOfLines={1}>{a.name}</Text>
+                      <Text style={[styles.amount, { color: colors.ink }]}>{formatMoney(a.balance_minor)}</Text>
+                    </Pressable>
+                  ))}
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => router.push({ pathname: '/account/[id]', params: { id: 'new' } })}
+                    style={styles.row}
+                  >
+                    <View style={[styles.initial, { backgroundColor: colors.fill }]}>
+                      <Plus color={colors.ink} size={20} />
+                    </View>
+                    <Text style={[styles.title, { color: colors.ink }]}>Add an account</Text>
+                  </Pressable>
+                </>
+              )}
+
+              {key === 'upcoming' && recurring && (upcoming.length === 0 ? (
+                <View style={styles.empty}>
+                  <Text style={{ color: colors.ink2 }}>Nothing due in the next 7 days.</Text>
+                </View>
+              ) : (
+                upcoming.map(({ item, date }) => <RecurringRow key={`${item.id}-${date}`} item={item} date={date} />)
+              ))}
+            </View>
+          ))}
+        </ScrollView>
       </ScrollView>
     </SafeAreaView>
   );
@@ -132,6 +163,7 @@ const styles = StyleSheet.create({
   initialText: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
   title: { flex: 1, fontSize: 16.5, fontWeight: '600' },
   amount: { fontSize: 16.5, fontWeight: '600' },
+  pages: { alignItems: 'flex-start' },
   empty: { alignItems: 'center', gap: 6, paddingVertical: 36 },
   emptyTitle: { fontSize: 17, fontWeight: '700' },
 });
