@@ -69,6 +69,8 @@ export type TransactionFilter = {
   search: string;
   type: TransactionType | 'all';
   month: string | null;
+  categoryId: number | null;
+  accountId: number | null; // matches the account a transaction is from or, for a transfer, moved to
 };
 
 export type CategorySpend = {

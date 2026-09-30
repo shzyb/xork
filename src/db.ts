@@ -169,7 +169,7 @@ const TX_FROM = `FROM transactions t
   LEFT JOIN categories c ON c.id = t.category_id
   LEFT JOIN recurring rc ON rc.id = t.recurring_id`;
 
-export const NO_FILTER: TransactionFilter = { search: '', type: 'all', month: null };
+export const NO_FILTER: TransactionFilter = { search: '', type: 'all', month: null, categoryId: null, accountId: null };
 
 // The WHERE part shared by the Activity list and its totals. Search looks at note, category and account names.
 export function buildFilter(filter: TransactionFilter): { where: string; params: (string | number)[] } {
@@ -183,6 +183,14 @@ export function buildFilter(filter: TransactionFilter): { where: string; params:
     const { start, end } = monthRange(filter.month);
     clauses.push('t.date BETWEEN ? AND ?');
     params.push(start, end);
+  }
+  if (filter.categoryId !== null) {
+    clauses.push('t.category_id = ?');
+    params.push(filter.categoryId);
+  }
+  if (filter.accountId !== null) {
+    clauses.push('(t.account_id = ? OR t.to_account_id = ?)');
+    params.push(filter.accountId, filter.accountId);
   }
   const search = filter.search.trim();
   if (search) {
@@ -215,6 +223,14 @@ export async function getTransactionTotals(
     ...params,
   );
   return row ?? { count: 0, in_minor: 0, out_minor: 0 };
+}
+
+// The months that have at least one transaction, newest first, for the Month filter.
+export async function getTransactionMonths(): Promise<string[]> {
+  const rows = await db!.getAllAsync<{ month: string }>(
+    'SELECT DISTINCT substr(date, 1, 7) AS month FROM transactions ORDER BY month DESC',
+  );
+  return rows.map((r) => r.month);
 }
 
 export async function getTransaction(id: number): Promise<TransactionRow | null> {

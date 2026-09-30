@@ -1,4 +1,4 @@
-import { deleteAllData, exportAll, replaceAllData, addAccount, addCategory, addRecurring, deleteRecurring, logDueRecurring, updateRecurring, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, updateAccount, updateCategory, updateTransaction } from '../db';
+import { deleteAllData, exportAll, NO_FILTER, replaceAllData, addAccount, addCategory, addRecurring, deleteRecurring, logDueRecurring, updateRecurring, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, updateAccount, updateCategory, updateTransaction } from '../db';
 import { formatMoney } from '../money';
 
 function fakeDb(overrides: Partial<Db> = {}): Db {
@@ -460,17 +460,23 @@ describe('exportAll', () => {
 
 describe('buildFilter', () => {
   it('has no WHERE when nothing is filtered', () => {
-    expect(buildFilter({ search: '  ', type: 'all', month: null })).toEqual({ where: '', params: [] });
+    expect(buildFilter({ ...NO_FILTER, search: '  ' })).toEqual({ where: '', params: [] });
   });
 
   it('filters by type and by the first and last day of the month', () => {
-    const { where, params } = buildFilter({ search: '', type: 'expense', month: '2028-02' });
+    const { where, params } = buildFilter({ ...NO_FILTER, type: 'expense', month: '2028-02' });
     expect(where).toBe('WHERE t.type = ? AND t.date BETWEEN ? AND ?');
     expect(params).toEqual(['expense', '2028-02-01', '2028-02-29']);
   });
 
+  it('filters by category, and by account including the receiving side of a transfer', () => {
+    const { where, params } = buildFilter({ ...NO_FILTER, categoryId: 4, accountId: 2 });
+    expect(where).toBe('WHERE t.category_id = ? AND (t.account_id = ? OR t.to_account_id = ?)');
+    expect(params).toEqual([4, 2, 2]);
+  });
+
   it('searches note, category and account names, escaping % and _', () => {
-    const { where, params } = buildFilter({ search: ' 50%_off ', type: 'all', month: null });
+    const { where, params } = buildFilter({ ...NO_FILTER, search: ' 50%_off ' });
     expect(where).toContain('t.note LIKE ?');
     expect(where).toContain('c.name LIKE ?');
     expect(where).toContain('a.name LIKE ?');
