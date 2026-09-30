@@ -1,7 +1,8 @@
 import { openDatabaseAsync } from 'expo-sqlite';
 import { monthRange } from './dates';
 import { setAppCurrency } from './money';
-import type { Account, Category, Transaction, TransactionRow } from './types';
+import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, SCHEMA } from './seed';
+import type { Account, Category, Transaction, TransactionFilter, TransactionRow } from './types';
 
 // The small part of expo-sqlite that we use, so tests can pass a fake.
 export type Db = {
@@ -34,93 +35,6 @@ async function write<T>(task: (db: Db) => Promise<T>): Promise<T> {
   listeners.forEach((listener) => listener());
   return result;
 }
-
-const SCHEMA = `
-CREATE TABLE accounts (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  opening_minor INTEGER NOT NULL DEFAULT 0,
-  color TEXT NOT NULL,
-  created_at TEXT NOT NULL
-);
-CREATE TABLE categories (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  kind TEXT NOT NULL,
-  icon TEXT NOT NULL,
-  color TEXT NOT NULL,
-  budget_minor INTEGER,
-  is_default INTEGER NOT NULL DEFAULT 0
-);
-CREATE TABLE transactions (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  type TEXT NOT NULL,
-  amount_minor INTEGER NOT NULL,
-  account_id INTEGER NOT NULL,
-  to_account_id INTEGER,
-  category_id INTEGER,
-  note TEXT NOT NULL DEFAULT '',
-  date TEXT NOT NULL,
-  recurring_id INTEGER,
-  created_at TEXT NOT NULL
-);
-CREATE INDEX transactions_date ON transactions (date);
-CREATE TABLE recurring (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  name TEXT NOT NULL,
-  type TEXT NOT NULL,
-  amount_minor INTEGER NOT NULL,
-  account_id INTEGER NOT NULL,
-  category_id INTEGER NOT NULL,
-  freq TEXT NOT NULL,
-  anchor_day INTEGER NOT NULL,
-  next_date TEXT NOT NULL,
-  active INTEGER NOT NULL DEFAULT 1
-);
-CREATE TABLE settings (
-  key TEXT PRIMARY KEY,
-  value TEXT NOT NULL
-);
-`;
-
-// name, Lucide icon name, colour. The two "Other" categories are is_default: they can't be deleted.
-const EXPENSE_CATEGORIES = [
-  ['Groceries', 'shopping-cart', '#34A853'],
-  ['Dining out', 'utensils', '#FF8A00'],
-  ['Transport', 'bus', '#3B82F6'],
-  ['Bills', 'receipt', '#EAB308'],
-  ['Rent', 'house', '#A0714F'],
-  ['Mobile', 'smartphone', '#14B8A6'],
-  ['Internet', 'wifi', '#0EA5E9'],
-  ['Subscriptions', 'repeat', '#8B5CF6'],
-  ['Shopping', 'shopping-bag', '#EC4899'],
-  ['Health', 'heart-pulse', '#EF4444'],
-  ['Family', 'users', '#64748B'],
-  ['Education', 'book-open', '#16A34A'],
-  ['Entertainment', 'clapperboard', '#0284C7'],
-  ['Fuel', 'fuel', '#F97316'],
-  ['Travel', 'plane', '#2563EB'],
-  ['Personal', 'sparkles', '#D946EF'],
-  ['Fitness', 'dumbbell', '#EA580C'],
-  ['Charity', 'hand-heart', '#059669'],
-  ['Home', 'sofa', '#B45309'],
-  ['Maintenance', 'wrench', '#78716C'],
-  ['Insurance', 'shield-check', '#4F46E5'],
-  ['Loans', 'landmark', '#7C3AED'],
-  ['EMI', 'credit-card', '#DB2777'],
-  ['Other', 'tag', '#64748B'],
-];
-
-const INCOME_CATEGORIES = [
-  ['Salary', 'briefcase', '#16A34A'],
-  ['Freelance', 'laptop', '#14B8A6'],
-  ['Business', 'store', '#F59E0B'],
-  ['Investments', 'trending-up', '#8B5CF6'],
-  ['Rental income', 'key-round', '#A0714F'],
-  ['Refunds', 'undo-2', '#0EA5E9'],
-  ['Gifts', 'gift', '#EC4899'],
-  ['Other income', 'sparkle', '#64748B'],
-];
 
 // Migrations only add things. Each step runs once, guarded by PRAGMA user_version.
 async function migrate(handle: Db) {
@@ -238,15 +152,75 @@ export async function getMonthSummary(month: string): Promise<{ in_minor: number
   return row ?? { in_minor: 0, out_minor: 0 };
 }
 
-export async function getRecent(limit: number): Promise<TransactionRow[]> {
+const TX_SELECT = `SELECT t.*, c.name AS category_name, c.icon AS category_icon, c.color AS category_color,
+       a.name AS account_name, b.name AS to_account_name`;
+const TX_FROM = `FROM transactions t
+  JOIN accounts a ON a.id = t.account_id
+  LEFT JOIN accounts b ON b.id = t.to_account_id
+  LEFT JOIN categories c ON c.id = t.category_id`;
+
+export const NO_FILTER: TransactionFilter = { search: '', type: 'all', month: null };
+
+// The WHERE part shared by the Activity list and its totals. Search looks at note, category and account names.
+export function buildFilter(filter: TransactionFilter): { where: string; params: (string | number)[] } {
+  const clauses: string[] = [];
+  const params: (string | number)[] = [];
+  if (filter.type !== 'all') {
+    clauses.push('t.type = ?');
+    params.push(filter.type);
+  }
+  if (filter.month) {
+    const { start, end } = monthRange(filter.month);
+    clauses.push('t.date BETWEEN ? AND ?');
+    params.push(start, end);
+  }
+  const search = filter.search.trim();
+  if (search) {
+    const like = `%${search.replace(/[\\%_]/g, '\\$&')}%`;
+    const columns = ['t.note', 'c.name', 'a.name', 'b.name'];
+    clauses.push('(' + columns.map((col) => `${col} LIKE ? ESCAPE '\\'`).join(' OR ') + ')');
+    params.push(like, like, like, like);
+  }
+  return { where: clauses.length ? 'WHERE ' + clauses.join(' AND ') : '', params };
+}
+
+export async function getTransactions(filter: TransactionFilter, limit: number): Promise<TransactionRow[]> {
+  const { where, params } = buildFilter(filter);
   return db!.getAllAsync(
-    `SELECT t.*, c.name AS category_name, c.icon AS category_icon, c.color AS category_color,
-            a.name AS account_name, b.name AS to_account_name
-     FROM transactions t
-     JOIN accounts a ON a.id = t.account_id
-     LEFT JOIN accounts b ON b.id = t.to_account_id
-     LEFT JOIN categories c ON c.id = t.category_id
-     ORDER BY t.date DESC, t.id DESC LIMIT ?`,
-    limit,
+    `${TX_SELECT} ${TX_FROM} ${where} ORDER BY t.date DESC, t.id DESC LIMIT ?`,
+    ...params, limit,
   );
+}
+
+// Count, money in and money out for the same filter. Transfers are counted but are not in or out.
+export async function getTransactionTotals(
+  filter: TransactionFilter,
+): Promise<{ count: number; in_minor: number; out_minor: number }> {
+  const { where, params } = buildFilter(filter);
+  const row = await db!.getFirstAsync<{ count: number; in_minor: number; out_minor: number }>(
+    `SELECT COUNT(*) AS count,
+            COALESCE(SUM(CASE WHEN t.type = 'income' THEN t.amount_minor END), 0) AS in_minor,
+            COALESCE(SUM(CASE WHEN t.type = 'expense' THEN t.amount_minor END), 0) AS out_minor
+     ${TX_FROM} ${where}`,
+    ...params,
+  );
+  return row ?? { count: 0, in_minor: 0, out_minor: 0 };
+}
+
+export async function getTransaction(id: number): Promise<TransactionRow | null> {
+  return db!.getFirstAsync(`${TX_SELECT} ${TX_FROM} WHERE t.id = ?`, id);
+}
+
+export async function updateTransaction(id: number, t: NewTransaction) {
+  await write((handle) =>
+    handle.runAsync(
+      `UPDATE transactions SET type = ?, amount_minor = ?, account_id = ?, to_account_id = ?,
+              category_id = ?, note = ?, date = ? WHERE id = ?`,
+      t.type, t.amount_minor, t.account_id, t.to_account_id, t.category_id, t.note, t.date, id,
+    ),
+  );
+}
+
+export async function deleteTransaction(id: number) {
+  await write((handle) => handle.runAsync('DELETE FROM transactions WHERE id = ?', id));
 }

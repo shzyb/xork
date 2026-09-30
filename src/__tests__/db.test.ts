@@ -1,4 +1,4 @@
-import { addTransaction, completeWelcome, Db, getVersion, openDb, setCurrency, subscribe } from '../db';
+import { addTransaction, buildFilter, completeWelcome, Db, deleteTransaction, getVersion, openDb, setCurrency, subscribe, updateTransaction } from '../db';
 import { formatMoney } from '../money';
 
 function fakeDb(overrides: Partial<Db> = {}): Db {
@@ -105,6 +105,60 @@ describe('addTransaction', () => {
     expect(getVersion()).toBe(before);
     expect(listener).not.toHaveBeenCalled();
     off();
+  });
+});
+
+describe.each([
+  ['updateTransaction', () => updateTransaction(7, LUNCH), 'UPDATE transactions', ['expense', 45000, 1, null, 2, 'Lunch', '2026-09-30', 7]],
+  ['deleteTransaction', () => deleteTransaction(7), 'DELETE FROM transactions', [7]],
+])('%s', (_name, run, sql, params) => {
+  it('runs the statement, bumps version and calls listeners', async () => {
+    const db = fakeDb();
+    await openDb(db);
+    const listener = jest.fn();
+    const off = subscribe(listener);
+    const before = getVersion();
+
+    await run();
+
+    expect(db.runAsync).toHaveBeenCalledWith(expect.stringContaining(sql), ...params);
+    expect(getVersion()).toBe(before + 1);
+    expect(listener).toHaveBeenCalledTimes(1);
+    off();
+  });
+
+  it('a failed statement changes nothing and calls no listeners', async () => {
+    await openDb(fakeDb({ runAsync: jest.fn().mockRejectedValue(new Error('disk full')) }));
+    const listener = jest.fn();
+    const off = subscribe(listener);
+    const before = getVersion();
+
+    await expect(run()).rejects.toThrow('disk full');
+
+    expect(getVersion()).toBe(before);
+    expect(listener).not.toHaveBeenCalled();
+    off();
+  });
+});
+
+describe('buildFilter', () => {
+  it('has no WHERE when nothing is filtered', () => {
+    expect(buildFilter({ search: '  ', type: 'all', month: null })).toEqual({ where: '', params: [] });
+  });
+
+  it('filters by type and by the first and last day of the month', () => {
+    const { where, params } = buildFilter({ search: '', type: 'expense', month: '2028-02' });
+    expect(where).toBe('WHERE t.type = ? AND t.date BETWEEN ? AND ?');
+    expect(params).toEqual(['expense', '2028-02-01', '2028-02-29']);
+  });
+
+  it('searches note, category and account names, escaping % and _', () => {
+    const { where, params } = buildFilter({ search: ' 50%_off ', type: 'all', month: null });
+    expect(where).toContain('t.note LIKE ?');
+    expect(where).toContain('c.name LIKE ?');
+    expect(where).toContain('a.name LIKE ?');
+    expect(where).toContain('b.name LIKE ?');
+    expect(params).toEqual(Array(4).fill('%50\\%\\_off%'));
   });
 });
 

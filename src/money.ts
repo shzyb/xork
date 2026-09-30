@@ -75,3 +75,10 @@ export function formatTyped(text: string): string {
   const grouped = (whole || '0').replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   return frac === undefined ? grouped : grouped + '.' + frac;
 }
+
+// Inverse of parseAmount, for editing: 245000 -> "2450", 1250 -> "12.5".
+export function minorToTyped(minor: number): string {
+  const frac = minor % 100;
+  const whole = String(Math.floor(minor / 100));
+  return frac === 0 ? whole : whole + '.' + String(frac).padStart(2, '0').replace(/0$/, '');
+}

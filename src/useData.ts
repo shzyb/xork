@@ -2,9 +2,10 @@ import { useNavigation } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { subscribe } from './db';
 
-// Runs `load` on mount, after every write anywhere in the app, and when the screen regains focus.
+// Runs `load` on mount, after every write anywhere in the app, when the screen regains focus,
+// and whenever `deps` change (e.g. a filter). Keeps the old result until the new one arrives.
 // Returns undefined until the first result arrives, so screens render nothing meanwhile.
-export function useData<T>(load: () => Promise<T>): T | undefined {
+export function useData<T>(load: () => Promise<T>, deps: unknown[] = []): T | undefined {
   const [data, setData] = useState<T>();
   const loadRef = useRef(load);
   loadRef.current = load;
@@ -25,7 +26,7 @@ export function useData<T>(load: () => Promise<T>): T | undefined {
       unsubscribe();
       unfocus();
     };
-  }, [navigation]);
+  }, [navigation, ...deps]);
 
   return data;
 }

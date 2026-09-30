@@ -55,3 +55,9 @@ export type TransactionRow = Transaction & {
   account_name: string;
   to_account_name: string | null;
 };
+
+export type TransactionFilter = {
+  search: string;
+  type: TransactionType | 'all';
+  month: string | null;
+};

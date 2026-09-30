@@ -1,4 +1,4 @@
-import { formatMoney, formatTyped, guessCurrency, parseAmount, setAppCurrency } from '../money';
+import { formatMoney, formatTyped, guessCurrency, minorToTyped, parseAmount, setAppCurrency } from '../money';
 
 describe('formatMoney', () => {
   it('shows no decimals for PKR', () => {
@@ -71,5 +71,17 @@ describe('formatTyped', () => {
     expect(formatTyped('2450')).toBe('2,450');
     expect(formatTyped('1234567.5')).toBe('1,234,567.5');
     expect(formatTyped('12.')).toBe('12.');
+  });
+});
+
+describe('minorToTyped', () => {
+  it('is the inverse of parseAmount for editing', () => {
+    expect(minorToTyped(245000)).toBe('2450');
+    expect(minorToTyped(1250)).toBe('12.5');
+    expect(minorToTyped(1205)).toBe('12.05');
+    expect(minorToTyped(5)).toBe('0.05');
+    for (const minor of [0, 5, 50, 1250, 1205, 245000]) {
+      expect(parseAmount(minorToTyped(minor))).toBe(minor);
+    }
   });
 });

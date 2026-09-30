@@ -1,13 +1,12 @@
-import { ArrowDown, ArrowLeftRight, ArrowUp } from 'lucide-react-native';
+import { ArrowDown, ArrowUp } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { CategoryIcon } from '../../src/components/CategoryIcon';
-import { getAccountsWithBalance, getMonthSummary, getRecent } from '../../src/db';
-import { currentMonth, monthLabel, prettyDate } from '../../src/dates';
+import { TransactionList } from '../../src/components/TransactionList';
+import { getAccountsWithBalance, getMonthSummary, getTransactions, NO_FILTER } from '../../src/db';
+import { currentMonth, monthLabel } from '../../src/dates';
 import { formatMoney } from '../../src/money';
 import { fontSize, spacing, useColors } from '../../src/theme';
-import type { TransactionRow } from '../../src/types';
 import { useData } from '../../src/useData';
 
 type Tab = 'recent' | 'accounts';
@@ -17,7 +16,7 @@ export default function Home() {
   const [tab, setTab] = useState<Tab>('recent');
   const accounts = useData(getAccountsWithBalance);
   const month = useData(() => getMonthSummary(currentMonth()));
-  const recent = useData(() => getRecent(8));
+  const recent = useData(() => getTransactions(NO_FILTER, 8));
 
   const total = accounts?.reduce((sum, a) => sum + a.balance_minor, 0);
 
@@ -61,14 +60,7 @@ export default function Home() {
             <Text style={{ color: colors.ink2 }}>Tap + to log your first expense or income.</Text>
           </View>
         ) : (
-          recent.map((t, i) => (
-            <View key={t.id}>
-              {(i === 0 || recent[i - 1].date !== t.date) && (
-                <Text style={[styles.dateHead, { color: colors.ink }]}>{prettyDate(t.date)}</Text>
-              )}
-              <TransactionLine t={t} />
-            </View>
-          ))
+          <TransactionList rows={recent} />
         ))}
 
         {tab === 'accounts' && accounts?.map((a) => (
@@ -85,44 +77,6 @@ export default function Home() {
   );
 }
 
-function TransactionLine({ t }: { t: TransactionRow }) {
-  const colors = useColors();
-
-  if (t.type === 'transfer') {
-    return (
-      <View style={styles.row}>
-        <View style={[styles.initial, { backgroundColor: colors.ink }]}>
-          <ArrowLeftRight color={colors.bg} size={20} />
-        </View>
-        <View style={styles.main}>
-          <Text style={{ color: colors.ink2, fontSize: fontSize.small }} numberOfLines={1}>Moved from {t.account_name}</Text>
-          <Text style={[styles.title, { color: colors.ink }]} numberOfLines={1}>To {t.to_account_name ?? 'deleted account'}</Text>
-        </View>
-        <Text style={[styles.amount, { color: colors.ink }]}>{formatMoney(t.amount_minor)}</Text>
-      </View>
-    );
-  }
-
-  const income = t.type === 'income';
-  return (
-    <View style={styles.row}>
-      <CategoryIcon name={t.category_icon} color={t.category_color} />
-      <View style={styles.main}>
-        <Text style={{ color: colors.ink2, fontSize: fontSize.small }} numberOfLines={1}>
-          {income ? 'Received' : 'Paid'} · {t.category_name ?? 'Other'}
-        </Text>
-        <Text style={[styles.title, { color: colors.ink }]} numberOfLines={1}>{t.note || t.category_name || 'Other'}</Text>
-      </View>
-      <View style={styles.end}>
-        <Text style={[styles.amount, { color: income ? colors.pos : colors.ink }]}>
-          {income ? '+ ' : ''}{formatMoney(t.amount_minor)}
-        </Text>
-        <Text style={{ color: colors.ink2, fontSize: fontSize.small }} numberOfLines={1}>{t.account_name}</Text>
-      </View>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingHorizontal: spacing.xl, paddingBottom: 140 },
@@ -133,12 +87,9 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 13.5, fontWeight: '600' },
   tabs: { flexDirection: 'row', gap: 14, marginTop: 26, paddingBottom: 10, borderBottomWidth: StyleSheet.hairlineWidth },
   tab: { fontSize: fontSize.body, fontWeight: '700' },
-  dateHead: { fontSize: 17, fontWeight: '700', paddingTop: 22, paddingBottom: 4 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64 },
   initial: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   initialText: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
-  main: { flex: 1 },
-  end: { alignItems: 'flex-end', maxWidth: '45%' },
   title: { flex: 1, fontSize: 16.5, fontWeight: '600' },
   amount: { fontSize: 16.5, fontWeight: '600' },
   empty: { alignItems: 'center', gap: 6, paddingVertical: 36 },

@@ -37,6 +37,10 @@ function Routes() {
           name="add"
           options={{ presentation: 'modal', contentStyle: { backgroundColor: sheet.bg } }}
         />
+        <Stack.Screen
+          name="transaction/[id]"
+          options={{ presentation: 'modal', contentStyle: { backgroundColor: sheet.bg } }}
+        />
       </Stack.Protected>
     </Stack>
   );

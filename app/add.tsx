@@ -1,5 +1,5 @@
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Calendar, ChevronLeft, X } from 'lucide-react-native';
 import { useState } from 'react';
@@ -9,11 +9,11 @@ import { AccountChips } from '../src/components/AccountChips';
 import { Button } from '../src/components/Button';
 import { CategoryGrid } from '../src/components/CategoryGrid';
 import { Keypad } from '../src/components/Keypad';
-import { addTransaction, getAccountsWithBalance, getCategories } from '../src/db';
+import { addTransaction, getAccountsWithBalance, getCategories, getTransaction, updateTransaction } from '../src/db';
 import { fromDay, prettyDate, toDay, today, yesterday } from '../src/dates';
-import { currentDecimals, currentSymbol, formatMoney, formatTyped, parseAmount } from '../src/money';
+import { currentDecimals, currentSymbol, formatMoney, formatTyped, minorToTyped, parseAmount } from '../src/money';
 import { sheet, spacing } from '../src/theme';
-import type { TransactionType } from '../src/types';
+import type { Account, Category, TransactionRow, TransactionType } from '../src/types';
 import { useData } from '../src/useData';
 
 const TYPES: { key: TransactionType; label: string }[] = [
@@ -24,23 +24,34 @@ const TYPES: { key: TransactionType; label: string }[] = [
 const TITLES = { expense: 'Expense', income: 'Income', transfer: 'Move money' };
 const SAVE_LABELS = { expense: 'Add expense', income: 'Add income', transfer: 'Move money' };
 
+// With ?id=5 the form edits that transaction; without it, it adds a new one.
 export default function Add() {
-  const router = useRouter();
+  const { id } = useLocalSearchParams<{ id?: string }>();
   const accounts = useData(getAccountsWithBalance);
   const categories = useData(getCategories);
+  const editing = useData(() => (id ? getTransaction(Number(id)) : Promise.resolve(null)), [id]);
+
+  if (!accounts || !categories || editing === undefined) return null;
+  return <AddForm accounts={accounts} categories={categories} editing={editing} />;
+}
+
+function AddForm({ accounts, categories, editing }: {
+  accounts: (Account & { balance_minor: number })[];
+  categories: Category[];
+  editing: TransactionRow | null;
+}) {
+  const router = useRouter();
 
   const [step, setStep] = useState<1 | 2>(1);
-  const [type, setType] = useState<TransactionType>('expense');
-  const [amount, setAmount] = useState('');
-  const [fromSel, setFromSel] = useState<number | null>(null);
-  const [toSel, setToSel] = useState<number | null>(null);
-  const [categoryId, setCategoryId] = useState<number | null>(null);
-  const [note, setNote] = useState('');
-  const [date, setDate] = useState(today());
+  const [type, setType] = useState<TransactionType>(editing?.type ?? 'expense');
+  const [amount, setAmount] = useState(editing ? minorToTyped(editing.amount_minor) : '');
+  const [fromSel, setFromSel] = useState<number | null>(editing?.account_id ?? null);
+  const [toSel, setToSel] = useState<number | null>(editing?.to_account_id ?? null);
+  const [categoryId, setCategoryId] = useState<number | null>(editing?.category_id ?? null);
+  const [note, setNote] = useState(editing?.note ?? '');
+  const [date, setDate] = useState(editing?.date ?? today());
   const [showPicker, setShowPicker] = useState(false);
   const [error, setError] = useState('');
-
-  if (!accounts || !categories) return null;
 
   const fromId = fromSel ?? accounts[0].id;
   const toId = toSel ?? accounts.find((a) => a.id !== fromId)?.id ?? fromId;
@@ -73,7 +84,7 @@ export default function Add() {
   function goToDetails() {
     if (minor <= 0) return setError('Enter an amount above zero.');
     if (type === 'transfer') {
-      if (accounts!.length < 2) return setError('Add a second account to move money.');
+      if (accounts.length < 2) return setError('Add a second account to move money.');
       if (fromId === toId) return setError('Choose two different accounts.');
     }
     setError('');
@@ -83,7 +94,7 @@ export default function Add() {
   async function save() {
     if (type !== 'transfer' && categoryId === null) return setError('Pick a category.');
     try {
-      await addTransaction({
+      const transaction = {
         type,
         amount_minor: minor,
         account_id: fromId,
@@ -91,7 +102,9 @@ export default function Add() {
         category_id: type === 'transfer' ? null : categoryId,
         note: note.trim(),
         date,
-      });
+      };
+      if (editing) await updateTransaction(editing.id, transaction);
+      else await addTransaction(transaction);
       router.back();
     } catch {
       setError('Could not save. Try again.');
@@ -124,7 +137,7 @@ export default function Add() {
             <ChevronLeft color={sheet.ink} size={20} />
           </RoundButton>
         )}
-        <Text style={styles.headerTitle}>{step === 1 ? TITLES[type] : type === 'transfer' ? 'Details' : type === 'income' ? 'Where from?' : 'What for?'}</Text>
+        <Text style={styles.headerTitle}>{step === 1 ? (editing ? 'Edit transaction' : TITLES[type]) : type === 'transfer' ? 'Details' : type === 'income' ? 'Where from?' : 'What for?'}</Text>
         {step === 2 ? (
           <RoundButton label="Close" onPress={() => router.back()}><X color={sheet.ink} size={18} /></RoundButton>
         ) : (
@@ -240,7 +253,7 @@ export default function Add() {
             {error !== '' && <Text style={styles.error}>{error}</Text>}
           </ScrollView>
           <View style={styles.footer}>
-            <Button title={SAVE_LABELS[type]} onPress={save} background={sheet.btnBg} color={sheet.btnFg} />
+            <Button title={editing ? 'Save changes' : SAVE_LABELS[type]} onPress={save} background={sheet.btnBg} color={sheet.btnFg} />
           </View>
         </KeyboardAvoidingView>
       )}

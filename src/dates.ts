@@ -53,3 +53,7 @@ export function toDay(date: Date): string {
 export function fromDay(day: string): Date {
   return parseISO(day);
 }
+
+export function fullDate(day: string): string {
+  return format(parseISO(day), 'EEEE, d MMMM yyyy');
+}

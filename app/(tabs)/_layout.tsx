@@ -1,10 +1,20 @@
 import { Tabs, useRouter } from 'expo-router';
-import { Plus, Wallet } from 'lucide-react-native';
+import { Clock, Plus, Wallet } from 'lucide-react-native';
+import type { LucideIcon } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useColors } from '../../src/theme';
 
 const BAR_HEIGHT = 56;
+
+function TabIcon({ Icon, focused }: { Icon: LucideIcon; focused: boolean }) {
+  const colors = useColors();
+  return (
+    <View style={[styles.icon, focused && { backgroundColor: colors.ink }]}>
+      <Icon color={focused ? colors.bg : colors.ink3} size={22} />
+    </View>
+  );
+}
 
 export default function TabsLayout() {
   const colors = useColors();
@@ -25,17 +35,8 @@ export default function TabsLayout() {
           },
         }}
       >
-        <Tabs.Screen
-          name="index"
-          options={{
-            tabBarAccessibilityLabel: 'Home',
-            tabBarIcon: ({ focused }) => (
-              <View style={[styles.icon, focused && { backgroundColor: colors.ink }]}>
-                <Wallet color={focused ? colors.bg : colors.ink3} size={22} />
-              </View>
-            ),
-          }}
-        />
+        <Tabs.Screen name="index" options={{ tabBarAccessibilityLabel: 'Home', tabBarIcon: ({ focused }) => <TabIcon Icon={Wallet} focused={focused} /> }} />
+        <Tabs.Screen name="activity" options={{ tabBarAccessibilityLabel: 'Activity', tabBarIcon: ({ focused }) => <TabIcon Icon={Clock} focused={focused} /> }} />
       </Tabs>
       <Pressable
         accessibilityRole="button"

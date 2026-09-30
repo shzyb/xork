@@ -1,4 +1,4 @@
-import { currentMonth, monthLabel, monthRange, nextOccurrence, prettyDate, shiftMonth, today, yesterday } from '../dates';
+import { currentMonth, fullDate, monthLabel, monthRange, nextOccurrence, prettyDate, shiftMonth, today, yesterday } from '../dates';
 
 describe('today', () => {
   it('is a local YYYY-MM-DD string', () => {
@@ -51,5 +51,11 @@ describe('prettyDate', () => {
 
   it('shows weekday, day and month, adding the year for other years', () => {
     expect(prettyDate('2020-03-04')).toBe('Wed, 4 Mar 2020');
+  });
+});
+
+describe('fullDate', () => {
+  it('writes the weekday, day, month and year', () => {
+    expect(fullDate('2026-09-29')).toBe('Tuesday, 29 September 2026');
   });
 });
