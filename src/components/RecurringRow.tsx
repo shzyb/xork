@@ -18,7 +18,7 @@ export function RecurringRow({ item, date }: { item: RecurringItem; date?: strin
       onPress={() => router.push({ pathname: '/recurring/detail/[id]', params: { id: String(item.id) } })}
       style={[styles.row, !item.active && { opacity: 0.55 }]}
     >
-      <CategoryIcon name={item.category_icon} color={item.category_color} />
+      <CategoryIcon name={item.category_icon} color={item.category_color} recurring />
       <View style={styles.main}>
         <Text style={[styles.title, { color: colors.ink }]} numberOfLines={1}>{item.name}</Text>
         <Text style={{ color: colors.ink2, fontSize: fontSize.small }} numberOfLines={1}>
