@@ -1,9 +1,10 @@
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { Calendar } from 'lucide-react-native';
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, View } from 'react-native';
 import { fromDay, prettyDate, toDay } from '../dates';
 import { sheet } from '../theme';
+import { Text } from './Text';
 
 // Date choice for the black sheet: a few preset chips (e.g. Today, Yesterday) plus a "Pick a date" chip.
 export function DateChips({ value, onChange, presets }: {

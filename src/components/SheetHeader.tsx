@@ -1,6 +1,7 @@
 import { X } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { sheet, spacing } from '../theme';
+import { Text } from './Text';
 
 export function SheetHeader({ title, onClose }: { title: string; onClose: () => void }) {
   return (

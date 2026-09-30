@@ -1,12 +1,13 @@
 import { getLocales } from 'expo-localization';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Check } from 'lucide-react-native';
 import { Button } from '../src/components/Button';
 import { completeWelcome } from '../src/db';
 import { CURRENCIES, guessCurrency } from '../src/money';
 import { fontSize, spacing, useColors } from '../src/theme';
+import { Text } from '../src/components/Text';
 
 export default function Welcome() {
   const colors = useColors();

@@ -5,7 +5,7 @@ import * as Sharing from 'expo-sharing';
 import { ChevronRight, Download, Globe, Landmark, Tag, Trash2, Upload } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { parseBackup } from '../src/backup';
 import { Sheet } from '../src/components/Sheet';
 import { SheetHeader } from '../src/components/SheetHeader';
@@ -14,6 +14,7 @@ import { today } from '../src/dates';
 import { currencyOf } from '../src/money';
 import { sheet, spacing } from '../src/theme';
 import { useData } from '../src/useData';
+import { Text } from '../src/components/Text';
 
 const confirm = (title: string, message: string, action: string) =>
   new Promise<boolean>((resolve) =>

@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { Check, TriangleAlert } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Button } from '../src/components/Button';
 import { Sheet } from '../src/components/Sheet';
 import { SheetHeader } from '../src/components/SheetHeader';
@@ -9,6 +9,7 @@ import { getSetting, setCurrency } from '../src/db';
 import { CURRENCIES, currencyOf } from '../src/money';
 import { sheet, spacing } from '../src/theme';
 import { useData } from '../src/useData';
+import { Text } from '../src/components/Text';
 
 export default function CurrencyScreen() {
   const currencyCode = useData(() => getSetting('currency'));

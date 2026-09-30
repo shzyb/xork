@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AccountChips } from '../../src/components/AccountChips';
 import { Button } from '../../src/components/Button';
@@ -18,6 +18,7 @@ import { currentDecimals, minorToTyped, parseAmount } from '../../src/money';
 import { sheet, spacing } from '../../src/theme';
 import type { Account, Category, Frequency, Recurring } from '../../src/types';
 import { useData } from '../../src/useData';
+import { Text } from '../../src/components/Text';
 
 // /recurring/new adds a recurring item, /recurring/5 edits item 5.
 export default function RecurringScreen() {

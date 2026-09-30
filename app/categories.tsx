@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { ChevronRight } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Button } from '../src/components/Button';
 import { CategoryIcon } from '../src/components/CategoryIcon';
 import { Sheet } from '../src/components/Sheet';
@@ -12,6 +12,7 @@ import { formatMoney } from '../src/money';
 import { sheet, spacing } from '../src/theme';
 import type { CategoryKind } from '../src/types';
 import { useData } from '../src/useData';
+import { Text } from '../src/components/Text';
 
 // Every category with what it added up to this month. Tap one to edit it.
 export default function Categories() {

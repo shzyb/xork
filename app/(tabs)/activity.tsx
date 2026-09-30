@@ -1,6 +1,6 @@
 import { ChevronDown, Search, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
 import { PickerSheet } from '../../src/components/PickerSheet';
@@ -14,6 +14,7 @@ import { formatMoney } from '../../src/money';
 import { fontSize, spacing, useColors } from '../../src/theme';
 import type { TransactionFilter } from '../../src/types';
 import { useData } from '../../src/useData';
+import { Text, TextInput } from '../../src/components/Text';
 
 const PAGE = 100;
 type FilterKey = 'type' | 'month' | 'category' | 'account';

@@ -1,10 +1,11 @@
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { FREQUENCY_LABEL, prettyDate } from '../dates';
 import { formatMoney } from '../money';
 import { fontSize, useColors } from '../theme';
 import type { RecurringRow as RecurringItem } from '../types';
 import { CategoryIcon } from './CategoryIcon';
+import { Text } from './Text';
 
 // One recurring item. With `date` it is one upcoming occurrence; without, it shows the item's next date or "Paused".
 export function RecurringRow({ item, date }: { item: RecurringItem; date?: string }) {

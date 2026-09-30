@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { ArrowDown, Plus, Repeat } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/Button';
 import { RecurringRow } from '../../src/components/RecurringRow';
@@ -11,6 +11,7 @@ import { formatMoney, monthlyMinor } from '../../src/money';
 import { fontSize, spacing, useColors } from '../../src/theme';
 import type { RecurringRow as RecurringItem } from '../../src/types';
 import { useData } from '../../src/useData';
+import { Text } from '../../src/components/Text';
 
 type Show = 'all' | 'subscriptions' | 'income';
 const SHOW_LABELS: Record<Show, string> = { all: 'All', subscriptions: 'Subscriptions', income: 'Income' };

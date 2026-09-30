@@ -1,8 +1,9 @@
 import { Plus } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { sheet } from '../theme';
 import type { Category } from '../types';
 import { CategoryIcon } from './CategoryIcon';
+import { Text } from './Text';
 
 // Four-column grid of round category icons for the black sheet.
 export function CategoryGrid({ categories, selectedId, onSelect, onNew }: {

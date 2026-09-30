@@ -1,11 +1,12 @@
 import { useRouter } from 'expo-router';
 import { ArrowLeftRight } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { prettyDate } from '../dates';
 import { formatMoney } from '../money';
 import { fontSize, useColors } from '../theme';
 import type { TransactionRow } from '../types';
 import { CategoryIcon } from './CategoryIcon';
+import { Text } from './Text';
 
 // Transactions grouped under a date heading. Tapping a row opens its detail sheet.
 export function TransactionList({ rows }: { rows: TransactionRow[] }) {

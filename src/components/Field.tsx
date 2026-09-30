@@ -1,5 +1,6 @@
-import { StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
+import { StyleSheet, TextInputProps, View } from 'react-native';
 import { sheet } from '../theme';
+import { Text, TextInput } from './Text';
 
 // A label above a text input, for the black sheet.
 export function Field({ label, value, onChangeText, placeholder, maxLength, keyboardType }: {

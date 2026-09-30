@@ -1,9 +1,10 @@
 import { useRouter } from 'expo-router';
 import { ArrowDown, ArrowLeftRight, ArrowUp, Repeat } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Sheet } from '../src/components/Sheet';
 import { sheet } from '../src/theme';
+import { Text } from '../src/components/Text';
 
 // What the + button opens: a floating black tray to choose what to log. Each row replaces the tray with its form.
 export default function AddMenu() {

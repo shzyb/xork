@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/Button';
 import { CATEGORY_ICONS, CategoryIcon } from '../../src/components/CategoryIcon';
@@ -14,6 +14,7 @@ import { currentDecimals, minorToTyped, parseAmount } from '../../src/money';
 import { categoryColors, sheet, spacing } from '../../src/theme';
 import type { Category, CategoryKind } from '../../src/types';
 import { useData } from '../../src/useData';
+import { Text } from '../../src/components/Text';
 
 // /category/new?kind=income adds a category, /category/5 edits category 5.
 export default function CategoryScreen() {

@@ -1,5 +1,6 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { sheet } from '../theme';
+import { Text } from './Text';
 
 // A "From" / "To" row of account chips for the black sheet.
 export function AccountChips({ label, accounts, selectedId, onSelect }: {

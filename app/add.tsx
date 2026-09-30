@@ -2,7 +2,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ChevronLeft, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AccountChips } from '../src/components/AccountChips';
 import { Button } from '../src/components/Button';
@@ -15,6 +15,7 @@ import { currentDecimals, currentSymbol, formatMoney, formatTyped, minorToTyped,
 import { sheet, spacing } from '../src/theme';
 import type { Account, Category, TransactionRow, TransactionType } from '../src/types';
 import { useData } from '../src/useData';
+import { Text, TextInput } from '../src/components/Text';
 
 const TYPES: { key: TransactionType; label: string }[] = [
   { key: 'expense', label: 'Expense' },

@@ -1,9 +1,10 @@
 import { Check } from 'lucide-react-native';
 import type { ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { sheet } from '../theme';
 import { Sheet } from './Sheet';
 import { SheetHeader } from './SheetHeader';
+import { Text } from './Text';
 
 export type PickerOption<T> = { value: T; label: string; sub?: string; lead?: ReactNode };
 

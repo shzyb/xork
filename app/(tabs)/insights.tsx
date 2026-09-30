@@ -1,7 +1,7 @@
 import { ArrowDown, ArrowUp, Gauge, Repeat, TrendingDown, TrendingUp, TriangleAlert } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { BarChart, LineChart } from 'react-native-gifted-charts';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
@@ -13,6 +13,7 @@ import { compactMoney, formatMoney } from '../../src/money';
 import { fontSize, spacing, useColors } from '../../src/theme';
 import type { InsightsData } from '../../src/types';
 import { useData } from '../../src/useData';
+import { Text } from '../../src/components/Text';
 
 const NOTE_ICONS: Record<Note['icon'], LucideIcon> = {
   'trending-up': TrendingUp,
@@ -261,8 +262,8 @@ function RunningTotalChart({ data, month, prevMonth, elapsed, width }: {
         yAxisThickness={0}
         xAxisThickness={0}
         rulesColor={colors.line}
-        yAxisTextStyle={{ color: colors.ink3, fontSize: 11 }}
-        xAxisLabelTextStyle={{ color: colors.ink3, fontSize: 11 }}
+        yAxisTextStyle={{ color: colors.ink3, fontSize: 11, fontFamily: 'OpenRunde-Regular' }}
+        xAxisLabelTextStyle={{ color: colors.ink3, fontSize: 11, fontFamily: 'OpenRunde-Regular' }}
         yAxisLabelWidth={44}
         formatYLabel={(label) => compactMoney(Number(label) * 100)}
         disableScroll
@@ -351,7 +352,7 @@ function CashFlowChart({ monthly, selected, onSelect, width }: {
         spacing: gap,
         label: monthShort(m.month),
         labelWidth: group,
-        labelTextStyle: { color: on ? colors.ink : colors.ink3, fontSize: 11, textAlign: 'center' as const, marginLeft: -(group - barWidth * 2 - gap) / 2 },
+        labelTextStyle: { color: on ? colors.ink : colors.ink3, fontSize: 11, fontFamily: 'OpenRunde-Regular', textAlign: 'center' as const, marginLeft: -(group - barWidth * 2 - gap) / 2 },
         onPress: press,
       },
       { value: m.out_minor / 100, frontColor: colors.ink, opacity: on ? 1 : 0.35, spacing: between, onPress: press },
@@ -372,7 +373,7 @@ function CashFlowChart({ monthly, selected, onSelect, width }: {
         yAxisThickness={0}
         xAxisThickness={0}
         rulesColor={colors.line}
-        yAxisTextStyle={{ color: colors.ink3, fontSize: 11 }}
+        yAxisTextStyle={{ color: colors.ink3, fontSize: 11, fontFamily: 'OpenRunde-Regular' }}
         yAxisLabelWidth={44}
         formatYLabel={(label) => compactMoney(Number(label) * 100)}
         disableScroll

@@ -1,7 +1,9 @@
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
+import { FONT_FILES } from '../src/components/Text';
 import { isOnboarded, logDueRecurring, openDb } from '../src/db';
 import { sheet } from '../src/theme';
 import { useData } from '../src/useData';
@@ -14,6 +16,7 @@ const TRAY_OPTIONS = { presentation: 'transparentModal', animation: 'fade', cont
 
 export default function RootLayout() {
   const [dbReady, setDbReady] = useState(false);
+  const [fontsLoaded, fontError] = useFonts(FONT_FILES);
 
   // Due recurring items are logged before the splash hides, so Home opens already up to date.
   useEffect(() => {
@@ -28,7 +31,8 @@ export default function RootLayout() {
     return () => subscription.remove();
   }, [dbReady]);
 
-  return dbReady ? <Routes /> : null;
+  // The splash stays up until the data and the font are ready. If the font fails to load we carry on with the system font.
+  return dbReady && (fontsLoaded || fontError) ? <Routes /> : null;
 }
 
 function Routes() {

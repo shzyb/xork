@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowLeftRight, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Button } from '../../src/components/Button';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
 import { Sheet } from '../../src/components/Sheet';
@@ -11,6 +11,7 @@ import { FREQUENCY_LABEL, fullDate } from '../../src/dates';
 import { formatMoney } from '../../src/money';
 import { sheet, spacing } from '../../src/theme';
 import { useData } from '../../src/useData';
+import { Text } from '../../src/components/Text';
 
 export default function TransactionDetail() {
   const router = useRouter();

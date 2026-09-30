@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { ArrowDown, ArrowUp, Plus, Settings } from 'lucide-react-native';
 import { useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RecurringRow } from '../../src/components/RecurringRow';
 import { TransactionList } from '../../src/components/TransactionList';
@@ -10,6 +10,7 @@ import { currentMonth, monthLabel, today, upcomingOccurrences } from '../../src/
 import { formatMoney } from '../../src/money';
 import { fontSize, spacing, tabBarHeight, useColors } from '../../src/theme';
 import { useData } from '../../src/useData';
+import { Text } from '../../src/components/Text';
 
 type Tab = 'recent' | 'accounts' | 'upcoming';
 const TABS: Tab[] = ['recent', 'accounts', 'upcoming'];
