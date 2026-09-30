@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, ChevronLeft, ChevronRight, Gauge, Repeat, TrendingDown, TrendingUp, TriangleAlert } from 'lucide-react-native';
+import { ArrowDown, ArrowUp, Gauge, Repeat, TrendingDown, TrendingUp, TriangleAlert } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -6,7 +6,7 @@ import { BarChart, LineChart } from 'react-native-gifted-charts';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
 import { getInsights } from '../../src/db';
-import { currentMonth, monthLabel, monthName, monthShort, shiftMonth, today } from '../../src/dates';
+import { currentMonth, lastMonths, monthName, monthShort, shiftMonth, today } from '../../src/dates';
 import { budgetStatus, buildNotes, chartDays, delta, keptPercent, runningTotal, spendComparison } from '../../src/insights';
 import type { Note } from '../../src/insights';
 import { compactMoney, formatMoney } from '../../src/money';
@@ -38,27 +38,6 @@ export default function Insights() {
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={[styles.title, { color: colors.ink }]}>Insights</Text>
-
-        <View style={styles.stepper}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Previous month"
-            onPress={() => setMonth(shiftMonth(month, -1))}
-            style={[styles.arrow, { backgroundColor: colors.fill }]}
-          >
-            <ChevronLeft color={colors.ink} size={18} />
-          </Pressable>
-          <Text style={[styles.monthText, { color: colors.ink }]}>{monthLabel(month)}</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Next month"
-            disabled={isCurrent}
-            onPress={() => setMonth(shiftMonth(month, 1))}
-            style={[styles.arrow, { backgroundColor: colors.fill, opacity: isCurrent ? 0.3 : 1 }]}
-          >
-            <ChevronRight color={colors.ink} size={18} />
-          </Pressable>
-        </View>
 
         {data && (
           <Body
@@ -112,6 +91,7 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, showAl
       </Text>
 
       <RunningTotalChart data={data} month={month} prevMonth={prevMonth} elapsed={elapsed} width={contentWidth} />
+      <MonthChips selected={month} earliest={data.earliestMonth} onSelect={onSelectMonth} />
 
       <View style={styles.duo}>
         <View style={styles.duoCell}>
@@ -313,6 +293,38 @@ function RunningTotalChart({ data, month, prevMonth, elapsed, width }: {
   );
 }
 
+// The last six months as chips under the chart. Months before your first transaction are disabled.
+function MonthChips({ selected, earliest, onSelect }: {
+  selected: string;
+  earliest: string | null;
+  onSelect: (month: string) => void;
+}) {
+  const colors = useColors();
+  return (
+    <View style={styles.chips}>
+      {lastMonths(currentMonth(), 6).map((m) => {
+        const on = m === selected;
+        const disabled = earliest === null ? m !== currentMonth() : m < earliest;
+        return (
+          <Pressable
+            key={m}
+            accessibilityRole="button"
+            accessibilityLabel={monthName(m)}
+            accessibilityState={{ selected: on, disabled }}
+            disabled={disabled}
+            onPress={() => onSelect(m)}
+            style={[styles.chipHit, disabled && { opacity: 0.35 }]}
+          >
+            <View style={[styles.chip, on && { backgroundColor: colors.fill }]}>
+              <Text style={[styles.chipText, { color: on ? colors.ink : colors.ink3 }]}>{monthShort(m)}</Text>
+            </View>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+}
+
 // Money in (green) and out for the last six months. Tap a month to open it.
 function CashFlowChart({ monthly, selected, onSelect, width }: {
   monthly: InsightsData['monthly'];
@@ -392,9 +404,10 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingHorizontal: spacing.xl, paddingBottom: 140 },
   title: { fontSize: fontSize.screen, fontWeight: '800', marginTop: spacing.md },
-  stepper: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.sm },
-  arrow: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  monthText: { fontSize: 17, fontWeight: '700' },
+  chips: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.sm },
+  chipHit: { flex: 1, height: 44, alignItems: 'center', justifyContent: 'center' },
+  chip: { minWidth: 48, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  chipText: { fontSize: 14, fontWeight: '600' },
   big: { fontSize: fontSize.big, fontWeight: '800', letterSpacing: -1.5 },
   chartBox: { marginTop: spacing.lg },
   legend: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 14, marginTop: spacing.sm },

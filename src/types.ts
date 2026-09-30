@@ -95,4 +95,5 @@ export type InsightsData = {
   prevDaily: DaySpend[];
   recurringOut: number;
   monthly: MonthTotals[];
+  earliestMonth: string | null; // the month of the oldest transaction, for disabling earlier month chips
 };

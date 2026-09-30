@@ -442,5 +442,9 @@ export async function getInsights(month: string): Promise<InsightsData> {
     start, end,
   );
   const monthly = await getMonthlyTotals(currentMonth());
-  return { summary, prevSummary, spending, prevSpending, income, daily, prevDaily, recurringOut: recurring?.total ?? 0, monthly };
+  const earliest = await db!.getFirstAsync<{ month: string | null }>('SELECT MIN(substr(date, 1, 7)) AS month FROM transactions');
+  return {
+    summary, prevSummary, spending, prevSpending, income, daily, prevDaily,
+    recurringOut: recurring?.total ?? 0, monthly, earliestMonth: earliest?.month ?? null,
+  };
 }
