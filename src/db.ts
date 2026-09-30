@@ -125,7 +125,12 @@ const INCOME_CATEGORIES = [
 // Migrations only add things. Each step runs once, guarded by PRAGMA user_version.
 async function migrate(handle: Db) {
   const row = await handle.getFirstAsync<{ user_version: number }>('PRAGMA user_version');
-  if ((row?.user_version ?? 0) >= 1) return;
+  const version = row?.user_version ?? 0;
+  if (version < 1) await migrateToV1(handle);
+  if (version < 2) await migrateToV2(handle);
+}
+
+async function migrateToV1(handle: Db) {
   await handle.withTransactionAsync(async () => {
     await handle.execAsync(SCHEMA);
     const insertCategory = 'INSERT INTO categories (name, kind, icon, color, is_default) VALUES (?, ?, ?, ?, ?)';
@@ -140,6 +145,16 @@ async function migrate(handle: Db) {
       'Cash', 0, '#FF9F0A', new Date().toISOString(),
     );
     await handle.execAsync('PRAGMA user_version = 1');
+  });
+}
+
+// Databases created before Lucide icons hold emoji in categories.icon. Set the icon by name.
+async function migrateToV2(handle: Db) {
+  await handle.withTransactionAsync(async () => {
+    const update = 'UPDATE categories SET icon = ? WHERE name = ? AND kind = ?';
+    for (const [name, icon] of EXPENSE_CATEGORIES) await handle.runAsync(update, icon, name, 'expense');
+    for (const [name, icon] of INCOME_CATEGORIES) await handle.runAsync(update, icon, name, 'income');
+    await handle.execAsync('PRAGMA user_version = 2');
   });
 }
 

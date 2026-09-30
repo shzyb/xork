@@ -5,7 +5,7 @@ function fakeDb(overrides: Partial<Db> = {}): Db {
   return {
     execAsync: jest.fn().mockResolvedValue(undefined),
     runAsync: jest.fn().mockResolvedValue({}),
-    getFirstAsync: jest.fn().mockResolvedValue({ user_version: 1 }),
+    getFirstAsync: jest.fn().mockResolvedValue({ user_version: 2 }),
     getAllAsync: jest.fn().mockResolvedValue([]),
     withTransactionAsync: jest.fn(async (task: () => Promise<void>) => task()),
     ...overrides,
@@ -109,18 +109,29 @@ describe('addTransaction', () => {
 });
 
 describe('migration', () => {
-  it('creates schema and seeds once, then sets user_version', async () => {
+  it('a new database gets the schema, the seed and the icon step', async () => {
     const db = fakeDb({ getFirstAsync: jest.fn().mockResolvedValue({ user_version: 0 }) });
     await openDb(db);
 
-    expect(db.withTransactionAsync).toHaveBeenCalledTimes(1);
+    expect(db.withTransactionAsync).toHaveBeenCalledTimes(2);
     expect(db.execAsync).toHaveBeenCalledWith('PRAGMA user_version = 1');
-    // 24 expense + 8 income categories + 1 Cash account
-    expect((db.runAsync as jest.Mock).mock.calls.length).toBe(33);
+    expect(db.execAsync).toHaveBeenCalledWith('PRAGMA user_version = 2');
+    // 32 categories + 1 Cash account, then 32 icon updates
+    expect((db.runAsync as jest.Mock).mock.calls.length).toBe(65);
+  });
+
+  it('a version 1 database only gets the icon update, and keeps its data', async () => {
+    const db = fakeDb({ getFirstAsync: jest.fn().mockResolvedValue({ user_version: 1 }) });
+    await openDb(db);
+
+    expect(db.withTransactionAsync).toHaveBeenCalledTimes(1);
+    expect(db.execAsync).not.toHaveBeenCalledWith(expect.stringContaining('CREATE TABLE'));
+    expect(db.runAsync).toHaveBeenCalledWith(expect.stringContaining('UPDATE categories SET icon'), 'shopping-cart', 'Groceries', 'expense');
+    expect(db.execAsync).toHaveBeenCalledWith('PRAGMA user_version = 2');
   });
 
   it('does nothing when already migrated', async () => {
-    const db = fakeDb();
+    const db = fakeDb({ getFirstAsync: jest.fn().mockResolvedValue({ user_version: 2 }) });
     await openDb(db);
     expect(db.withTransactionAsync).not.toHaveBeenCalled();
   });
