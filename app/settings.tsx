@@ -2,13 +2,12 @@ import * as DocumentPicker from 'expo-document-picker';
 import { File, Paths } from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
-import { StatusBar } from 'expo-status-bar';
 import { ChevronRight, Download, Globe, Landmark, Tag, Trash2, Upload } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { parseBackup } from '../src/backup';
+import { Sheet } from '../src/components/Sheet';
 import { SheetHeader } from '../src/components/SheetHeader';
 import { deleteAllData, exportAll, getSetting, replaceAllData } from '../src/db';
 import { today } from '../src/dates';
@@ -93,10 +92,9 @@ export default function Settings() {
   }
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <StatusBar style="light" />
+    <Sheet onClose={() => router.back()}>
       <SheetHeader title="Settings" onClose={() => router.back()} />
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <ActionRow
           Icon={Landmark}
           title="Accounts"
@@ -144,7 +142,7 @@ export default function Settings() {
           Your data lives only on this phone. Nothing is sent anywhere. Export a backup to keep it safe.
         </Text>
       </ScrollView>
-    </SafeAreaView>
+    </Sheet>
   );
 }
 
@@ -177,7 +175,7 @@ function ActionRow({ Icon, title, subtitle, onPress, end, disabled, danger }: {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: sheet.bg, paddingHorizontal: spacing.xl },
+  scroll: { flexShrink: 1 },
   content: { paddingBottom: spacing.xxl },
   message: { color: sheet.ink, fontSize: 14.5, fontWeight: '600', marginTop: 10 },
   note: { color: sheet.ink2, fontSize: 13.5, lineHeight: 20, marginTop: 16 },

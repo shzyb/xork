@@ -1,9 +1,8 @@
 import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { ChevronRight } from 'lucide-react-native';
 import { ScrollView, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../src/components/Button';
+import { Sheet } from '../src/components/Sheet';
 import { SheetHeader } from '../src/components/SheetHeader';
 import { getAccountsWithBalance } from '../src/db';
 import { formatMoney } from '../src/money';
@@ -16,10 +15,9 @@ export default function Accounts() {
   const total = accounts?.reduce((sum, a) => sum + a.balance_minor, 0) ?? 0;
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <StatusBar style="light" />
+    <Sheet onClose={() => router.back()}>
       <SheetHeader title="Accounts" onClose={() => router.back()} />
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         {accounts && (
           <>
             <Text style={styles.intro}>
@@ -51,12 +49,12 @@ export default function Accounts() {
           color={sheet.btnFg}
         />
       </View>
-    </SafeAreaView>
+    </Sheet>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: sheet.bg, paddingHorizontal: spacing.xl },
+  scroll: { flexShrink: 1 },
   content: { paddingBottom: spacing.lg },
   intro: { color: sheet.ink2, fontSize: 15, marginBottom: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64 },

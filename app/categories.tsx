@@ -1,11 +1,10 @@
 import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { ChevronRight } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../src/components/Button';
 import { CategoryIcon } from '../src/components/CategoryIcon';
+import { Sheet } from '../src/components/Sheet';
 import { SheetHeader } from '../src/components/SheetHeader';
 import { getCategories, getTotalsByCategory } from '../src/db';
 import { currentMonth } from '../src/dates';
@@ -26,8 +25,7 @@ export default function Categories() {
   });
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <StatusBar style="light" />
+    <Sheet onClose={() => router.back()}>
       <SheetHeader title="Categories" onClose={() => router.back()} />
       <View style={styles.segment}>
         {([['expense', 'Spending'], ['income', 'Income']] as const).map(([key, label]) => (
@@ -42,7 +40,7 @@ export default function Categories() {
           </Pressable>
         ))}
       </View>
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         {data?.categories.filter((c) => c.kind === kind).map((c) => (
           <Pressable
             key={c.id}
@@ -69,12 +67,12 @@ export default function Categories() {
           color={sheet.btnFg}
         />
       </View>
-    </SafeAreaView>
+    </Sheet>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: sheet.bg, paddingHorizontal: spacing.xl },
+  scroll: { flexShrink: 1 },
   segment: { flexDirection: 'row', backgroundColor: sheet.card, borderRadius: 22, padding: 3, gap: 3, marginBottom: 8 },
   segmentItem: { flex: 1, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   segmentText: { color: sheet.ink2, fontSize: 14.5, fontWeight: '600' },

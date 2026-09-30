@@ -1,10 +1,9 @@
 import { useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { Check, TriangleAlert } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../src/components/Button';
+import { Sheet } from '../src/components/Sheet';
 import { SheetHeader } from '../src/components/SheetHeader';
 import { getSetting, setCurrency } from '../src/db';
 import { CURRENCIES, currencyOf } from '../src/money';
@@ -34,10 +33,9 @@ function CurrencyPicker({ currentCode }: { currentCode: string }) {
   }
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <StatusBar style="light" />
+    <Sheet onClose={() => router.back()}>
       <SheetHeader title="Currency" onClose={() => router.back()} />
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <Text style={styles.intro}>Everything in the app is shown in one currency.</Text>
         {CURRENCIES.map((c) => (
           <Pressable
@@ -75,12 +73,12 @@ function CurrencyPicker({ currentCode }: { currentCode: string }) {
           color={changed ? sheet.btnFg : sheet.ink3}
         />
       </View>
-    </SafeAreaView>
+    </Sheet>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: sheet.bg, paddingHorizontal: spacing.xl },
+  scroll: { flexShrink: 1 },
   content: { paddingBottom: spacing.lg },
   intro: { color: sheet.ink2, fontSize: 15, marginBottom: 6 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64 },
