@@ -2,10 +2,6 @@ import { useNavigation } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { subscribe } from './db';
 
-// Loads run one after another, never in parallel: after a write every open screen reloads at once,
-// and the Android SQLite module can fail (NullPointerException in prepareAsync) when many queries start together.
-let queue: Promise<void> = Promise.resolve();
-
 // Runs `load` on mount, after every write anywhere in the app, when the screen regains focus,
 // and whenever `deps` change (e.g. a filter). Keeps the old result until the new one arrives.
 // Returns undefined until the first result arrives, so screens render nothing meanwhile.
@@ -18,9 +14,7 @@ export function useData<T>(load: () => Promise<T>, deps: unknown[] = []): T | un
   useEffect(() => {
     let alive = true;
     const refresh = () => {
-      const run = queue.then(() => loadRef.current());
-      queue = run.then(() => undefined, () => undefined);
-      run.then((result) => {
+      loadRef.current().then((result) => {
         if (alive) setData(result);
       });
     };
