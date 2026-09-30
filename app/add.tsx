@@ -24,26 +24,28 @@ const TYPES: { key: TransactionType; label: string }[] = [
 const TITLES = { expense: 'Expense', income: 'Income', transfer: 'Move money' };
 const SAVE_LABELS = { expense: 'Add expense', income: 'Add income', transfer: 'Move money' };
 
-// With ?id=5 the form edits that transaction; without it, it adds a new one.
+// With ?id=5 the form edits that transaction; without it, it adds a new one, starting as ?type= (default expense).
 export default function Add() {
-  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { id, type } = useLocalSearchParams<{ id?: string; type?: string }>();
   const accounts = useData(getAccountsWithBalance);
   const categories = useData(getCategories);
   const editing = useData(() => (id ? getTransaction(Number(id)) : Promise.resolve(null)), [id]);
 
   if (!accounts || !categories || editing === undefined) return null;
-  return <AddForm accounts={accounts} categories={categories} editing={editing} />;
+  const startType = type === 'income' || type === 'transfer' ? type : 'expense';
+  return <AddForm accounts={accounts} categories={categories} editing={editing} startType={startType} />;
 }
 
-function AddForm({ accounts, categories, editing }: {
+function AddForm({ accounts, categories, editing, startType }: {
   accounts: (Account & { balance_minor: number })[];
   categories: Category[];
   editing: TransactionRow | null;
+  startType: TransactionType;
 }) {
   const router = useRouter();
 
   const [step, setStep] = useState<1 | 2>(1);
-  const [type, setType] = useState<TransactionType>(editing?.type ?? 'expense');
+  const [type, setType] = useState<TransactionType>(editing?.type ?? startType);
   const [amount, setAmount] = useState(editing ? minorToTyped(editing.amount_minor) : '');
   const [fromSel, setFromSel] = useState<number | null>(editing?.account_id ?? null);
   const [toSel, setToSel] = useState<number | null>(editing?.to_account_id ?? null);

@@ -43,7 +43,7 @@ export default function TabsLayout() {
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Add"
-        onPress={() => router.push('/add')}
+        onPress={() => router.push('/add-menu')}
         style={[styles.fab, { backgroundColor: colors.btnBg, bottom: BAR_HEIGHT + insets.bottom + 16 }]}
       >
         <Plus color={colors.btnFg} size={28} />
