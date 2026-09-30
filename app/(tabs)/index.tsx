@@ -2,13 +2,13 @@ import { useRouter } from 'expo-router';
 import { ArrowDown, ArrowUp, Plus, Settings } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { RecurringRow } from '../../src/components/RecurringRow';
 import { TransactionList } from '../../src/components/TransactionList';
 import { getAccountsWithBalance, getMonthSummary, getRecurring, getTransactions, NO_FILTER } from '../../src/db';
 import { currentMonth, monthLabel, today, upcomingOccurrences } from '../../src/dates';
 import { formatMoney } from '../../src/money';
-import { fontSize, spacing, useColors } from '../../src/theme';
+import { fontSize, spacing, tabBarHeight, useColors } from '../../src/theme';
 import { useData } from '../../src/useData';
 
 type Tab = 'recent' | 'accounts' | 'upcoming';
@@ -18,9 +18,11 @@ const TAB_LABELS: Record<Tab, string> = { recent: 'Recent', accounts: 'Accounts'
 export default function Home() {
   const colors = useColors();
   const router = useRouter();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const pager = useRef<ScrollView>(null);
   const [tab, setTab] = useState<Tab>('recent');
+  const [pagerTop, setPagerTop] = useState(0);
   const [heights, setHeights] = useState<Record<Tab, number>>({ recent: 0, accounts: 0, upcoming: 0 });
   const accounts = useData(getAccountsWithBalance);
   const month = useData(() => getMonthSummary(currentMonth()));
@@ -30,6 +32,8 @@ export default function Home() {
 
   const total = accounts?.reduce((sum, a) => sum + a.balance_minor, 0);
   const pageWidth = width - spacing.xl * 2;
+  // The pager always fills the screen below the tab labels, so a swipe works even when the list is short.
+  const minPagerHeight = Math.max(0, height - insets.top - pagerTop - tabBarHeight - insets.bottom);
 
   function goTo(key: Tab) {
     setTab(key);
@@ -82,7 +86,8 @@ export default function Home() {
           showsHorizontalScrollIndicator={false}
           onMomentumScrollEnd={(e) => setTab(TABS[Math.round(e.nativeEvent.contentOffset.x / pageWidth)] ?? tab)}
           contentContainerStyle={styles.pages}
-          style={heights[tab] > 0 ? { height: heights[tab] } : undefined}
+          onLayout={(e) => setPagerTop(e.nativeEvent.layout.y)}
+          style={[heights[tab] > 0 && { height: heights[tab] }, { minHeight: minPagerHeight }]}
         >
           {TABS.map((key) => (
             <View

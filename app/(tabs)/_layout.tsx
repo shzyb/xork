@@ -3,9 +3,7 @@ import { ChartNoAxesColumn, Clock, Plus, Repeat, Wallet } from 'lucide-react-nat
 import type { LucideIcon } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useColors } from '../../src/theme';
-
-const BAR_HEIGHT = 56;
+import { tabBarHeight, useColors } from '../../src/theme';
 
 function TabIcon({ Icon, focused }: { Icon: LucideIcon; focused: boolean }) {
   const colors = useColors();
@@ -30,7 +28,7 @@ export default function TabsLayout() {
           tabBarStyle: {
             backgroundColor: colors.bg,
             borderTopColor: colors.line,
-            height: BAR_HEIGHT + insets.bottom,
+            height: tabBarHeight + insets.bottom,
             paddingBottom: insets.bottom,
           },
         }}
@@ -44,7 +42,7 @@ export default function TabsLayout() {
         accessibilityRole="button"
         accessibilityLabel="Add"
         onPress={() => router.push('/add-menu')}
-        style={[styles.fab, { backgroundColor: colors.btnBg, bottom: BAR_HEIGHT + insets.bottom + 16 }]}
+        style={[styles.fab, { backgroundColor: colors.btnBg, bottom: tabBarHeight + insets.bottom + 16 }]}
       >
         <Plus color={colors.btnFg} size={28} />
       </Pressable>

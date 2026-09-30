@@ -34,6 +34,9 @@ export function useColors() {
   return useColorScheme() === 'dark' ? dark : light;
 }
 
+// Height of the bottom tab bar, without the phone's bottom inset.
+export const tabBarHeight = 56;
+
 export const spacing = { xs: 4, sm: 8, md: 12, lg: 16, xl: 20, xxl: 32 };
 
 export const fontSize = { small: 13, body: 16, title: 22, screen: 32, big: 52 };
