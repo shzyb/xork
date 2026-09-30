@@ -44,7 +44,7 @@ export default function Home() {
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.topbar}>
-          <Text style={[styles.brand, { color: colors.ink }]}>Hisaab</Text>
+          <Text style={[styles.brand, { color: colors.ink }]}>Home</Text>
           <Pressable accessibilityRole="button" accessibilityLabel="Settings" onPress={() => router.push('/settings')} style={styles.iconButton}>
             <Settings color={colors.ink} size={22} />
           </Pressable>
