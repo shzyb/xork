@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/Button';
 import { RecurringRow } from '../../src/components/RecurringRow';
+import { SwipePages } from '../../src/components/SwipePages';
 import { getRecurring } from '../../src/db';
 import { prettyDate, today, upcomingOccurrences } from '../../src/dates';
 import { formatMoney, monthlyMinor } from '../../src/money';
@@ -14,6 +15,7 @@ import { useData } from '../../src/useData';
 import { Text } from '../../src/components/Text';
 
 type Show = 'all' | 'subscriptions' | 'income';
+const SHOWS: Show[] = ['all', 'subscriptions', 'income'];
 const SHOW_LABELS: Record<Show, string> = { all: 'All', subscriptions: 'Subscriptions', income: 'Income' };
 const isSubscription = (r: RecurringItem) => r.type === 'expense' && r.category_name === 'Subscriptions';
 
@@ -28,9 +30,6 @@ export default function Recurring() {
   const monthly = (type: 'expense' | 'income') =>
     active.filter((r) => r.type === type).reduce((sum, r) => sum + monthlyMinor(r.amount_minor, r.freq), 0);
   const subscriptionsPerYear = active.filter(isSubscription).reduce((sum, r) => sum + monthlyMinor(r.amount_minor, r.freq), 0) * 12;
-  const keep = (r: RecurringItem) => show === 'all' || (show === 'income' ? r.type === 'income' : isSubscription(r));
-  const shown = items?.filter(keep) ?? [];
-  const upcoming = items ? upcomingOccurrences(shown, today(), 30) : [];
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
@@ -58,46 +57,60 @@ export default function Recurring() {
             </View>
 
             <View style={[styles.tabs, { borderBottomColor: colors.line }]}>
-              {(Object.keys(SHOW_LABELS) as Show[]).map((key) => (
+              {SHOWS.map((key) => (
                 <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected: show === key }} onPress={() => setShow(key)}>
                   <Text style={[styles.tab, { color: show === key ? colors.ink : colors.ink3 }]}>{SHOW_LABELS[key]}</Text>
                 </Pressable>
               ))}
             </View>
 
-            <Text style={[styles.section, { color: colors.ink }]}>Next 30 days</Text>
-            {upcoming.length === 0 ? (
-              <Text style={{ color: colors.ink2, paddingVertical: spacing.md }}>Nothing scheduled in the next 30 days.</Text>
-            ) : (
-              upcoming.map(({ item, date }, i) => (
-                <View key={`${item.id}-${date}`}>
-                  {(i === 0 || upcoming[i - 1].date !== date) && (
-                    <Text style={[styles.dateHead, { color: colors.ink2 }]}>{prettyDate(date)}</Text>
-                  )}
-                  <RecurringRow item={item} date={date} />
-                </View>
-              ))
-            )}
+            <SwipePages
+              keys={SHOWS}
+              active={show}
+              onChange={setShow}
+              renderPage={(key) => {
+                const shown = items.filter((r) => key === 'all' || (key === 'income' ? r.type === 'income' : isSubscription(r)));
+                const upcoming = upcomingOccurrences(shown, today(), 30);
+                return (
+                  <>
+                    <Text style={[styles.section, { color: colors.ink }]}>Next 30 days</Text>
+                    {upcoming.length === 0 ? (
+                      <Text style={{ color: colors.ink2, paddingVertical: spacing.md }}>Nothing scheduled in the next 30 days.</Text>
+                    ) : (
+                      upcoming.map(({ item, date }, i) => (
+                        <View key={`${item.id}-${date}`}>
+                          {(i === 0 || upcoming[i - 1].date !== date) && (
+                            <Text style={[styles.dateHead, { color: colors.ink2 }]}>{prettyDate(date)}</Text>
+                          )}
+                          <RecurringRow item={item} date={date} />
+                        </View>
+                      ))
+                    )}
 
-            <Text style={[styles.section, { color: colors.ink }]}>
-              Everything scheduled <Text style={{ color: colors.ink3 }}>· {shown.length}</Text>
-            </Text>
-            {items.length === 0 ? (
-              <View style={styles.empty}>
-                <Text style={[styles.emptyTitle, { color: colors.ink }]}>Nothing scheduled yet</Text>
-                <Text style={{ color: colors.ink2, textAlign: 'center' }}>
-                  Add rent, bills, subscriptions or your salary so you can see what's coming before it lands.
-                </Text>
-              </View>
-            ) : shown.length === 0 ? (
-              <Text style={{ color: colors.ink2, paddingVertical: spacing.md }}>Nothing here yet.</Text>
-            ) : (
-              shown.map((item) => <RecurringRow key={item.id} item={item} />)
-            )}
+                    <Text style={[styles.section, { color: colors.ink }]}>
+                      Everything scheduled <Text style={{ color: colors.ink3 }}>· {shown.length}</Text>
+                    </Text>
+                    {items.length === 0 ? (
+                      <View style={styles.empty}>
+                        <Text style={[styles.emptyTitle, { color: colors.ink }]}>Nothing scheduled yet</Text>
+                        <Text style={{ color: colors.ink2, textAlign: 'center' }}>
+                          Add rent, bills, subscriptions or your salary so you can see what's coming before it lands.
+                        </Text>
+                      </View>
+                    ) : shown.length === 0 ? (
+                      <Text style={{ color: colors.ink2, paddingVertical: spacing.md }}>Nothing here yet.</Text>
+                    ) : (
+                      shown.map((item) => <RecurringRow key={item.id} item={item} />)
+                    )}
 
-            <View style={styles.footer}>
-              <Button title="Add a recurring item" onPress={openNew} background={colors.btnBg} color={colors.btnFg} />
-            </View>
+                    <View style={styles.footer}>
+                      <Button title="Add a recurring item" onPress={openNew} background={colors.btnBg} color={colors.btnFg} />
+                    </View>
+                  </>
+                );
+              }}
+            />
+
           </>
         )}
       </ScrollView>
