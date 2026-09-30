@@ -45,7 +45,7 @@ function Routes() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
           name="add-menu"
-          options={{ presentation: 'transparentModal', animation: 'slide_from_bottom', contentStyle: { backgroundColor: 'rgba(0,0,0,0.32)' } }}
+          options={{ presentation: 'transparentModal', animation: 'fade', contentStyle: { backgroundColor: 'rgba(0,0,0,0.32)' } }}
         />
         {['add', 'transaction/[id]', 'account/[id]', 'category/[id]', 'recurring/[id]', 'settings'].map((name) => (
           <Stack.Screen key={name} name={name} options={{ presentation: 'modal', contentStyle: { backgroundColor: sheet.bg } }} />
