@@ -1,5 +1,5 @@
 import { Tabs, useRouter } from 'expo-router';
-import { ChartPie, Clock, House, Plus, Repeat } from 'lucide-react-native';
+import { ChartPie, Clock, Plus, Repeat } from 'lucide-react-native';
 import type { ComponentProps, ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,18 +12,18 @@ type Colors = { focused: boolean; ink: string; bg: string; grey: string };
 const SIZE = 25;
 const TAB_ORDER = ['index', 'activity', 'recurring', 'insights'];
 
-// Selected icons are filled black. Home and Clock are drawn here so their outer outline stays solid and only
-// the inner details (door, clock hands) are cut out in the background colour, so they don't look smaller.
-function FilledHome({ ink, bg }: { ink: string; bg: string }) {
+// Selected icons are filled black. Home, Clock and Pie are drawn here so their outer outline stays solid and only
+// inner details (the clock hands) are cut out in the background colour, so they don't look smaller.
+// The house without its door: solid when selected, an outline otherwise.
+function HomeIcon({ color, filled }: { color: string; filled: boolean }) {
   return (
     <Svg width={SIZE} height={SIZE} viewBox="0 0 24 24">
       <G strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
         <Path
           d="M3 10a2 2 0 0 1 .709-1.528l7-6a2 2 0 0 1 2.582 0l7 6A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
-          fill={ink}
-          stroke={ink}
+          fill={filled ? color : 'none'}
+          stroke={color}
         />
-        <Path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" fill={bg} stroke={bg} />
       </G>
     </Svg>
   );
@@ -57,7 +57,7 @@ function FilledPie({ ink }: { ink: string }) {
 }
 
 const TABS: Record<string, { label: string; icon: (c: Colors) => ReactNode }> = {
-  index: { label: 'Home', icon: (c) => (c.focused ? <FilledHome ink={c.ink} bg={c.bg} /> : <House size={SIZE} color={c.grey} strokeWidth={2} />) },
+  index: { label: 'Home', icon: (c) => <HomeIcon color={c.focused ? c.ink : c.grey} filled={c.focused} /> },
   activity: { label: 'Activity', icon: (c) => (c.focused ? <FilledClock ink={c.ink} bg={c.bg} /> : <Clock size={SIZE} color={c.grey} strokeWidth={2} />) },
   // Line icons have nothing to fill, so selected they turn black and bold.
   recurring: { label: 'Recurring', icon: (c) => <Repeat size={SIZE} color={c.focused ? c.ink : c.grey} strokeWidth={c.focused ? 2.8 : 2} /> },
