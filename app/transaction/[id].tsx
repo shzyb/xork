@@ -1,11 +1,11 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { ArrowLeftRight, Trash2, X } from 'lucide-react-native';
+import { ArrowLeftRight, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/Button';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
+import { Sheet } from '../../src/components/Sheet';
+import { SheetHeader } from '../../src/components/SheetHeader';
 import { deleteTransaction, getTransaction } from '../../src/db';
 import { FREQUENCY_LABEL, fullDate } from '../../src/dates';
 import { formatMoney } from '../../src/money';
@@ -56,14 +56,9 @@ export default function TransactionDetail() {
   }
 
   return (
-    <SafeAreaView style={styles.screen}>
-      <StatusBar style="light" />
-      <View style={styles.header}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={() => router.back()} style={styles.round}>
-          <X color={sheet.ink} size={18} />
-        </Pressable>
-      </View>
-      <ScrollView contentContainerStyle={styles.content}>
+    <Sheet onClose={() => router.back()}>
+      <SheetHeader title="" onClose={() => router.back()} />
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={styles.hero}>
           {transfer ? (
             <View style={styles.transferIcon}>
@@ -107,14 +102,12 @@ export default function TransactionDetail() {
           <Text style={styles.deleteText}>Delete</Text>
         </Pressable>
       </View>
-    </SafeAreaView>
+    </Sheet>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: sheet.bg, paddingHorizontal: spacing.xl },
-  header: { flexDirection: 'row', justifyContent: 'flex-end', paddingVertical: spacing.md },
-  round: { width: 44, height: 44, borderRadius: 22, backgroundColor: sheet.card, alignItems: 'center', justifyContent: 'center' },
+  scroll: { flexShrink: 1 },
   content: { paddingBottom: spacing.lg },
   hero: { alignItems: 'center', gap: 6, paddingBottom: 6 },
   transferIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: sheet.card2, alignItems: 'center', justifyContent: 'center' },

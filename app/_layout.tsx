@@ -9,7 +9,7 @@ import { useData } from '../src/useData';
 SplashScreen.preventAutoHideAsync();
 
 // Floating trays: a transparent modal that fades (the Sheet component slides the tray itself).
-const TRAYS = ['add-menu', 'settings', 'accounts', 'categories', 'currency'];
+const TRAYS = ['add-menu', 'settings', 'accounts', 'categories', 'currency', 'transaction/[id]'];
 const TRAY_OPTIONS = { presentation: 'transparentModal', animation: 'fade', contentStyle: { backgroundColor: 'rgba(0,0,0,0.32)' } } as const;
 
 export default function RootLayout() {
@@ -50,7 +50,7 @@ function Routes() {
         {TRAYS.map((name) => (
           <Stack.Screen key={name} name={name} options={TRAY_OPTIONS} />
         ))}
-        {['add', 'transaction/[id]', 'account/[id]', 'category/[id]', 'recurring/[id]'].map((name) => (
+        {['add', 'account/[id]', 'category/[id]', 'recurring/[id]'].map((name) => (
           <Stack.Screen key={name} name={name} options={{ presentation: 'modal', contentStyle: { backgroundColor: sheet.bg } }} />
         ))}
       </Stack.Protected>
