@@ -1,23 +1,58 @@
+import { useNavigation } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { sheet } from '../theme';
 
+const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
+const ENTER_MS = 260;
+const EXIT_MS = 200;
+
 // A floating black tray over a dimmed screen. It is only as tall as its content (scroll inside it if it is long).
-// The screen itself must be a transparent modal that fades, so the dim layer fades in place and only the tray slides up.
+// The tray slides up and the dim fades in; going back (close button, backdrop, Android back) plays that in reverse.
+// A route that uses it is a transparent modal with no router animation, so this component owns all the motion.
 export function Sheet({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
-  const slide = useRef(new Animated.Value(320)).current;
+  const navigation = useNavigation();
+  const slide = useRef(new Animated.Value(height)).current;
+  const dim = useRef(new Animated.Value(0)).current;
+  const hiddenAt = useRef(height);
+  const entered = useRef(false);
+  const closing = useRef(false);
 
-  useEffect(() => {
-    Animated.timing(slide, { toValue: 0, duration: 260, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-  }, [slide]);
+  function run(slideTo: number, dimTo: number, duration: number, done?: () => void) {
+    Animated.parallel([
+      Animated.timing(slide, { toValue: slideTo, duration, easing: EASE_OUT, useNativeDriver: true }),
+      Animated.timing(dim, { toValue: dimTo, duration, easing: EASE_OUT, useNativeDriver: true }),
+    ]).start(() => done?.());
+  }
+
+  // Hold back a "go back" until the exit has played, then let it through. Replace and push are left alone.
+  useEffect(
+    () =>
+      navigation.addListener('beforeRemove', (e) => {
+        const type = e.data.action.type;
+        if (closing.current || (type !== 'GO_BACK' && type !== 'POP')) return;
+        e.preventDefault();
+        closing.current = true;
+        run(hiddenAt.current, 0, EXIT_MS, () => navigation.dispatch(e.data.action));
+      }),
+    [navigation],
+  );
 
   return (
     <View style={styles.root}>
+      <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { backgroundColor: sheet.scrim, opacity: dim }]} />
       <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={StyleSheet.absoluteFill} />
       <Animated.View
+        onLayout={(e) => {
+          hiddenAt.current = e.nativeEvent.layout.height + 8 + insets.bottom;
+          if (entered.current) return;
+          entered.current = true;
+          slide.setValue(hiddenAt.current);
+          run(0, 1, ENTER_MS);
+        }}
         style={[
           styles.tray,
           { maxHeight: height - insets.top - 24, marginBottom: 8 + insets.bottom, transform: [{ translateY: slide }] },

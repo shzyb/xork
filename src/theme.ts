@@ -58,6 +58,7 @@ export const sheet = {
   neg: '#FF6B61',
   pos: '#4ADE80',
   warn: '#FFB340',
+  scrim: 'rgba(0,0,0,0.32)',
   btnBg: '#FFFFFF',
   btnFg: '#000000',
 };

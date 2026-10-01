@@ -48,7 +48,7 @@ export function PickerSheet<T extends string | number | null>({ title, options, 
 }
 
 const styles = StyleSheet.create({
-  dim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.32)' },
+  dim: { flex: 1 },
   list: { flexShrink: 1 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 60 },
   main: { flex: 1 },
