@@ -104,10 +104,16 @@ export default function Appearance() {
       </View>
       <View style={styles.toggleRow}>
         <View style={styles.main}>
-          <Text style={[styles.toggleTitle, { color: colors.ink }]}>Hide balances on open</Text>
-          <Text style={{ color: colors.ink2, fontSize: 13.5 }}>Amounts on Home stay hidden until you tap the eye</Text>
+          <Text style={[styles.toggleTitle, { color: colors.ink }]}>Keep balances private</Text>
+          <Text style={{ color: colors.ink2, fontSize: 13.5 }}>Amounts stay hidden each time you open the app, until you tap the eye on Home.</Text>
         </View>
-        <Switch value={hideOnOpen} onValueChange={toggleHide} trackColor={{ true: colors.pos, false: colors.fill2 }} />
+        <Switch
+          value={hideOnOpen}
+          onValueChange={toggleHide}
+          trackColor={{ true: colors.ink, false: colors.fill2 }}
+          thumbColor={hideOnOpen ? colors.bg : colors.ink3}
+          ios_backgroundColor={colors.fill2}
+        />
       </View>
       {error !== '' && <Text style={[styles.error, { color: colors.neg }]}>{error}</Text>}
     </SafeAreaView>
