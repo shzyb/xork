@@ -60,8 +60,8 @@ function FilledPie({ ink }: { ink: string }) {
 const TABS: Record<string, { label: string; icon: (c: Colors) => ReactNode }> = {
   index: { label: 'Home', icon: (c) => <HomeIcon color={c.focused ? c.ink : c.grey} filled={c.focused} /> },
   activity: { label: 'Activity', icon: (c) => (c.focused ? <FilledClock ink={c.ink} bg={c.bg} /> : <Clock size={SIZE} color={c.grey} strokeWidth={2} />) },
-  // Line icons have nothing to fill, so selected they turn black and bold.
-  recurring: { label: 'Recurring', icon: (c) => <Repeat size={SIZE} color={c.focused ? c.ink : c.grey} strokeWidth={c.focused ? 2.8 : 2} /> },
+  // A line icon has nothing to fill, so selected it only turns black; the stroke stays the same weight.
+  recurring: { label: 'Recurring', icon: (c) => <Repeat size={SIZE} color={c.focused ? c.ink : c.grey} strokeWidth={2} /> },
   insights: { label: 'Insights', icon: (c) => (c.focused ? <FilledPie ink={c.ink} /> : <ChartPie size={SIZE} color={c.grey} strokeWidth={2} />) },
 };
 
