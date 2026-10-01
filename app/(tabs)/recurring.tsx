@@ -43,8 +43,7 @@ export default function Recurring() {
 
         {items && items.length > 0 && (
           <>
-            <Text style={{ color: colors.ink2, fontSize: 14.5, marginTop: 2 }}>Logged automatically on the due date.</Text>
-            <Text style={{ color: colors.ink2, fontSize: fontSize.body, marginTop: spacing.lg }}>Going out in the next 30 days</Text>
+            <Text style={{ color: colors.ink2, fontSize: fontSize.body, marginTop: spacing.md }}>Going out in the next 30 days</Text>
             <Text style={[styles.big, { color: colors.ink }]}>{formatMoney(sumComing('expense'))}</Text>
             <View style={styles.chips}>
               <View style={[styles.chip, { backgroundColor: colors.fill }]}>
