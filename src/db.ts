@@ -318,6 +318,19 @@ export async function getAccount(id: number): Promise<Account | null> {
   return db!.getFirstAsync('SELECT * FROM accounts WHERE id = ?', id);
 }
 
+// For the account detail sheet: how many transactions touch the account, and what it spent and received in `month`.
+export async function getAccountStats(id: number, month: string): Promise<{ count: number; spent_minor: number; in_minor: number }> {
+  const { start, end } = monthRange(month);
+  const row = await db!.getFirstAsync<{ count: number; spent_minor: number; in_minor: number }>(
+    `SELECT COUNT(*) AS count,
+       COALESCE(SUM(CASE WHEN type = 'expense' AND date BETWEEN ? AND ? THEN amount_minor END), 0) AS spent_minor,
+       COALESCE(SUM(CASE WHEN type = 'income' AND date BETWEEN ? AND ? THEN amount_minor END), 0) AS in_minor
+     FROM transactions WHERE account_id = ? OR to_account_id = ?`,
+    start, end, start, end, id, id,
+  );
+  return row ?? { count: 0, spent_minor: 0, in_minor: 0 };
+}
+
 export async function addAccount(a: NewAccount) {
   await write((handle) =>
     handle.runAsync(

@@ -96,7 +96,7 @@ export default function Home() {
                   <Pressable
                     key={a.id}
                     accessibilityRole="button"
-                    onPress={() => router.push({ pathname: '/account/[id]', params: { id: String(a.id) } })}
+                    onPress={() => router.push({ pathname: '/account/detail/[id]', params: { id: String(a.id) } })}
                     style={styles.row}
                   >
                     <View style={[styles.initial, { backgroundColor: a.color }]}>
