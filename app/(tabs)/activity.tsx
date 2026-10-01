@@ -12,7 +12,6 @@ import {
   getAccountsWithBalance, getCategories, getTransactionMonths, getTransactions, getTransactionTotals, NO_FILTER,
 } from '../../src/db';
 import { monthLabel } from '../../src/dates';
-import { formatMoney } from '../../src/money';
 import { fabClearance, fontSize, spacing, tabBarHeight, useColors } from '../../src/theme';
 import type { TransactionFilter } from '../../src/types';
 import { useData } from '../../src/useData';
@@ -179,8 +178,7 @@ export default function Activity() {
           ) : (
             <>
               <Text style={[styles.summary, { color: colors.ink2 }]}>
-                {totals.count} transaction{totals.count === 1 ? '' : 's'}  ·  In{' '}
-                <Text style={{ color: colors.pos, fontWeight: '700' }}>{formatMoney(totals.in_minor)}</Text>
+                {totals.count} transaction{totals.count === 1 ? '' : 's'}
               </Text>
               <TransactionList rows={rows} />
               {totals.count > rows.length && (
