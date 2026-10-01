@@ -11,12 +11,11 @@ import { PressableScale } from '../src/components/PressableScale';
 import { parseBackup } from '../src/backup';
 import { Sheet } from '../src/components/Sheet';
 import { SheetHeader } from '../src/components/SheetHeader';
-import { deleteAllData, exportAll, getSetting, replaceAllData, setTheme } from '../src/db';
+import { deleteAllData, exportAll, getSetting, replaceAllData } from '../src/db';
 import { today } from '../src/dates';
 import { currencyOf } from '../src/money';
 import { sheet, spacing } from '../src/theme';
 import { THEME_OPTIONS } from '../src/types';
-import type { ThemeSetting } from '../src/types';
 import { useData } from '../src/useData';
 import { Text } from '../src/components/Text';
 
@@ -41,16 +40,7 @@ export default function Settings() {
   const [message, setMessage] = useState('');
 
   const current = currencyOf(currencyCode ?? 'USD');
-  const theme: ThemeSetting = themeSetting === 'light' || themeSetting === 'dark' ? themeSetting : 'system';
-
-  async function chooseTheme(next: ThemeSetting) {
-    setMessage('');
-    try {
-      await setTheme(next);
-    } catch {
-      setMessage('Could not save. Try again.');
-    }
-  }
+  const theme = THEME_OPTIONS.find((o) => o.value === themeSetting) ?? THEME_OPTIONS[0];
 
   async function exportBackup() {
     setMessage('');
@@ -132,28 +122,13 @@ export default function Settings() {
           onPress={() => router.push('/currency')}
           end={<ChevronRight color={sheet.ink3} size={20} />}
         />
-        <View style={styles.row}>
-          <View style={styles.actionIcon}>
-            <SunMoon color={sheet.ink} size={20} />
-          </View>
-          <View style={styles.main}>
-            <Text style={styles.rowTitle}>Appearance</Text>
-            <Text style={styles.rowSub}>Light, dark, or follow your phone</Text>
-          </View>
-        </View>
-        <View style={styles.segment}>
-          {THEME_OPTIONS.map((o) => (
-            <PressableScale
-              key={o.value}
-              accessibilityRole="button"
-              accessibilityState={{ selected: theme === o.value }}
-              onPress={() => chooseTheme(o.value)}
-              style={[styles.segmentItem, theme === o.value && { backgroundColor: sheet.card2 }]}
-            >
-              <Text style={[styles.segmentText, theme === o.value && { color: sheet.ink }]}>{o.label}</Text>
-            </PressableScale>
-          ))}
-        </View>
+        <ActionRow
+          Icon={SunMoon}
+          title="Appearance"
+          subtitle={theme.label}
+          onPress={() => router.push('/appearance')}
+          end={<ChevronRight color={sheet.ink3} size={20} />}
+        />
         <ActionRow
           Icon={Download}
           title={busy === 'export' ? 'Exporting…' : 'Export backup'}
@@ -221,8 +196,5 @@ const styles = StyleSheet.create({
   main: { flex: 1 },
   rowTitle: { color: sheet.ink, fontSize: 16.5, fontWeight: '600' },
   rowSub: { color: sheet.ink2, fontSize: 14 },
-  segment: { flexDirection: 'row', backgroundColor: sheet.card, borderRadius: 22, padding: 3, gap: 3, marginBottom: 6 },
-  segmentItem: { flex: 1, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
-  segmentText: { color: sheet.ink2, fontSize: 14.5, fontWeight: '600' },
   actionIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: sheet.card, alignItems: 'center', justifyContent: 'center' },
 });

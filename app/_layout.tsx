@@ -68,6 +68,7 @@ function Routes() {
         ))}
         <Stack.Screen name="accounts" />
         <Stack.Screen name="categories" />
+        <Stack.Screen name="appearance" />
         {['add', 'account/[id]', 'category/[id]', 'recurring/[id]'].map((name) => (
           <Stack.Screen key={name} name={name} options={{ presentation: 'modal', contentStyle: { backgroundColor: sheet.bg } }} />
         ))}
