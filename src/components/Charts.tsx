@@ -1,13 +1,14 @@
 import { StyleSheet, View } from 'react-native';
 import { BarChart, LineChart } from 'react-native-gifted-charts';
-import { monthName, monthShort } from '../dates';
-import { chartDays, runningTotal } from '../insights';
+import { daysInMonth, monthName, monthShort } from '../dates';
+import { runningTotal } from '../insights';
 import { compactMoney, formatMoney } from '../money';
 import { spacing, useColors } from '../theme';
 import type { InsightsData } from '../types';
 import { Text } from './Text';
 
-// This month's running total by day, with the same days of last month dashed behind it. Touch and drag to read a day.
+// The whole month on the x-axis: last month dashed in full, this month solid up to today with a dot at the end.
+// Last month is the first line because the chart takes its day labels from it. Touch and drag to read a day.
 export function RunningTotalChart({ data, month, prevMonth, elapsed, width }: {
   data: InsightsData;
   month: string;
@@ -16,37 +17,42 @@ export function RunningTotalChart({ data, month, prevMonth, elapsed, width }: {
   width: number;
 }) {
   const colors = useColors();
-  const days = chartDays(month, elapsed);
-  const current = runningTotal(data.daily, days);
+  const days = Math.max(daysInMonth(month), daysInMonth(prevMonth));
+  // Reaches the last day with spending, so a transaction dated ahead of today still draws.
+  const lastDay = Math.max(elapsed ?? 0, ...data.daily.map((d) => d.day));
+  const current = runningTotal(data.daily, elapsed === undefined ? daysInMonth(month) : lastDay);
   const previous = runningTotal(data.prevDaily, days);
-  if (current[days - 1] === 0 && previous[days - 1] === 0) return null;
+  if (current[current.length - 1] === 0 && previous[days - 1] === 0) return null;
 
-  const point = (value: number, i: number) => ({ value: value / 100, label: i % 7 === 0 ? String(i + 1) : '' });
   const chartWidth = width - 56;
+  const edge = 8; // room so the dot on the last day and the first day isn't cut off
+  const gap = (chartWidth - edge * 2) / (days - 1);
 
   return (
     <View style={styles.chartBox}>
       <LineChart
-        data={current.map(point)}
-        data2={previous.map(point)}
-        color1={colors.ink}
-        color2={colors.ink3}
-        thickness1={3}
-        thickness2={2}
-        strokeDashArray2={[6, 5]}
-        hideDataPoints
+        data={previous.map((value) => ({ value: value / 100 }))}
+        data2={current.map((value, i) => ({ value: value / 100, hideDataPoint: i !== current.length - 1 }))}
+        color1={colors.ink3}
+        color2={colors.ink}
+        thickness1={2}
+        thickness2={3}
+        strokeDashArray1={[6, 5]}
+        hideDataPoints1
+        hideDataPoints2={false}
+        dataPointsColor2={colors.ink}
+        dataPointsRadius2={5}
         curved
         width={chartWidth}
         height={170}
-        initialSpacing={0}
-        endSpacing={0}
-        spacing={chartWidth / Math.max(days - 1, 1)}
+        initialSpacing={edge}
+        endSpacing={edge}
+        spacing={gap}
         noOfSections={3}
         yAxisThickness={0}
         xAxisThickness={0}
         rulesColor={colors.line}
         yAxisTextStyle={{ color: colors.ink3, fontSize: 11, fontFamily: 'OpenRunde-Regular' }}
-        xAxisLabelTextStyle={{ color: colors.ink3, fontSize: 11, fontFamily: 'OpenRunde-Regular' }}
         yAxisLabelWidth={44}
         formatYLabel={(label) => compactMoney(Number(label) * 100)}
         disableScroll
@@ -60,14 +66,23 @@ export function RunningTotalChart({ data, month, prevMonth, elapsed, width }: {
           pointerLabelComponent: (items: { value: number }[], _secondary: unknown, index: number) => (
             <View style={[styles.tooltip, { backgroundColor: colors.btnBg }]}>
               <Text style={{ color: colors.btnFg, fontWeight: '700', fontSize: 12.5 }}>Day {index + 1}</Text>
-              <Text style={{ color: colors.btnFg, fontSize: 12.5 }}>{monthShort(month)} {formatMoney(Math.round(items[0].value * 100))}</Text>
+              {index < current.length && (
+                <Text style={{ color: colors.btnFg, fontSize: 12.5 }}>{monthShort(month)} {formatMoney(current[index])}</Text>
+              )}
               <Text style={{ color: colors.btnFg, fontSize: 12.5, opacity: 0.7 }}>
-                {monthShort(prevMonth)} {formatMoney(Math.round((items[1]?.value ?? 0) * 100))}
+                {monthShort(prevMonth)} {formatMoney(previous[index])}
               </Text>
             </View>
           ),
         }}
       />
+      <View style={{ height: 18, marginLeft: 44, marginTop: 6 }}>
+        {[1, 8, 15, 22, 29].map((day) => (
+          <Text key={day} style={{ position: 'absolute', left: edge + (day - 1) * gap - 14, width: 28, textAlign: 'center', color: colors.ink3, fontSize: 11 }}>
+            {day}
+          </Text>
+        ))}
+      </View>
       <View style={styles.legend}>
         <LegendItem color={colors.ink} label={monthName(month)} />
         <LegendItem color={colors.ink3} label={monthName(prevMonth)} dashed />

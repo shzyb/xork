@@ -12,11 +12,6 @@ export function runningTotal(daily: DaySpend[], length: number): number[] {
   return perDay.map((v) => (sum += v));
 }
 
-// How many days the running-total chart shows: up to today for the current month, otherwise the whole month.
-export function chartDays(month: string, throughDay?: number): number {
-  return throughDay ?? daysInMonth(month);
-}
-
 export type Delta = { kind: 'new' | 'same' | 'up' | 'down'; percent: number } | null;
 
 // Compares this month's amount with last month's, for the small badge next to a category.

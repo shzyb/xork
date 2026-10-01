@@ -1,5 +1,5 @@
 import { setAppCurrency } from '../money';
-import { budgetStatus, buildNotes, chartDays, delta, keptPercent, runningTotal, spendComparison } from '../insights';
+import { budgetStatus, buildNotes, delta, keptPercent, runningTotal, spendComparison } from '../insights';
 import type { CategorySpend } from '../types';
 
 beforeEach(() => setAppCurrency('USD'));
@@ -20,13 +20,6 @@ describe('runningTotal', () => {
 
   it('is flat zero with no spending', () => {
     expect(runningTotal([], 3)).toEqual([0, 0, 0]);
-  });
-});
-
-describe('chartDays', () => {
-  it('stops at today for the current month, and uses the whole month otherwise', () => {
-    expect(chartDays('2026-09', 12)).toBe(12);
-    expect(chartDays('2026-02')).toBe(28);
   });
 });
 
