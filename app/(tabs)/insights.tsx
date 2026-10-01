@@ -2,14 +2,15 @@ import { ArrowDown, ArrowUp, Gauge, Repeat, TrendingDown, TrendingUp, TriangleAl
 import type { LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { BarChart, LineChart } from 'react-native-gifted-charts';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
+import { CashFlowChart, RunningTotalChart } from '../../src/components/Charts';
+import { StatTile } from '../../src/components/StatTile';
 import { getInsights } from '../../src/db';
-import { currentMonth, lastMonths, monthName, monthShort, shiftMonth, today } from '../../src/dates';
-import { budgetStatus, buildNotes, chartDays, delta, keptPercent, runningTotal, spendComparison } from '../../src/insights';
+import { currentMonth, daysInMonth, lastMonths, monthName, monthShort, shiftMonth, today } from '../../src/dates';
+import { budgetStatus, buildNotes, delta, keptPercent, spendComparison } from '../../src/insights';
 import type { Note } from '../../src/insights';
-import { compactMoney, formatMoney } from '../../src/money';
+import { formatMoney } from '../../src/money';
 import { fontSize, spacing, useColors } from '../../src/theme';
 import type { InsightsData } from '../../src/types';
 import { useData } from '../../src/useData';
@@ -214,6 +215,14 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, showAl
         </>
       )}
 
+      <View style={styles.tiles}>
+        <StatTile label="Daily average" value={formatMoney(Math.round(out / (elapsed ?? daysInMonth(month))))}
+          sub={prevSummary.out_minor > 0 ? `${formatMoney(Math.round(prevSummary.out_minor / daysInMonth(prevMonth)))} in ${monthShort(prevMonth)}` : 'Per day so far'} />
+        <StatTile label="Savings rate" value={kept === null ? '–' : `${kept}%`} sub={kept === null ? 'No income logged' : 'Of income kept'} />
+        <StatTile label="Biggest expense" value={data.biggest ? formatMoney(data.biggest.amount_minor) : '–'} sub={data.biggest?.label ?? 'Nothing yet'} />
+        <StatTile label="No-spend days" value={String(Math.max(0, (elapsed ?? daysInMonth(month)) - data.spendDays))} sub={`Of ${elapsed ?? daysInMonth(month)} days, bills aside`} />
+      </View>
+
       <Text style={[styles.section, { color: colors.ink }]}>Cash flow</Text>
       <CashFlowChart monthly={data.monthly} selected={month} onSelect={onSelectMonth} width={contentWidth} />
 
@@ -221,76 +230,6 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, showAl
         Moving money between your own accounts isn't counted as spending or income.
       </Text>
     </>
-  );
-}
-
-// This month's running total by day, with the same days of last month dashed behind it. Touch and drag to read a day.
-function RunningTotalChart({ data, month, prevMonth, elapsed, width }: {
-  data: InsightsData;
-  month: string;
-  prevMonth: string;
-  elapsed: number | undefined;
-  width: number;
-}) {
-  const colors = useColors();
-  const days = chartDays(month, elapsed);
-  const current = runningTotal(data.daily, days);
-  const previous = runningTotal(data.prevDaily, days);
-  if (current[days - 1] === 0 && previous[days - 1] === 0) return null;
-
-  const point = (value: number, i: number) => ({ value: value / 100, label: i % 7 === 0 ? String(i + 1) : '' });
-  const chartWidth = width - 56;
-
-  return (
-    <View style={styles.chartBox}>
-      <LineChart
-        data={current.map(point)}
-        data2={previous.map(point)}
-        color1={colors.ink}
-        color2={colors.ink3}
-        thickness1={3}
-        thickness2={2}
-        strokeDashArray2={[6, 5]}
-        hideDataPoints
-        curved
-        width={chartWidth}
-        height={170}
-        initialSpacing={0}
-        endSpacing={0}
-        spacing={chartWidth / Math.max(days - 1, 1)}
-        noOfSections={3}
-        yAxisThickness={0}
-        xAxisThickness={0}
-        rulesColor={colors.line}
-        yAxisTextStyle={{ color: colors.ink3, fontSize: 11, fontFamily: 'OpenRunde-Regular' }}
-        xAxisLabelTextStyle={{ color: colors.ink3, fontSize: 11, fontFamily: 'OpenRunde-Regular' }}
-        yAxisLabelWidth={44}
-        formatYLabel={(label) => compactMoney(Number(label) * 100)}
-        disableScroll
-        pointerConfig={{
-          pointerStripColor: colors.ink3,
-          pointerColor: colors.ink,
-          radius: 4,
-          pointerLabelWidth: 150,
-          pointerLabelHeight: 64,
-          autoAdjustPointerLabelPosition: true,
-          pointerLabelComponent: (items: { value: number }[], _secondary: unknown, index: number) => (
-            <View style={[styles.tooltip, { backgroundColor: colors.btnBg }]}>
-              <Text style={{ color: colors.btnFg, fontWeight: '700', fontSize: 12.5 }}>Day {index + 1}</Text>
-              <Text style={{ color: colors.btnFg, fontSize: 12.5 }}>{monthShort(month)} {formatMoney(Math.round(items[0].value * 100))}</Text>
-              <Text style={{ color: colors.btnFg, fontSize: 12.5, opacity: 0.7 }}>
-                {monthShort(prevMonth)} {formatMoney(Math.round((items[1]?.value ?? 0) * 100))}
-              </Text>
-            </View>
-          ),
-        }}
-      />
-      <View style={styles.legend}>
-        <LegendItem color={colors.ink} label={monthName(month)} />
-        <LegendItem color={colors.ink3} label={monthName(prevMonth)} dashed />
-        <Text style={{ color: colors.ink2, fontSize: 12.5 }}>Running total by day</Text>
-      </View>
-    </View>
   );
 }
 
@@ -307,96 +246,20 @@ function MonthChips({ selected, earliest, onSelect }: {
         const on = m === selected;
         const disabled = earliest === null ? m !== currentMonth() : m < earliest;
         return (
-          <Pressable
-            key={m}
-            accessibilityRole="button"
-            accessibilityLabel={monthName(m)}
-            accessibilityState={{ selected: on, disabled }}
-            disabled={disabled}
-            onPress={() => onSelect(m)}
-            style={[styles.chipHit, disabled && { opacity: 0.35 }]}
-          >
-            <View style={[styles.chip, on && { backgroundColor: colors.fill }]}>
+          <View key={m} style={[styles.chipHit, disabled && { opacity: 0.35 }]}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={monthName(m)}
+              accessibilityState={{ selected: on, disabled }}
+              disabled={disabled}
+              onPress={() => onSelect(m)}
+              style={[styles.chip, { backgroundColor: on ? colors.fill : 'transparent' }]}
+            >
               <Text style={[styles.chipText, { color: on ? colors.ink : colors.ink3 }]}>{monthShort(m)}</Text>
-            </View>
-          </Pressable>
+            </Pressable>
+          </View>
         );
       })}
-    </View>
-  );
-}
-
-// Money in (green) and out for the last six months. Tap a month to open it.
-function CashFlowChart({ monthly, selected, onSelect, width }: {
-  monthly: InsightsData['monthly'];
-  selected: string;
-  onSelect: (month: string) => void;
-  width: number;
-}) {
-  const colors = useColors();
-  const chartWidth = width - 56;
-  const barWidth = 14;
-  const gap = 4;
-  const group = chartWidth / monthly.length;
-  const between = group - (barWidth * 2 + gap);
-  const chosen = monthly.find((m) => m.month === selected);
-
-  const bars = monthly.flatMap((m) => {
-    const on = m.month === selected;
-    const press = () => onSelect(m.month);
-    return [
-      {
-        value: m.in_minor / 100,
-        frontColor: colors.pos,
-        opacity: on ? 1 : 0.35,
-        spacing: gap,
-        label: monthShort(m.month),
-        labelWidth: group,
-        labelTextStyle: { color: on ? colors.ink : colors.ink3, fontSize: 11, fontFamily: 'OpenRunde-Regular', textAlign: 'center' as const, marginLeft: -(group - barWidth * 2 - gap) / 2 },
-        onPress: press,
-      },
-      { value: m.out_minor / 100, frontColor: colors.ink, opacity: on ? 1 : 0.35, spacing: between, onPress: press },
-    ];
-  });
-
-  return (
-    <View style={styles.chartBox}>
-      <BarChart
-        data={bars}
-        barWidth={barWidth}
-        barBorderRadius={7}
-        width={chartWidth}
-        height={150}
-        initialSpacing={between / 2}
-        endSpacing={0}
-        noOfSections={3}
-        yAxisThickness={0}
-        xAxisThickness={0}
-        rulesColor={colors.line}
-        yAxisTextStyle={{ color: colors.ink3, fontSize: 11, fontFamily: 'OpenRunde-Regular' }}
-        yAxisLabelWidth={44}
-        formatYLabel={(label) => compactMoney(Number(label) * 100)}
-        disableScroll
-      />
-      <View style={styles.legend}>
-        <LegendItem color={colors.pos} label="Money in" />
-        <LegendItem color={colors.ink} label="Money out" />
-      </View>
-      {chosen && (
-        <Text style={{ color: colors.ink2, fontSize: 13.5, marginTop: 6 }}>
-          {monthShort(chosen.month)}: in {formatMoney(chosen.in_minor)}, out {formatMoney(chosen.out_minor)}
-        </Text>
-      )}
-    </View>
-  );
-}
-
-function LegendItem({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
-  const colors = useColors();
-  return (
-    <View style={styles.legendItem}>
-      <View style={dashed ? { width: 14, borderTopWidth: 2, borderStyle: 'dashed', borderColor: color } : { width: 10, height: 10, borderRadius: 5, backgroundColor: color }} />
-      <Text style={{ color: colors.ink2, fontSize: 12.5 }}>{label}</Text>
     </View>
   );
 }
@@ -407,13 +270,9 @@ const styles = StyleSheet.create({
   title: { fontSize: fontSize.screen, fontWeight: '800', marginTop: spacing.md },
   chips: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.sm },
   chipHit: { flex: 1, height: 44, alignItems: 'center', justifyContent: 'center' },
-  chip: { minWidth: 48, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
+  chip: { minWidth: 48, height: 34, borderRadius: 17, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
   chipText: { fontSize: 14, fontWeight: '600' },
   big: { fontSize: fontSize.big, fontWeight: '800', letterSpacing: -1.5 },
-  chartBox: { marginTop: spacing.lg },
-  legend: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 14, marginTop: spacing.sm },
-  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  tooltip: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, gap: 1 },
   duo: { flexDirection: 'row', marginTop: 22 },
   duoCell: { flex: 1, alignItems: 'center', paddingHorizontal: 8 },
   duoValue: { fontSize: 22, fontWeight: '700', marginTop: 2 },
@@ -432,6 +291,7 @@ const styles = StyleSheet.create({
   deltaText: { fontSize: 12.5, fontWeight: '700' },
   budget: { marginLeft: 50, marginTop: -6, marginBottom: 8 },
   meter: { height: 5, borderRadius: 3, overflow: 'hidden' },
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 30 },
   pill: { height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginTop: spacing.md },
   foot: { fontSize: 12.5, lineHeight: 19, marginTop: 26 },
 });

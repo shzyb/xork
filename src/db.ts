@@ -472,11 +472,23 @@ export async function getInsights(month: string): Promise<InsightsData> {
      WHERE type = 'expense' AND recurring_id IS NOT NULL AND date BETWEEN ? AND ?`,
     start, end,
   );
+  const biggest = await db!.getFirstAsync<{ amount_minor: number; label: string }>(
+    `SELECT t.amount_minor, COALESCE(NULLIF(t.note, ''), c.name, 'Expense') AS label
+     FROM transactions t LEFT JOIN categories c ON c.id = t.category_id
+     WHERE t.type = 'expense' AND t.date BETWEEN ? AND ? ORDER BY t.amount_minor DESC LIMIT 1`,
+    start, end,
+  );
+  // Days with something you chose to buy; recurring bills don't count, so a bills-only day is a no-spend day.
+  const spendDays = await db!.getFirstAsync<{ days: number }>(
+    `SELECT COUNT(DISTINCT date) AS days FROM transactions
+     WHERE type = 'expense' AND recurring_id IS NULL AND date BETWEEN ? AND ?`,
+    start, end,
+  );
   const monthly = await getMonthlyTotals(currentMonth());
   const earliest = await db!.getFirstAsync<{ month: string | null }>('SELECT MIN(substr(date, 1, 7)) AS month FROM transactions');
   return {
     summary, prevSummary, spending, prevSpending, income, daily, prevDaily,
-    recurringOut: recurring?.total ?? 0, monthly, earliestMonth: earliest?.month ?? null,
+    recurringOut: recurring?.total ?? 0, biggest: biggest ?? null, spendDays: spendDays?.days ?? 0, monthly, earliestMonth: earliest?.month ?? null,
   };
 }
 

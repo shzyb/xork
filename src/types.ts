@@ -96,6 +96,8 @@ export type InsightsData = {
   daily: DaySpend[];
   prevDaily: DaySpend[];
   recurringOut: number;
+  biggest: { amount_minor: number; label: string } | null; // the largest expense of the month
+  spendDays: number; // days with a non-recurring expense
   monthly: MonthTotals[];
   earliestMonth: string | null; // the month of the oldest transaction, for disabling earlier month chips
 };
