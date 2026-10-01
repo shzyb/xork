@@ -3,8 +3,9 @@ import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { StatusBar } from 'expo-status-bar';
 import { Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Switch, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { PressableScale } from '../../src/components/PressableScale';
+import { Toggle } from '../../src/components/Toggle';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AccountChips } from '../../src/components/AccountChips';
 import { Button } from '../../src/components/Button';
@@ -155,7 +156,7 @@ function RecurringForm({ editing, accounts, categories }: {
               <Text style={styles.activeTitle}>Active</Text>
               <Text style={styles.activeSub}>{active ? 'Logged automatically on the day' : 'Paused: nothing is logged'}</Text>
             </View>
-            <Switch value={active} onValueChange={setActive} trackColor={{ true: sheet.pos, false: sheet.card2 }} />
+            <Toggle value={active} onValueChange={setActive} onSheet accessibilityLabel="Active" />
           </View>
           {error !== '' && <Text style={styles.error}>{error}</Text>}
         </FadeScrollView>

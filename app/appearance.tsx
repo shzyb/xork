@@ -1,9 +1,10 @@
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import { useState } from 'react';
-import { StyleSheet, Switch, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PressableScale } from '../src/components/PressableScale';
+import { Toggle } from '../src/components/Toggle';
 import { Text } from '../src/components/Text';
 import { getSetting, setHideBalances, setTheme } from '../src/db';
 import { fontSize, spacing, useColors } from '../src/theme';
@@ -107,13 +108,7 @@ export default function Appearance() {
           <Text style={[styles.toggleTitle, { color: colors.ink }]}>Keep balances private</Text>
           <Text style={{ color: colors.ink2, fontSize: 13.5 }}>Amounts stay hidden each time you open the app, until you tap the eye on Home.</Text>
         </View>
-        <Switch
-          value={hideOnOpen}
-          onValueChange={toggleHide}
-          trackColor={{ true: colors.ink, false: colors.fill2 }}
-          thumbColor={hideOnOpen ? colors.bg : colors.ink3}
-          ios_backgroundColor={colors.fill2}
-        />
+        <Toggle value={hideOnOpen} onValueChange={toggleHide} accessibilityLabel="Keep balances private" />
       </View>
       {error !== '' && <Text style={[styles.error, { color: colors.neg }]}>{error}</Text>}
     </SafeAreaView>
