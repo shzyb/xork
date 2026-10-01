@@ -44,6 +44,7 @@ async function migrate(handle: Db) {
   const version = row?.user_version ?? 0;
   if (version < 1) await migrateToV1(handle);
   if (version < 2) await migrateToV2(handle);
+  if (version < 3) await migrateToV3(handle);
 }
 
 // The default categories and the "Cash" account. Used for a new database and after "Delete all data".
@@ -76,6 +77,14 @@ async function migrateToV2(handle: Db) {
     for (const [name, icon] of EXPENSE_CATEGORIES) await handle.runAsync(update, icon, name, 'expense');
     for (const [name, icon] of INCOME_CATEGORIES) await handle.runAsync(update, icon, name, 'income');
     await handle.execAsync('PRAGMA user_version = 2');
+  });
+}
+
+// Accounts get a type. Existing accounts become 'cash'.
+async function migrateToV3(handle: Db) {
+  await handle.withTransactionAsync(async () => {
+    await handle.execAsync("ALTER TABLE accounts ADD COLUMN type TEXT NOT NULL DEFAULT 'cash'");
+    await handle.execAsync('PRAGMA user_version = 3');
   });
 }
 
@@ -252,7 +261,7 @@ export async function deleteTransaction(id: number) {
   await write((handle) => handle.runAsync('DELETE FROM transactions WHERE id = ?', id));
 }
 
-export type NewAccount = Pick<Account, 'name' | 'opening_minor' | 'color'>;
+export type NewAccount = Pick<Account, 'name' | 'type' | 'opening_minor' | 'color'>;
 
 export async function getAccount(id: number): Promise<Account | null> {
   return db!.getFirstAsync('SELECT * FROM accounts WHERE id = ?', id);
@@ -261,15 +270,15 @@ export async function getAccount(id: number): Promise<Account | null> {
 export async function addAccount(a: NewAccount) {
   await write((handle) =>
     handle.runAsync(
-      'INSERT INTO accounts (name, opening_minor, color, created_at) VALUES (?, ?, ?, ?)',
-      a.name, a.opening_minor, a.color, new Date().toISOString(),
+      'INSERT INTO accounts (name, type, opening_minor, color, created_at) VALUES (?, ?, ?, ?, ?)',
+      a.name, a.type, a.opening_minor, a.color, new Date().toISOString(),
     ),
   );
 }
 
 export async function updateAccount(id: number, a: NewAccount) {
   await write((handle) =>
-    handle.runAsync('UPDATE accounts SET name = ?, opening_minor = ?, color = ? WHERE id = ?', a.name, a.opening_minor, a.color, id),
+    handle.runAsync('UPDATE accounts SET name = ?, type = ?, opening_minor = ?, color = ? WHERE id = ?', a.name, a.type, a.opening_minor, a.color, id),
   );
 }
 
@@ -519,8 +528,8 @@ export async function replaceAllData(backup: Backup) {
       await clearAll(handle);
       for (const a of backup.accounts) {
         await handle.runAsync(
-          'INSERT INTO accounts (id, name, opening_minor, color, created_at) VALUES (?, ?, ?, ?, ?)',
-          a.id, a.name, a.opening_minor, a.color, a.created_at,
+          'INSERT INTO accounts (id, name, type, opening_minor, color, created_at) VALUES (?, ?, ?, ?, ?, ?)',
+          a.id, a.name, a.type, a.opening_minor, a.color, a.created_at,
         );
       }
       for (const c of backup.categories) {

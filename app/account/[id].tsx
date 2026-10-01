@@ -12,7 +12,8 @@ import { SheetHeader } from '../../src/components/SheetHeader';
 import { addAccount, deleteAccount, getAccount, getAccountsWithBalance, updateAccount } from '../../src/db';
 import { currentDecimals, minorToTyped, parseAmount } from '../../src/money';
 import { accountColors, sheet, spacing } from '../../src/theme';
-import type { Account } from '../../src/types';
+import { ACCOUNT_TYPES } from '../../src/types';
+import type { Account, AccountType } from '../../src/types';
 import { useData } from '../../src/useData';
 import { Text } from '../../src/components/Text';
 
@@ -31,6 +32,7 @@ export default function AccountScreen() {
 function AccountForm({ editing, accountCount }: { editing: Account | null; accountCount: number }) {
   const router = useRouter();
   const [name, setName] = useState(editing?.name ?? '');
+  const [type, setType] = useState<AccountType>(editing?.type ?? 'cash');
   const [opening, setOpening] = useState(editing ? minorToTyped(editing.opening_minor) : '');
   const [color, setColor] = useState(editing?.color ?? accountColors[accountCount % accountColors.length]);
   const [error, setError] = useState('');
@@ -38,7 +40,7 @@ function AccountForm({ editing, accountCount }: { editing: Account | null; accou
   async function save() {
     if (name.trim() === '') return setError('Enter a name.');
     if (!/^\d*\.?\d*$/.test(opening.trim())) return setError('Enter the starting balance as a number.');
-    const account = { name: name.trim(), opening_minor: parseAmount(opening.trim()), color };
+    const account = { name: name.trim(), type, opening_minor: parseAmount(opening.trim()), color };
     try {
       if (editing) await updateAccount(editing.id, account);
       else await addAccount(account);
@@ -80,6 +82,20 @@ function AccountForm({ editing, accountCount }: { editing: Account | null; accou
             </View>
           </View>
           <Field label="Account name" value={name} onChangeText={setName} placeholder="e.g. Bank" maxLength={32} />
+          <Text style={styles.label}>Type</Text>
+          <View style={styles.types}>
+            {ACCOUNT_TYPES.map((t) => (
+              <Pressable
+                key={t.value}
+                accessibilityRole="button"
+                accessibilityState={{ selected: t.value === type }}
+                onPress={() => setType(t.value)}
+                style={[styles.type, t.value === type && styles.typeSelected]}
+              >
+                <Text style={[styles.typeText, t.value === type && styles.typeTextSelected]}>{t.label}</Text>
+              </Pressable>
+            ))}
+          </View>
           <Field
             label="Starting balance"
             value={opening}
@@ -113,6 +129,11 @@ const styles = StyleSheet.create({
   initial: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
   initialText: { color: '#FFFFFF', fontSize: 26, fontWeight: '700' },
   label: { color: sheet.ink2, fontSize: 14, fontWeight: '600', marginTop: 20, marginBottom: 8 },
+  types: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  type: { minHeight: 44, paddingHorizontal: 18, borderRadius: 22, backgroundColor: sheet.card, alignItems: 'center', justifyContent: 'center' },
+  typeSelected: { backgroundColor: sheet.ink },
+  typeText: { color: sheet.ink2, fontSize: 15, fontWeight: '600' },
+  typeTextSelected: { color: sheet.bg },
   error: { color: sheet.neg, fontSize: 14.5, fontWeight: '600', marginTop: 14, textAlign: 'center' },
   footer: { gap: 10, paddingTop: 6, paddingBottom: spacing.lg },
   delete: { height: 50, borderRadius: 25, backgroundColor: 'rgba(255,107,97,0.16)', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },

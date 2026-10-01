@@ -1,6 +1,16 @@
+export type AccountType = 'cash' | 'debit' | 'savings' | 'credit';
+
+export const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
+  { value: 'cash', label: 'Cash' },
+  { value: 'debit', label: 'Debit' },
+  { value: 'savings', label: 'Savings' },
+  { value: 'credit', label: 'Credit card' },
+];
+
 export type Account = {
   id: number;
   name: string;
+  type: AccountType;
   opening_minor: number;
   color: string;
   created_at: string;

@@ -7,8 +7,8 @@ const valid = (): Backup => ({
   exported_at: '2026-09-30T10:00:00.000Z',
   currency: 'PKR',
   accounts: [
-    { id: 1, name: 'Cash', opening_minor: 0, color: '#FF9F0A', created_at: 'x' },
-    { id: 2, name: 'Bank', opening_minor: 500000, color: '#3B82F6', created_at: 'x' },
+    { id: 1, name: 'Cash', type: 'cash', opening_minor: 0, color: '#FF9F0A', created_at: 'x' },
+    { id: 2, name: 'Bank', type: 'debit', opening_minor: 500000, color: '#3B82F6', created_at: 'x' },
   ],
   categories: [
     { id: 1, name: 'Groceries', kind: 'expense', icon: 'shopping-cart', color: '#34A853', budget_minor: 4500000, is_default: 0 },
@@ -38,6 +38,17 @@ describe('parseBackup', () => {
   it('accepts a good backup and returns it', () => {
     const result = parse(valid());
     expect(result).toEqual({ ok: true, backup: valid() });
+  });
+
+  it('treats accounts from older backups as cash and rejects an unknown type', () => {
+    const old = valid() as unknown as { accounts: Record<string, unknown>[] };
+    delete old.accounts[0].type;
+    const result = parse(old);
+    expect(result.ok && result.backup.accounts[0].type).toBe('cash');
+
+    const bad = valid() as unknown as { accounts: Record<string, unknown>[] };
+    bad.accounts[0].type = 'loan';
+    expect(parse(bad).ok).toBe(false);
   });
 
   it('rejects text that is not JSON or not a Xork file', () => {

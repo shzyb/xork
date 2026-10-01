@@ -8,6 +8,7 @@ import { SheetHeader } from '../src/components/SheetHeader';
 import { getAccountsWithBalance } from '../src/db';
 import { formatMoney } from '../src/money';
 import { sheet, spacing } from '../src/theme';
+import { ACCOUNT_TYPES } from '../src/types';
 import { useData } from '../src/useData';
 import { Text } from '../src/components/Text';
 
@@ -35,7 +36,10 @@ export default function Accounts() {
                 <View style={[styles.initial, { backgroundColor: a.color }]}>
                   <Text style={styles.initialText}>{a.name.trim().charAt(0).toUpperCase() || '?'}</Text>
                 </View>
-                <Text style={styles.name} numberOfLines={1}>{a.name}</Text>
+                <View style={styles.nameBox}>
+                  <Text style={styles.name} numberOfLines={1}>{a.name}</Text>
+                  <Text style={styles.type}>{ACCOUNT_TYPES.find((t) => t.value === a.type)?.label}</Text>
+                </View>
                 <Text style={styles.amount}>{formatMoney(a.balance_minor)}</Text>
                 <ChevronRight color={sheet.ink3} size={20} />
               </Pressable>
@@ -62,7 +66,9 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64 },
   initial: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   initialText: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
-  name: { flex: 1, color: sheet.ink, fontSize: 16.5, fontWeight: '600' },
+  nameBox: { flex: 1 },
+  name: { color: sheet.ink, fontSize: 16.5, fontWeight: '600' },
+  type: { color: sheet.ink3, fontSize: 13, marginTop: 1 },
   amount: { color: sheet.ink, fontSize: 16.5, fontWeight: '600' },
   footer: { paddingTop: 10, paddingBottom: spacing.lg },
 });

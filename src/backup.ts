@@ -1,4 +1,5 @@
 import { CURRENCIES } from './money';
+import { ACCOUNT_TYPES } from './types';
 import type { Account, Category, Recurring, Transaction } from './types';
 
 export const BACKUP_VERSION = 1;
@@ -47,6 +48,8 @@ export function parseBackup(text: string): ParseResult {
     if (!isRecord(a) || !isInt(a.id) || !isStr(a.name) || !isInt(a.opening_minor) || !isStr(a.color) || !isStr(a.created_at)) {
       return fail('An account in this backup is damaged.');
     }
+    if (a.type === undefined) a.type = 'cash'; // backups made before account types
+    if (!ACCOUNT_TYPES.some((t) => t.value === a.type)) return fail('An account in this backup is damaged.');
     if (accountIds.has(a.id)) return fail('This backup lists the same account twice.');
     accountIds.add(a.id);
   }
