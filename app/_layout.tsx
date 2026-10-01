@@ -1,5 +1,6 @@
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
@@ -45,6 +46,8 @@ function Routes() {
   if (onboarded === undefined) return null;
 
   return (
+    <>
+    <StatusBar style="auto" />
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Protected guard={!onboarded}>
         <Stack.Screen name="welcome" />
@@ -59,5 +62,6 @@ function Routes() {
         ))}
       </Stack.Protected>
     </Stack>
+    </>
   );
 }
