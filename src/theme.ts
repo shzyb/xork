@@ -54,6 +54,7 @@ export const sheet = {
   ink3: '#636366',
   neg: '#FF6B61',
   pos: '#4ADE80',
+  warn: '#FFB340',
   btnBg: '#FFFFFF',
   btnFg: '#000000',
 };

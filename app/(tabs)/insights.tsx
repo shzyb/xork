@@ -2,18 +2,18 @@ import { ArrowDown, ArrowUp, Gauge, Repeat, TrendingDown, TrendingUp, TriangleAl
 import { FadeScrollView } from '../../src/components/FadeScrollView';
 import type { LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
 import { CashFlowChart, RunningTotalChart } from '../../src/components/Charts';
 import { StatTile } from '../../src/components/StatTile';
 import { getInsights } from '../../src/db';
 import { currentMonth, daysInMonth, lastMonths, monthName, monthShort, shiftMonth, today } from '../../src/dates';
-import { budgetStatus, buildNotes, delta, keptPercent, spendComparison } from '../../src/insights';
+import { budgetStatus, buildNotes, creditStatus, delta, dueText, keptPercent, spendComparison } from '../../src/insights';
 import type { Note } from '../../src/insights';
 import { formatMoney } from '../../src/money';
 import { fontSize, spacing, useColors } from '../../src/theme';
-import type { InsightsData } from '../../src/types';
+import type { CardInsight, InsightsData } from '../../src/types';
 import { useData } from '../../src/useData';
 import { Text } from '../../src/components/Text';
 
@@ -227,9 +227,59 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, showAl
       <Text style={[styles.section, { color: colors.ink }]}>Cash flow</Text>
       <CashFlowChart monthly={data.monthly} selected={month} onSelect={onSelectMonth} width={contentWidth} />
 
+      {data.cards.length > 0 && <CreditCards cards={data.cards} month={month} />}
+
       <Text style={[styles.foot, { color: colors.ink3 }]}>
         Moving money between your own accounts isn't counted as spending or income.
       </Text>
+    </>
+  );
+}
+
+// One panel per credit card, with chips to switch when there is more than one. Owed and limit are right now;
+// spent and paid follow the month picked above.
+function CreditCards({ cards, month }: { cards: CardInsight[]; month: string }) {
+  const colors = useColors();
+  const [selectedId, setSelectedId] = useState(cards[0].id);
+  const card = cards.find((c) => c.id === selectedId) ?? cards[0];
+  const status = card.limit_minor ? creditStatus(card.owed_minor, card.limit_minor) : null;
+  const tint = status?.state === 'warn' ? colors.warn : status && status.state !== 'ok' ? colors.neg : colors.ink;
+  return (
+    <>
+      <Text style={[styles.section, { color: colors.ink }]}>{cards.length > 1 ? 'Credit cards' : 'Credit card'}</Text>
+      {cards.length > 1 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cardChips}>
+          {cards.map((c) => (
+            <Pressable
+              key={c.id}
+              accessibilityRole="button"
+              accessibilityState={{ selected: c.id === card.id }}
+              onPress={() => setSelectedId(c.id)}
+              style={[styles.cardChip, { backgroundColor: c.id === card.id ? colors.fill : 'transparent' }]}
+            >
+              <Text style={[styles.chipText, { color: c.id === card.id ? colors.ink : colors.ink3 }]} numberOfLines={1}>{c.name}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      )}
+      <View style={styles.sectionHead}>
+        <Text style={[styles.rowTitle, { color: colors.ink }]} numberOfLines={1}>{card.name}</Text>
+        {status && <Text style={{ color: tint, fontSize: 14, fontWeight: '700' }}>{status.percent}% used</Text>}
+      </View>
+      {status && (
+        <View style={[styles.meter, { backgroundColor: colors.fill }]}>
+          <View style={{ width: `${Math.min(100, status.percent)}%`, height: '100%', borderRadius: 3, backgroundColor: tint }} />
+        </View>
+      )}
+      {card.due_day && (
+        <Text style={{ color: colors.ink2, fontSize: 14, marginTop: 8 }}>Payment {dueText(card.due_day, today())}</Text>
+      )}
+      <View style={[styles.tiles, { marginTop: 14 }]}>
+        <StatTile label="Owed now" value={formatMoney(card.owed_minor)} sub={card.limit_minor ? `Limit ${formatMoney(card.limit_minor)}` : 'No limit set'} />
+        {status && <StatTile label="Available" value={formatMoney(status.left)} sub={status.state === 'full' ? 'At the limit' : 'Left to spend'} />}
+        <StatTile label={`Spent in ${monthName(month)}`} value={formatMoney(card.spent_minor)} sub="On this card" />
+        <StatTile label={`Paid in ${monthName(month)}`} value={formatMoney(card.paid_minor)} sub="Into this card" />
+      </View>
     </>
   );
 }
@@ -273,6 +323,8 @@ const styles = StyleSheet.create({
   chipHit: { flex: 1, height: 44, alignItems: 'center', justifyContent: 'center' },
   chip: { minWidth: 48, height: 34, borderRadius: 17, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 8 },
   chipText: { fontSize: 14, fontWeight: '600' },
+  cardChips: { gap: 6 },
+  cardChip: { minHeight: 44, borderRadius: 22, paddingHorizontal: 16, justifyContent: 'center', maxWidth: 200 },
   big: { fontSize: fontSize.big, fontWeight: '800', letterSpacing: -1.5 },
   duo: { flexDirection: 'row', marginTop: 22 },
   duoCell: { flex: 1, alignItems: 'center', paddingHorizontal: 8 },

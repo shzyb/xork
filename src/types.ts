@@ -11,8 +11,10 @@ export type Account = {
   id: number;
   name: string;
   type: AccountType;
-  opening_minor: number;
+  opening_minor: number; // for a credit card this is minus the amount owed at the start
   color: string;
+  limit_minor: number | null; // credit cards only
+  due_day: number | null; // credit cards only: day of the month the payment is due, 1 to 31
   created_at: string;
 };
 
@@ -96,6 +98,18 @@ export type MonthTotals = { month: string; in_minor: number; out_minor: number }
 
 export type DaySpend = { day: number; total_minor: number };
 
+// One credit card on Insights. Owed, limit and due day are right now; spent and paid are for the chosen month.
+export type CardInsight = {
+  id: number;
+  name: string;
+  color: string;
+  limit_minor: number | null;
+  due_day: number | null;
+  owed_minor: number;
+  spent_minor: number;
+  paid_minor: number;
+};
+
 // Everything the Insights screen shows for one month. "prev" is the month before it.
 export type InsightsData = {
   summary: { in_minor: number; out_minor: number };
@@ -109,5 +123,6 @@ export type InsightsData = {
   biggest: { amount_minor: number; label: string } | null; // the largest expense of the month
   spendDays: number; // days with a non-recurring expense
   monthly: MonthTotals[];
+  cards: CardInsight[];
   earliestMonth: string | null; // the month of the oldest transaction, for disabling earlier month chips
 };

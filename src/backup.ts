@@ -49,7 +49,11 @@ export function parseBackup(text: string): ParseResult {
       return fail('An account in this backup is damaged.');
     }
     if (a.type === undefined) a.type = 'cash'; // backups made before account types
-    if (!ACCOUNT_TYPES.some((t) => t.value === a.type)) return fail('An account in this backup is damaged.');
+    if (a.limit_minor === undefined) a.limit_minor = null; // ...and before credit limits
+    if (a.due_day === undefined) a.due_day = null;
+    const limitOk = a.limit_minor === null || (isInt(a.limit_minor) && a.limit_minor > 0);
+    const dueOk = a.due_day === null || (isInt(a.due_day) && a.due_day >= 1 && a.due_day <= 31);
+    if (!ACCOUNT_TYPES.some((t) => t.value === a.type) || !limitOk || !dueOk) return fail('An account in this backup is damaged.');
     if (accountIds.has(a.id)) return fail('This backup lists the same account twice.');
     accountIds.add(a.id);
   }

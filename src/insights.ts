@@ -36,6 +36,32 @@ export function budgetStatus(spent: number, budget: number): Budget {
   return { percent, state: percent > 85 ? 'warn' : 'ok', text: `${formatMoney(budget - spent)} left of ${formatMoney(budget)}` };
 }
 
+// How much of a credit limit is used. Warns from 80%, turns red from 95%, and is full at 100%.
+export type CreditStatus = { percent: number; state: 'ok' | 'warn' | 'high' | 'full'; left: number };
+
+export function creditStatus(owed: number, limit: number): CreditStatus {
+  const percent = Math.max(0, Math.round((owed / limit) * 100));
+  const state = owed >= limit ? 'full' : percent >= 95 ? 'high' : percent >= 80 ? 'warn' : 'ok';
+  return { percent, state, left: Math.max(0, limit - owed) };
+}
+
+// "Due on the 15th", or "due tomorrow" / "due in 5 days" when it is close. A day past the month's end counts as its last day.
+export function dueText(dueDay: number, todayDate: string): string {
+  const year = Number(todayDate.slice(0, 4));
+  const month = Number(todayDate.slice(5, 7));
+  const day = Number(todayDate.slice(8));
+  const thisMonthLast = new Date(year, month, 0).getDate();
+  const nextMonthLast = new Date(year, month + 1, 0).getDate();
+  const thisDue = Math.min(dueDay, thisMonthLast);
+  const daysAway = thisDue >= day ? thisDue - day : thisMonthLast - day + Math.min(dueDay, nextMonthLast);
+  const last = dueDay % 10;
+  const nth = dueDay >= 11 && dueDay <= 13 ? 'th' : last === 1 ? 'st' : last === 2 ? 'nd' : last === 3 ? 'rd' : 'th';
+  if (daysAway === 0) return 'due today';
+  if (daysAway === 1) return 'due tomorrow';
+  if (daysAway <= 7) return `due in ${daysAway} days`;
+  return `due on the ${dueDay}${nth}`;
+}
+
 // "Rs 4,200 less than this point in August". Null when last month has nothing to compare with.
 export function spendComparison(spent: number, prevSamePoint: number, isCurrent: boolean, prevMonth: string) {
   if (prevSamePoint <= 0) return null;

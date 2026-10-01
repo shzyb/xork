@@ -1,10 +1,10 @@
 import { openDatabaseAsync } from 'expo-sqlite';
 import { currentMonth, firstOnOrAfter, lastMonths, monthRange, nextOccurrence, shiftMonth, today } from './dates';
-import { setAppCurrency } from './money';
+import { formatMoney, setAppCurrency } from './money';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, SCHEMA } from './seed';
 import { BACKUP_VERSION } from './backup';
 import type { Backup } from './backup';
-import type { Account, Category, CategorySpend, DaySpend, InsightsData, MonthTotals, Recurring, RecurringRow, Transaction, TransactionFilter, TransactionRow } from './types';
+import type { Account, CardInsight, Category, CategorySpend, DaySpend, InsightsData, MonthTotals, Recurring, RecurringRow, Transaction, TransactionFilter, TransactionRow } from './types';
 
 // The small part of expo-sqlite that we use, so tests can pass a fake.
 export type Db = {
@@ -45,6 +45,7 @@ async function migrate(handle: Db) {
   if (version < 1) await migrateToV1(handle);
   if (version < 2) await migrateToV2(handle);
   if (version < 3) await migrateToV3(handle);
+  if (version < 4) await migrateToV4(handle);
 }
 
 // The default categories and the "Cash" account. Used for a new database and after "Delete all data".
@@ -85,6 +86,15 @@ async function migrateToV3(handle: Db) {
   await handle.withTransactionAsync(async () => {
     await handle.execAsync("ALTER TABLE accounts ADD COLUMN type TEXT NOT NULL DEFAULT 'cash'");
     await handle.execAsync('PRAGMA user_version = 3');
+  });
+}
+
+// Credit cards get a limit and a payment due day. Other accounts leave both empty.
+async function migrateToV4(handle: Db) {
+  await handle.withTransactionAsync(async () => {
+    await handle.execAsync('ALTER TABLE accounts ADD COLUMN limit_minor INTEGER');
+    await handle.execAsync('ALTER TABLE accounts ADD COLUMN due_day INTEGER');
+    await handle.execAsync('PRAGMA user_version = 4');
   });
 }
 
@@ -131,7 +141,49 @@ export type NewTransaction = Pick<
   'type' | 'amount_minor' | 'account_id' | 'to_account_id' | 'category_id' | 'note' | 'date'
 >;
 
+export const isOverLimit = (e: unknown): e is Error => e instanceof Error && e.name === 'OverLimit';
+
+// What a transaction does to one account's balance.
+function balanceEffect(accountId: number, t: Pick<Transaction, 'type' | 'amount_minor' | 'account_id' | 'to_account_id'>) {
+  let effect = 0;
+  if (t.account_id === accountId) effect += t.type === 'income' ? t.amount_minor : -t.amount_minor;
+  if (t.type === 'transfer' && t.to_account_id === accountId) effect += t.amount_minor;
+  return effect;
+}
+
+// Refuses a change that pushes a credit card past its limit. A change that doesn't raise what is owed is always fine,
+// so a card that is already over (a recurring charge landed) can still have its notes edited or be paid off.
+// Pass `editingId` when t replaces an existing transaction. Recurring items log without this check: they already happened.
+export async function checkCreditLimit(t: NewTransaction, editingId?: number) {
+  const old = editingId
+    ? await db!.getFirstAsync<Pick<Transaction, 'type' | 'amount_minor' | 'account_id' | 'to_account_id'>>(
+        'SELECT type, amount_minor, account_id, to_account_id FROM transactions WHERE id = ?', editingId,
+      )
+    : null;
+  const ids = new Set([t.account_id, t.to_account_id, old?.account_id, old?.to_account_id]);
+  for (const id of ids) {
+    if (id === null || id === undefined) continue;
+    const card = await db!.getFirstAsync<{ name: string; type: string; limit_minor: number | null; balance_minor: number }>(
+      `SELECT a.name, a.type, a.limit_minor, ${BALANCE} AS balance_minor FROM accounts a WHERE a.id = ?`, id,
+    );
+    if (!card || card.type !== 'credit' || card.limit_minor === null) continue;
+    const owedBefore = -card.balance_minor;
+    const owedAfter = owedBefore - (balanceEffect(id, t) - (old ? balanceEffect(id, old) : 0));
+    if (owedAfter > card.limit_minor && owedAfter > owedBefore) {
+      const left = Math.max(0, card.limit_minor - owedBefore);
+      const error = new Error(
+        left === 0
+          ? `${card.name} is at its limit. Raise the limit on the account to record this.`
+          : `That is more than the ${formatMoney(left)} left on ${card.name}. Raise the limit on the account to record it.`,
+      );
+      error.name = 'OverLimit';
+      throw error;
+    }
+  }
+}
+
 export async function addTransaction(t: NewTransaction) {
+  await checkCreditLimit(t);
   await write((handle) =>
     handle.runAsync(
       `INSERT INTO transactions (type, amount_minor, account_id, to_account_id, category_id, note, date, created_at)
@@ -142,17 +194,15 @@ export async function addTransaction(t: NewTransaction) {
   );
 }
 
-// Balance = opening + income - expense - transfers out + transfers in. Never stored.
+// Balance = opening + income - expense - transfers out + transfers in. Never stored. Needs the accounts table aliased as `a`.
+const BALANCE = `(a.opening_minor
+  + COALESCE((SELECT SUM(CASE WHEN t.type = 'income' THEN t.amount_minor ELSE -t.amount_minor END)
+              FROM transactions t WHERE t.account_id = a.id), 0)
+  + COALESCE((SELECT SUM(t.amount_minor) FROM transactions t
+              WHERE t.type = 'transfer' AND t.to_account_id = a.id), 0))`;
+
 export async function getAccountsWithBalance(): Promise<(Account & { balance_minor: number })[]> {
-  return db!.getAllAsync(
-    `SELECT a.*,
-       a.opening_minor
-       + COALESCE((SELECT SUM(CASE WHEN t.type = 'income' THEN t.amount_minor ELSE -t.amount_minor END)
-                   FROM transactions t WHERE t.account_id = a.id), 0)
-       + COALESCE((SELECT SUM(t.amount_minor) FROM transactions t
-                   WHERE t.type = 'transfer' AND t.to_account_id = a.id), 0) AS balance_minor
-     FROM accounts a ORDER BY a.id`,
-  );
+  return db!.getAllAsync(`SELECT a.*, ${BALANCE} AS balance_minor FROM accounts a ORDER BY a.id`);
 }
 
 export async function getCategories(): Promise<Category[]> {
@@ -248,6 +298,7 @@ export async function getTransaction(id: number): Promise<TransactionRow | null>
 }
 
 export async function updateTransaction(id: number, t: NewTransaction) {
+  await checkCreditLimit(t, id);
   await write((handle) =>
     handle.runAsync(
       `UPDATE transactions SET type = ?, amount_minor = ?, account_id = ?, to_account_id = ?,
@@ -261,7 +312,7 @@ export async function deleteTransaction(id: number) {
   await write((handle) => handle.runAsync('DELETE FROM transactions WHERE id = ?', id));
 }
 
-export type NewAccount = Pick<Account, 'name' | 'type' | 'opening_minor' | 'color'>;
+export type NewAccount = Pick<Account, 'name' | 'type' | 'opening_minor' | 'color' | 'limit_minor' | 'due_day'>;
 
 export async function getAccount(id: number): Promise<Account | null> {
   return db!.getFirstAsync('SELECT * FROM accounts WHERE id = ?', id);
@@ -270,15 +321,18 @@ export async function getAccount(id: number): Promise<Account | null> {
 export async function addAccount(a: NewAccount) {
   await write((handle) =>
     handle.runAsync(
-      'INSERT INTO accounts (name, type, opening_minor, color, created_at) VALUES (?, ?, ?, ?, ?)',
-      a.name, a.type, a.opening_minor, a.color, new Date().toISOString(),
+      'INSERT INTO accounts (name, type, opening_minor, color, limit_minor, due_day, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      a.name, a.type, a.opening_minor, a.color, a.limit_minor, a.due_day, new Date().toISOString(),
     ),
   );
 }
 
 export async function updateAccount(id: number, a: NewAccount) {
   await write((handle) =>
-    handle.runAsync('UPDATE accounts SET name = ?, type = ?, opening_minor = ?, color = ? WHERE id = ?', a.name, a.type, a.opening_minor, a.color, id),
+    handle.runAsync(
+      'UPDATE accounts SET name = ?, type = ?, opening_minor = ?, color = ?, limit_minor = ?, due_day = ? WHERE id = ?',
+      a.name, a.type, a.opening_minor, a.color, a.limit_minor, a.due_day, id,
+    ),
   );
 }
 
@@ -463,6 +517,20 @@ async function getMonthlyTotals(endMonth: string): Promise<MonthTotals[]> {
   return months.map((month) => rows.find((r) => r.month === month) ?? { month, in_minor: 0, out_minor: 0 });
 }
 
+// Every credit card with what is owed now, and what was spent on it and paid into it in `month`.
+async function getCardInsights(month: string): Promise<CardInsight[]> {
+  const { start, end } = monthRange(month);
+  return db!.getAllAsync(
+    `SELECT a.id, a.name, a.color, a.limit_minor, a.due_day, -${BALANCE} AS owed_minor,
+       COALESCE((SELECT SUM(t.amount_minor) FROM transactions t
+                 WHERE t.account_id = a.id AND t.type = 'expense' AND t.date BETWEEN ? AND ?), 0) AS spent_minor,
+       COALESCE((SELECT SUM(t.amount_minor) FROM transactions t
+                 WHERE t.to_account_id = a.id AND t.type = 'transfer' AND t.date BETWEEN ? AND ?), 0) AS paid_minor
+     FROM accounts a WHERE a.type = 'credit' ORDER BY a.id`,
+    start, end, start, end,
+  );
+}
+
 // One call per screen load. Queries run one after another on purpose (see useData).
 export async function getInsights(month: string): Promise<InsightsData> {
   const prev = shiftMonth(month, -1);
@@ -494,10 +562,11 @@ export async function getInsights(month: string): Promise<InsightsData> {
     start, end,
   );
   const monthly = await getMonthlyTotals(currentMonth());
+  const cards = await getCardInsights(month);
   const earliest = await db!.getFirstAsync<{ month: string | null }>('SELECT MIN(substr(date, 1, 7)) AS month FROM transactions');
   return {
     summary, prevSummary, spending, prevSpending, income, daily, prevDaily,
-    recurringOut: recurring?.total ?? 0, biggest: biggest ?? null, spendDays: spendDays?.days ?? 0, monthly, earliestMonth: earliest?.month ?? null,
+    recurringOut: recurring?.total ?? 0, biggest: biggest ?? null, spendDays: spendDays?.days ?? 0, monthly, cards, earliestMonth: earliest?.month ?? null,
   };
 }
 
@@ -528,8 +597,8 @@ export async function replaceAllData(backup: Backup) {
       await clearAll(handle);
       for (const a of backup.accounts) {
         await handle.runAsync(
-          'INSERT INTO accounts (id, name, type, opening_minor, color, created_at) VALUES (?, ?, ?, ?, ?, ?)',
-          a.id, a.name, a.type, a.opening_minor, a.color, a.created_at,
+          'INSERT INTO accounts (id, name, type, opening_minor, color, limit_minor, due_day, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          a.id, a.name, a.type, a.opening_minor, a.color, a.limit_minor, a.due_day, a.created_at,
         );
       }
       for (const c of backup.categories) {

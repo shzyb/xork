@@ -10,8 +10,9 @@ import { Button } from '../src/components/Button';
 import { CategoryGrid } from '../src/components/CategoryGrid';
 import { DateChips } from '../src/components/DateChips';
 import { Keypad } from '../src/components/Keypad';
-import { addTransaction, getAccountsWithBalance, getCategories, getTransaction, updateTransaction } from '../src/db';
+import { addTransaction, checkCreditLimit, getAccountsWithBalance, getCategories, getTransaction, isOverLimit, updateTransaction } from '../src/db';
 import { today, yesterday } from '../src/dates';
+import { creditStatus } from '../src/insights';
 import { currentDecimals, currentSymbol, formatMoney, formatTyped, minorToTyped, parseAmount } from '../src/money';
 import { sheet, spacing } from '../src/theme';
 import type { Account, Category, TransactionRow, TransactionType } from '../src/types';
@@ -84,11 +85,27 @@ function AddForm({ accounts, categories, editing, startType }: {
     setError('');
   }
 
-  function goToDetails() {
+  const draft = () => ({
+    type,
+    amount_minor: minor,
+    account_id: fromId,
+    to_account_id: type === 'transfer' ? toId : null,
+    category_id: type === 'transfer' ? null : categoryId,
+    note: note.trim(),
+    date,
+  });
+
+  // A credit card at its limit refuses new spending. Checked on Continue so nobody fills in details first.
+  async function goToDetails() {
     if (minor <= 0) return setError('Enter an amount above zero.');
     if (type === 'transfer') {
       if (accounts.length < 2) return setError('Add a second account to move money.');
       if (fromId === toId) return setError('Choose two different accounts.');
+    }
+    try {
+      await checkCreditLimit(draft(), editing?.id);
+    } catch (e) {
+      return setError(isOverLimit(e) ? e.message : 'Something went wrong. Try again.');
     }
     setError('');
     setStep(2);
@@ -97,20 +114,34 @@ function AddForm({ accounts, categories, editing, startType }: {
   async function save() {
     if (type !== 'transfer' && categoryId === null) return setError('Pick a category.');
     try {
-      const transaction = {
-        type,
-        amount_minor: minor,
-        account_id: fromId,
-        to_account_id: type === 'transfer' ? toId : null,
-        category_id: type === 'transfer' ? null : categoryId,
-        note: note.trim(),
-        date,
-      };
-      if (editing) await updateTransaction(editing.id, transaction);
-      else await addTransaction(transaction);
+      if (editing) await updateTransaction(editing.id, draft());
+      else await addTransaction(draft());
       router.back();
-    } catch {
-      setError('Could not save. Try again.');
+    } catch (e) {
+      setError(isOverLimit(e) ? e.message : 'Could not save. Try again.');
+    }
+  }
+
+  // For a credit card, show what is left and warn as the typed amount takes it near the limit.
+  const card = from.type === 'credit' && from.limit_minor ? from : null;
+  const oldOutflow = card && editing && editing.account_id === card.id ? (editing.type === 'income' ? -editing.amount_minor : editing.amount_minor) : 0;
+  const cardOwed = card ? -card.balance_minor - oldOutflow + (type === 'income' ? -minor : minor) : 0;
+  const cardStatus = card?.limit_minor ? creditStatus(cardOwed, card.limit_minor) : null;
+  let underText = `${from.name} has ${formatMoney(from.balance_minor)}`;
+  let underColor: string | undefined;
+  if (card?.limit_minor && cardStatus) {
+    const verb = minor > 0 ? 'would be' : 'is';
+    if (cardOwed > card.limit_minor) {
+      underText = `${formatMoney(cardOwed - card.limit_minor)} over the limit on ${card.name}`;
+      underColor = sheet.neg;
+    } else if (cardStatus.state === 'full') {
+      underText = `${card.name} ${verb} at its limit`;
+      underColor = sheet.neg;
+    } else if (cardStatus.state === 'ok') {
+      underText = `${card.name}: ${formatMoney(cardStatus.left)} left of ${formatMoney(card.limit_minor)}`;
+    } else {
+      underText = `${card.name} ${verb} at ${cardStatus.percent}% of its limit`;
+      underColor = cardStatus.state === 'warn' ? sheet.warn : sheet.neg;
     }
   }
 
@@ -171,7 +202,7 @@ function AddForm({ accounts, categories, editing, startType }: {
                 <Text style={styles.symbol}>{currentSymbol()} </Text>
                 {amount ? formatTyped(amount) : '0'}
               </Text>
-              <Text style={styles.under}>{from.name} has {formatMoney(from.balance_minor)}</Text>
+              <Text style={[styles.under, underColor !== undefined && { color: underColor, fontWeight: '600' }]}>{underText}</Text>
               {error !== '' && <Text style={styles.error}>{error}</Text>}
             </View>
           </View>

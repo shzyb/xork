@@ -145,7 +145,8 @@ src/__tests__/     tests for money, dates, db change listeners
 ## Data model
 
 ```sql
-accounts     (id, name, opening_minor, color, created_at)
+accounts     (id, name, type['cash'|'debit'|'savings'|'credit'], opening_minor, color,
+              limit_minor NULL, due_day NULL, created_at)   -- limit and due day: credit cards only
 categories   (id, name, kind['expense'|'income'], icon, color, budget_minor NULL, is_default)
 transactions (id, type['expense'|'income'|'transfer'], amount_minor, account_id,
               to_account_id NULL, category_id NULL,
@@ -159,6 +160,10 @@ deletes its transactions. Seed default categories on first launch: Groceries, Di
 Transport, Bills, Rent, Mobile & internet, Subscriptions, Shopping, Health, Family, Other /
 Salary, Freelance, Gifts, Other income. Seed one account called "Cash".
 A transfer moves the same amount out of one account and into the other.
+A credit card stores what is owed as a negative `opening_minor`, so balances and transfers work as for any account.
+It has a required limit and payment due day. Warn from 80% of the limit used (red from 95%). Adding or editing an
+expense or transfer-out that would push the card past its limit is refused. Payments and refunds are always
+allowed, and recurring items log regardless because the charge already happened.
 
 ## Screens (Expo Router)
 

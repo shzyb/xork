@@ -5,7 +5,7 @@ function fakeDb(overrides: Partial<Db> = {}): Db {
   return {
     execAsync: jest.fn().mockResolvedValue(undefined),
     runAsync: jest.fn().mockResolvedValue({}),
-    getFirstAsync: jest.fn().mockResolvedValue({ user_version: 3 }),
+    getFirstAsync: jest.fn().mockResolvedValue({ user_version: 4 }),
     getAllAsync: jest.fn().mockResolvedValue([]),
     withTransactionAsync: jest.fn(async (task: () => Promise<void>) => task()),
     ...overrides,
@@ -144,8 +144,8 @@ describe.each([
 const FOOD = { name: 'Food', kind: 'expense' as const, icon: 'utensils', color: '#FF8A00', budget_minor: null };
 
 describe.each([
-  ['addAccount', () => addAccount({ name: 'Bank', type: 'debit', opening_minor: 5000, color: '#3B82F6' }), 'INSERT INTO accounts'],
-  ['updateAccount', () => updateAccount(3, { name: 'Bank', type: 'debit', opening_minor: 5000, color: '#3B82F6' }), 'UPDATE accounts'],
+  ['addAccount', () => addAccount({ name: 'Bank', type: 'debit', opening_minor: 5000, color: '#3B82F6', limit_minor: null, due_day: null }), 'INSERT INTO accounts'],
+  ['updateAccount', () => updateAccount(3, { name: 'Bank', type: 'debit', opening_minor: 5000, color: '#3B82F6', limit_minor: null, due_day: null }), 'UPDATE accounts'],
   ['addCategory', () => addCategory(FOOD), 'INSERT INTO categories'],
   ['updateCategory', () => updateCategory(3, FOOD), 'UPDATE categories'],
 ])('%s', (_name, run, sql) => {
@@ -217,7 +217,7 @@ describe('deleteCategory', () => {
   it('moves transactions and recurring items to Other, then deletes, in one SQL transaction', async () => {
     const getFirstAsync = jest
       .fn()
-      .mockResolvedValueOnce({ user_version: 3 })
+      .mockResolvedValueOnce({ user_version: 4 })
       .mockResolvedValueOnce(null) // currency setting during openDb
       .mockResolvedValueOnce({ kind: 'expense', is_default: 0 })
       .mockResolvedValueOnce({ id: 24 });
@@ -239,7 +239,7 @@ describe('deleteCategory', () => {
   it('refuses to delete an Other category and changes nothing', async () => {
     const getFirstAsync = jest
       .fn()
-      .mockResolvedValueOnce({ user_version: 3 })
+      .mockResolvedValueOnce({ user_version: 4 })
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ kind: 'expense', is_default: 1 });
     const db = fakeDb({ getFirstAsync });
@@ -271,7 +271,7 @@ describe('logDueRecurring', () => {
   const due = (next_date: string) => ({ id: 7, ...RENT, next_date });
   const dbWith = (rows: unknown[], count: number) =>
     fakeDb({
-      getFirstAsync: jest.fn().mockResolvedValueOnce({ user_version: 3 }).mockResolvedValueOnce(null).mockResolvedValue({ count }),
+      getFirstAsync: jest.fn().mockResolvedValueOnce({ user_version: 4 }).mockResolvedValueOnce(null).mockResolvedValue({ count }),
       getAllAsync: jest.fn().mockResolvedValue(rows),
     });
 
@@ -331,7 +331,7 @@ describe('recurring detail actions', () => {
 
   const item = (next_date: string, active = 1) => ({ id: 7, ...RENT, next_date, active });
   const dbWith = (found: unknown) =>
-    fakeDb({ getFirstAsync: jest.fn().mockResolvedValueOnce({ user_version: 3 }).mockResolvedValueOnce(null).mockResolvedValue(found) });
+    fakeDb({ getFirstAsync: jest.fn().mockResolvedValueOnce({ user_version: 4 }).mockResolvedValueOnce(null).mockResolvedValue(found) });
   const statements = (db: Db) => (db.runAsync as jest.Mock).mock.calls;
 
   it('logRecurringNow logs today for a future payment and moves to the one after, in one SQL transaction', async () => {
@@ -399,7 +399,7 @@ describe('recurring detail actions', () => {
   it('getRecurringActivity returns the history and this year’s total', async () => {
     const getFirstAsync = jest
       .fn()
-      .mockResolvedValueOnce({ user_version: 3 })
+      .mockResolvedValueOnce({ user_version: 4 })
       .mockResolvedValueOnce(null)
       .mockResolvedValue({ count: 4, total: 34000000 });
     const db = fakeDb({ getFirstAsync, getAllAsync: jest.fn().mockResolvedValue([{ id: 1 }]) });
@@ -450,7 +450,7 @@ describe('recurring writes', () => {
 
 const BACKUP = {
   app: 'hisaab' as const, version: 1, exported_at: 'x', currency: 'PKR',
-  accounts: [{ id: 1, name: 'Cash', type: 'cash' as const, opening_minor: 0, color: '#FF9F0A', created_at: 'x' }],
+  accounts: [{ id: 1, name: 'Cash', type: 'cash' as const, opening_minor: 0, color: '#FF9F0A', limit_minor: null, due_day: null, created_at: 'x' }],
   categories: [
     { id: 1, name: 'Groceries', kind: 'expense' as const, icon: 'tag', color: '#000', budget_minor: null, is_default: 0 },
     { id: 2, name: 'Other', kind: 'expense' as const, icon: 'tag', color: '#000', budget_minor: null, is_default: 1 },
@@ -538,7 +538,7 @@ describe('deleteAllData', () => {
 describe('exportAll', () => {
   it('returns every table with the currency and a version marker', async () => {
     const rows = [{ id: 1 }];
-    const getFirstAsync = jest.fn().mockResolvedValueOnce({ user_version: 3 }).mockResolvedValueOnce(null).mockResolvedValue({ value: 'AED' });
+    const getFirstAsync = jest.fn().mockResolvedValueOnce({ user_version: 4 }).mockResolvedValueOnce(null).mockResolvedValue({ value: 'AED' });
     await openDb(fakeDb({ getFirstAsync, getAllAsync: jest.fn().mockResolvedValue(rows) }));
 
     const backup = await exportAll();
@@ -579,10 +579,11 @@ describe('migration', () => {
     const db = fakeDb({ getFirstAsync: jest.fn().mockResolvedValue({ user_version: 0 }) });
     await openDb(db);
 
-    expect(db.withTransactionAsync).toHaveBeenCalledTimes(3);
+    expect(db.withTransactionAsync).toHaveBeenCalledTimes(4);
     expect(db.execAsync).toHaveBeenCalledWith('PRAGMA user_version = 1');
     expect(db.execAsync).toHaveBeenCalledWith('PRAGMA user_version = 2');
     expect(db.execAsync).toHaveBeenCalledWith('PRAGMA user_version = 3');
+    expect(db.execAsync).toHaveBeenCalledWith('PRAGMA user_version = 4');
     // 32 categories + 1 Cash account, then 32 icon updates
     expect((db.runAsync as jest.Mock).mock.calls.length).toBe(65);
   });
@@ -591,17 +592,90 @@ describe('migration', () => {
     const db = fakeDb({ getFirstAsync: jest.fn().mockResolvedValue({ user_version: 1 }) });
     await openDb(db);
 
-    expect(db.withTransactionAsync).toHaveBeenCalledTimes(2);
+    expect(db.withTransactionAsync).toHaveBeenCalledTimes(3);
     expect(db.execAsync).not.toHaveBeenCalledWith(expect.stringContaining('CREATE TABLE'));
     expect(db.execAsync).toHaveBeenCalledWith(expect.stringContaining('ALTER TABLE accounts ADD COLUMN type'));
+    expect(db.execAsync).toHaveBeenCalledWith(expect.stringContaining('ALTER TABLE accounts ADD COLUMN limit_minor'));
+    expect(db.execAsync).toHaveBeenCalledWith(expect.stringContaining('ALTER TABLE accounts ADD COLUMN due_day'));
     expect(db.execAsync).toHaveBeenCalledWith('PRAGMA user_version = 3');
+    expect(db.execAsync).toHaveBeenCalledWith('PRAGMA user_version = 4');
     expect(db.runAsync).toHaveBeenCalledWith(expect.stringContaining('UPDATE categories SET icon'), 'shopping-cart', 'Groceries', 'expense');
     expect(db.execAsync).toHaveBeenCalledWith('PRAGMA user_version = 2');
   });
 
   it('does nothing when already migrated', async () => {
-    const db = fakeDb({ getFirstAsync: jest.fn().mockResolvedValue({ user_version: 3 }) });
+    const db = fakeDb({ getFirstAsync: jest.fn().mockResolvedValue({ user_version: 4 }) });
     await openDb(db);
     expect(db.withTransactionAsync).not.toHaveBeenCalled();
+  });
+});
+
+describe('credit card limit', () => {
+  // A card with a 10,000.00 limit and 9,000.00 owed.
+  const card = { name: 'Visa', type: 'credit', limit_minor: 1000000, balance_minor: -900000 };
+  const spend = (amount_minor: number, account_id = 1) => ({
+    type: 'expense' as const, amount_minor, account_id, to_account_id: null, category_id: 1, note: '', date: '2026-10-01',
+  });
+
+  // Opens a database, then queues what the limit check will read: the old transaction (when editing) and the card.
+  async function open(rows: unknown[]) {
+    const getFirstAsync = jest.fn().mockResolvedValue({ user_version: 4 });
+    const db = fakeDb({ getFirstAsync });
+    await openDb(db);
+    rows.forEach((row) => getFirstAsync.mockResolvedValueOnce(row));
+    return db;
+  }
+
+  it('refuses an expense that goes past the limit, writes nothing and notifies nobody', async () => {
+    const db = await open([card]);
+    (db.runAsync as jest.Mock).mockClear();
+    const listener = jest.fn();
+    const off = subscribe(listener);
+    const before = getVersion();
+
+    await expect(addTransaction(spend(150000))).rejects.toThrow('1,000.00 left on Visa');
+
+    expect(db.runAsync).not.toHaveBeenCalled();
+    expect(getVersion()).toBe(before);
+    expect(listener).not.toHaveBeenCalled();
+    off();
+  });
+
+  it('allows an expense that stays within the limit', async () => {
+    const db = await open([card]);
+    await addTransaction(spend(100000));
+    expect(db.runAsync).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO transactions'), 'expense', 100000, 1, null, 1, '', '2026-10-01', expect.any(String));
+  });
+
+  it('says the card is at its limit when nothing is left', async () => {
+    await open([{ ...card, balance_minor: -1000000 }]);
+    await expect(addTransaction(spend(100))).rejects.toThrow('Visa is at its limit');
+  });
+
+  it('allows a payment into the card and a refund', async () => {
+    const bank = { name: 'Bank', type: 'debit', limit_minor: null, balance_minor: 500000 };
+    const db = await open([bank, { ...card, balance_minor: -1000000 }]);
+    await addTransaction({ type: 'transfer', amount_minor: 50000, account_id: 2, to_account_id: 1, category_id: null, note: '', date: '2026-10-01' });
+    expect(db.runAsync).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO transactions'), 'transfer', 50000, 2, 1, null, '', '2026-10-01', expect.any(String));
+  });
+
+  it('refuses a transfer out of a full card', async () => {
+    await open([{ ...card, balance_minor: -1000000 }]);
+    await expect(
+      addTransaction({ type: 'transfer', amount_minor: 100, account_id: 1, to_account_id: 2, category_id: null, note: '', date: '2026-10-01' }),
+    ).rejects.toThrow('Visa is at its limit');
+  });
+
+  it('lets a card that is already over its limit edit a transaction without raising what is owed', async () => {
+    const old = { type: 'expense', amount_minor: 200000, account_id: 1, to_account_id: null };
+    const db = await open([old, { ...card, balance_minor: -1100000 }]);
+    await updateTransaction(5, spend(200000));
+    expect(db.runAsync).toHaveBeenCalledWith(expect.stringContaining('UPDATE transactions'), 'expense', 200000, 1, null, 1, '', '2026-10-01', 5);
+  });
+
+  it('refuses an edit that raises what is owed past the limit', async () => {
+    const old = { type: 'expense', amount_minor: 200000, account_id: 1, to_account_id: null };
+    await open([old, { ...card, balance_minor: -900000 }]);
+    await expect(updateTransaction(5, spend(400000))).rejects.toThrow('left on Visa');
   });
 });

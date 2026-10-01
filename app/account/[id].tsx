@@ -3,7 +3,7 @@ import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { StatusBar } from 'expo-status-bar';
 import { Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/Button';
 import { ColorSwatches } from '../../src/components/ColorSwatches';
@@ -33,14 +33,33 @@ function AccountForm({ editing, accountCount }: { editing: Account | null; accou
   const router = useRouter();
   const [name, setName] = useState(editing?.name ?? '');
   const [type, setType] = useState<AccountType>(editing?.type ?? 'cash');
-  const [opening, setOpening] = useState(editing ? minorToTyped(editing.opening_minor) : '');
+  const [opening, setOpening] = useState(editing ? minorToTyped(Math.abs(editing.opening_minor)) : '');
+  const [limit, setLimit] = useState(editing?.limit_minor ? minorToTyped(editing.limit_minor) : '');
+  const [dueDay, setDueDay] = useState(editing?.due_day ? String(editing.due_day) : '');
   const [color, setColor] = useState(editing?.color ?? accountColors[accountCount % accountColors.length]);
   const [error, setError] = useState('');
+  const isCredit = type === 'credit';
+  const decimalPad = currentDecimals() === 0 ? 'number-pad' : 'decimal-pad';
 
   async function save() {
     if (name.trim() === '') return setError('Enter a name.');
-    if (!/^\d*\.?\d*$/.test(opening.trim())) return setError('Enter the starting balance as a number.');
-    const account = { name: name.trim(), type, opening_minor: parseAmount(opening.trim()), color };
+    if (!/^\d*\.?\d*$/.test(opening.trim())) {
+      return setError(isCredit ? 'Enter the amount owed as a number.' : 'Enter the starting balance as a number.');
+    }
+    const openingMinor = parseAmount(opening.trim());
+    let limitMinor: number | null = null;
+    let due: number | null = null;
+    if (isCredit) {
+      limitMinor = /^\d*\.?\d*$/.test(limit.trim()) ? parseAmount(limit.trim()) : 0;
+      if (limitMinor <= 0) return setError('Enter a credit limit above zero.');
+      if (openingMinor > limitMinor) return setError('The amount owed can’t be more than the limit.');
+      due = /^\d{1,2}$/.test(dueDay.trim()) ? Number(dueDay.trim()) : 0;
+      if (due < 1 || due > 31) return setError('Enter a due day from 1 to 31.');
+    }
+    const account = {
+      name: name.trim(), type, opening_minor: isCredit ? -openingMinor : openingMinor, color,
+      limit_minor: limitMinor, due_day: due,
+    };
     try {
       if (editing) await updateAccount(editing.id, account);
       else await addAccount(account);
@@ -83,26 +102,32 @@ function AccountForm({ editing, accountCount }: { editing: Account | null; accou
           </View>
           <Field label="Account name" value={name} onChangeText={setName} placeholder="e.g. Bank" maxLength={32} />
           <Text style={styles.label}>Type</Text>
-          <View style={styles.types}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.types}>
             {ACCOUNT_TYPES.map((t) => (
               <Pressable
                 key={t.value}
                 accessibilityRole="button"
                 accessibilityState={{ selected: t.value === type }}
-                onPress={() => setType(t.value)}
+                onPress={() => { setType(t.value); setError(''); }}
                 style={[styles.type, t.value === type && styles.typeSelected]}
               >
                 <Text style={[styles.typeText, t.value === type && styles.typeTextSelected]}>{t.label}</Text>
               </Pressable>
             ))}
-          </View>
+          </ScrollView>
           <Field
-            label="Starting balance"
+            label={isCredit ? 'Starting amount owed' : 'Starting balance'}
             value={opening}
             onChangeText={setOpening}
             placeholder="0"
-            keyboardType={currentDecimals() === 0 ? 'number-pad' : 'decimal-pad'}
+            keyboardType={decimalPad}
           />
+          {isCredit && (
+            <>
+              <Field label="Credit limit" value={limit} onChangeText={setLimit} placeholder="e.g. 100000" keyboardType={decimalPad} />
+              <Field label="Payment due day of the month" value={dueDay} onChangeText={setDueDay} placeholder="e.g. 15" keyboardType="number-pad" maxLength={2} />
+            </>
+          )}
           <Text style={styles.label}>Colour</Text>
           <ColorSwatches colors={accountColors} selected={color} onSelect={setColor} />
           {error !== '' && <Text style={styles.error}>{error}</Text>}
@@ -129,7 +154,7 @@ const styles = StyleSheet.create({
   initial: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
   initialText: { color: '#FFFFFF', fontSize: 26, fontWeight: '700' },
   label: { color: sheet.ink2, fontSize: 14, fontWeight: '600', marginTop: 20, marginBottom: 8 },
-  types: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  types: { gap: 8 },
   type: { minHeight: 44, paddingHorizontal: 18, borderRadius: 22, backgroundColor: sheet.card, alignItems: 'center', justifyContent: 'center' },
   typeSelected: { backgroundColor: sheet.ink },
   typeText: { color: sheet.ink2, fontSize: 15, fontWeight: '600' },

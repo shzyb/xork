@@ -7,8 +7,8 @@ const valid = (): Backup => ({
   exported_at: '2026-09-30T10:00:00.000Z',
   currency: 'PKR',
   accounts: [
-    { id: 1, name: 'Cash', type: 'cash', opening_minor: 0, color: '#FF9F0A', created_at: 'x' },
-    { id: 2, name: 'Bank', type: 'debit', opening_minor: 500000, color: '#3B82F6', created_at: 'x' },
+    { id: 1, name: 'Cash', type: 'cash', opening_minor: 0, color: '#FF9F0A', limit_minor: null, due_day: null, created_at: 'x' },
+    { id: 2, name: 'Bank', type: 'debit', opening_minor: 500000, color: '#3B82F6', limit_minor: null, due_day: null, created_at: 'x' },
   ],
   categories: [
     { id: 1, name: 'Groceries', kind: 'expense', icon: 'shopping-cart', color: '#34A853', budget_minor: 4500000, is_default: 0 },
@@ -49,6 +49,24 @@ describe('parseBackup', () => {
     const bad = valid() as unknown as { accounts: Record<string, unknown>[] };
     bad.accounts[0].type = 'loan';
     expect(parse(bad).ok).toBe(false);
+  });
+
+  it('treats a missing limit and due day as empty, and rejects bad ones', () => {
+    const old = valid() as unknown as { accounts: Record<string, unknown>[] };
+    delete old.accounts[0].limit_minor;
+    delete old.accounts[0].due_day;
+    const result = parse(old);
+    expect(result.ok && [result.backup.accounts[0].limit_minor, result.backup.accounts[0].due_day]).toEqual([null, null]);
+
+    for (const [field, value] of [['limit_minor', 0], ['limit_minor', 1.5], ['due_day', 0], ['due_day', 32], ['due_day', '15']]) {
+      const bad = valid() as unknown as { accounts: Record<string, unknown>[] };
+      bad.accounts[0][field] = value;
+      expect(parse(bad).ok).toBe(false);
+    }
+
+    const card = valid() as unknown as { accounts: Record<string, unknown>[] };
+    Object.assign(card.accounts[0], { type: 'credit', limit_minor: 5000000, due_day: 15 });
+    expect(parse(card).ok).toBe(true);
   });
 
   it('rejects text that is not JSON or not a Xork file', () => {
