@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
 import { ArrowLeftRight } from 'lucide-react-native';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { PressableScale } from './PressableScale';
 import { prettyDate } from '../dates';
 import { formatMoney } from '../money';
 import { fontSize, useColors } from '../theme';
@@ -33,7 +34,7 @@ function Line({ t }: { t: TransactionRow }) {
   const transfer = t.type === 'transfer';
 
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       onPress={() => router.push(`/transaction/${t.id}`)}
       style={styles.row}
@@ -56,7 +57,7 @@ function Line({ t }: { t: TransactionRow }) {
       <Text style={[styles.amount, { color: income ? colors.pos : colors.ink }]}>
         {income ? '+ ' : ''}{formatMoney(t.amount_minor)}
       </Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 

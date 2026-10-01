@@ -3,7 +3,8 @@ import { FadeScrollView } from '../src/components/FadeScrollView';
 import { StatusBar } from 'expo-status-bar';
 import { ChevronLeft, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { PressableScale } from '../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AccountChips } from '../src/components/AccountChips';
 import { Button } from '../src/components/Button';
@@ -171,7 +172,7 @@ function AddForm({ accounts, categories, editing, startType }: {
           <View style={styles.body}>
             <View style={styles.segment}>
               {TYPES.map((t) => (
-                <Pressable
+                <PressableScale
                   key={t.key}
                   accessibilityRole="button"
                   accessibilityState={{ selected: type === t.key }}
@@ -179,7 +180,7 @@ function AddForm({ accounts, categories, editing, startType }: {
                   style={[styles.segmentItem, type === t.key && { backgroundColor: sheet.card2 }]}
                 >
                   <Text style={[styles.segmentText, type === t.key && { color: sheet.ink }]}>{t.label}</Text>
-                </Pressable>
+                </PressableScale>
               ))}
             </View>
 
@@ -220,14 +221,14 @@ function AddForm({ accounts, categories, editing, startType }: {
       ) : (
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <FadeScrollView style={styles.flex} contentContainerStyle={styles.details} keyboardShouldPersistTaps="handled">
-            <Pressable accessibilityRole="button" accessibilityLabel="Change amount" onPress={() => setStep(1)} style={styles.hero}>
+            <PressableScale accessibilityRole="button" accessibilityLabel="Change amount" onPress={() => setStep(1)} style={styles.hero}>
               <Text style={[styles.heroAmount, type === 'income' && { color: sheet.pos }]}>
                 {type === 'income' ? '+ ' : ''}{formatMoney(minor)}
               </Text>
               <Text style={styles.under}>
                 {from.name}{type === 'transfer' ? ` → ${to.name}` : ''} · tap to change
               </Text>
-            </Pressable>
+            </PressableScale>
 
             {type !== 'transfer' && (
               <>
@@ -273,9 +274,9 @@ function AddForm({ accounts, categories, editing, startType }: {
 
 function RoundButton({ label, onPress, children }: { label: string; onPress: () => void; children: React.ReactNode }) {
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={styles.round}>
+    <PressableScale accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={styles.round}>
       {children}
-    </Pressable>
+    </PressableScale>
   );
 }
 

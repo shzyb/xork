@@ -2,7 +2,8 @@ import { ArrowDown, ArrowUp, Gauge, Repeat, TrendingDown, TrendingUp, TriangleAl
 import { FadeScrollView } from '../../src/components/FadeScrollView';
 import type { LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { PressableScale } from '../../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
 import { CashFlowChart, RunningTotalChart } from '../../src/components/Charts';
@@ -193,9 +194,9 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, showAl
             );
           })}
           {spending.length > 6 && (
-            <Pressable accessibilityRole="button" onPress={onToggleAll} style={[styles.pill, { backgroundColor: colors.fill }]}>
+            <PressableScale accessibilityRole="button" onPress={onToggleAll} style={[styles.pill, { backgroundColor: colors.fill }]}>
               <Text style={{ color: colors.ink, fontWeight: '600' }}>{showAll ? 'Show top 6' : `Show all ${spending.length} categories`}</Text>
-            </Pressable>
+            </PressableScale>
           )}
         </>
       )}
@@ -250,7 +251,7 @@ function CreditCards({ cards, month }: { cards: CardInsight[]; month: string }) 
       {cards.length > 1 && (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cardChips}>
           {cards.map((c) => (
-            <Pressable
+            <PressableScale
               key={c.id}
               accessibilityRole="button"
               accessibilityState={{ selected: c.id === card.id }}
@@ -258,7 +259,7 @@ function CreditCards({ cards, month }: { cards: CardInsight[]; month: string }) 
               style={[styles.cardChip, { backgroundColor: c.id === card.id ? colors.fill : 'transparent' }]}
             >
               <Text style={[styles.chipText, { color: c.id === card.id ? colors.ink : colors.ink3 }]} numberOfLines={1}>{c.name}</Text>
-            </Pressable>
+            </PressableScale>
           ))}
         </ScrollView>
       )}
@@ -298,7 +299,7 @@ function MonthChips({ selected, earliest, onSelect }: {
         const disabled = earliest === null ? m !== currentMonth() : m < earliest;
         return (
           <View key={m} style={[styles.chipHit, disabled && { opacity: 0.35 }]}>
-            <Pressable
+            <PressableScale
               accessibilityRole="button"
               accessibilityLabel={monthName(m)}
               accessibilityState={{ selected: on, disabled }}
@@ -307,7 +308,7 @@ function MonthChips({ selected, earliest, onSelect }: {
               style={[styles.chip, { backgroundColor: on ? colors.fill : 'transparent' }]}
             >
               <Text style={[styles.chipText, { color: on ? colors.ink : colors.ink3 }]}>{monthShort(m)}</Text>
-            </Pressable>
+            </PressableScale>
           </View>
         );
       })}

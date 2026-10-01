@@ -3,7 +3,8 @@ import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { StatusBar } from 'expo-status-bar';
 import { Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
+import { PressableScale } from '../../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/Button';
 import { ColorSwatches } from '../../src/components/ColorSwatches';
@@ -104,7 +105,7 @@ function AccountForm({ editing, accountCount }: { editing: Account | null; accou
           <Text style={styles.label}>Type</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.types}>
             {ACCOUNT_TYPES.map((t) => (
-              <Pressable
+              <PressableScale
                 key={t.value}
                 accessibilityRole="button"
                 accessibilityState={{ selected: t.value === type }}
@@ -112,7 +113,7 @@ function AccountForm({ editing, accountCount }: { editing: Account | null; accou
                 style={[styles.type, t.value === type && styles.typeSelected]}
               >
                 <Text style={[styles.typeText, t.value === type && styles.typeTextSelected]}>{t.label}</Text>
-              </Pressable>
+              </PressableScale>
             ))}
           </ScrollView>
           <Field
@@ -135,10 +136,10 @@ function AccountForm({ editing, accountCount }: { editing: Account | null; accou
         <View style={styles.footer}>
           <Button title={editing ? 'Save changes' : 'Add account'} onPress={save} background={sheet.btnBg} color={sheet.btnFg} />
           {editing && (
-            <Pressable accessibilityRole="button" onPress={confirmDelete} style={styles.delete}>
+            <PressableScale accessibilityRole="button" onPress={confirmDelete} style={styles.delete}>
               <Trash2 color={sheet.neg} size={18} />
               <Text style={styles.deleteText}>Delete account</Text>
-            </Pressable>
+            </PressableScale>
           )}
         </View>
       </KeyboardAvoidingView>

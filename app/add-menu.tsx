@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
 import { ArrowDown, ArrowLeftRight, ArrowUp, Repeat } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { PressableScale } from '../src/components/PressableScale';
 import { Sheet } from '../src/components/Sheet';
 import { actionColors, sheet } from '../src/theme';
 import { Text } from '../src/components/Text';
@@ -48,7 +49,7 @@ export default function AddMenu() {
 
 function Row({ Icon, color, title, subtitle, onPress }: { Icon: LucideIcon; color: string; title: string; subtitle: string; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={styles.row}>
+    <PressableScale accessibilityRole="button" onPress={onPress} style={styles.row}>
       <View style={[styles.icon, { backgroundColor: color }]}>
         <Icon color={sheet.ink} size={20} strokeWidth={2.2} />
       </View>
@@ -56,7 +57,7 @@ function Row({ Icon, color, title, subtitle, onPress }: { Icon: LucideIcon; colo
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.subtitle}>{subtitle}</Text>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 

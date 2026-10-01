@@ -2,7 +2,8 @@ import { useRouter } from 'expo-router';
 import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { ArrowDown, Plus, Repeat } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { PressableScale } from '../../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '../../src/components/EmptyState';
 import { RecurringRow } from '../../src/components/RecurringRow';
@@ -36,9 +37,9 @@ export default function Recurring() {
       <FadeScrollView contentContainerStyle={styles.content}>
         <View style={styles.topbar}>
           <Text style={[styles.title, { color: colors.ink }]}>Recurring</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel="Add recurring item" onPress={openNew} style={styles.iconButton}>
+          <PressableScale accessibilityRole="button" accessibilityLabel="Add recurring item" onPress={openNew} style={styles.iconButton}>
             <Plus color={colors.ink} size={24} />
-          </Pressable>
+          </PressableScale>
         </View>
 
         {items && items.length > 0 && (
@@ -62,9 +63,9 @@ export default function Recurring() {
           <>
             <View style={[styles.tabs, { borderBottomColor: colors.line }]}>
               {SHOWS.map((key) => (
-                <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected: show === key }} onPress={() => setShow(key)}>
+                <PressableScale key={key} accessibilityRole="tab" accessibilityState={{ selected: show === key }} onPress={() => setShow(key)}>
                   <Text style={[styles.tab, { color: show === key ? colors.ink : colors.ink3 }]}>{SHOW_LABELS[key]}</Text>
-                </Pressable>
+                </PressableScale>
               ))}
             </View>
 

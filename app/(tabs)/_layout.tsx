@@ -1,7 +1,8 @@
 import { Tabs, useRouter } from 'expo-router';
 import { ChartPie, Clock, Plus, Repeat } from 'lucide-react-native';
 import type { ComponentProps, ReactNode } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { PressableScale } from '../../src/components/PressableScale';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, G, Path } from 'react-native-svg';
 import { tabBarHeight, useColors } from '../../src/theme';
@@ -87,7 +88,7 @@ function TabBar({ state, navigation }: TabBarProps) {
           if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
         };
         return (
-          <Pressable
+          <PressableScale
             key={route.key}
             accessibilityRole="tab"
             accessibilityLabel={tab.label}
@@ -96,7 +97,7 @@ function TabBar({ state, navigation }: TabBarProps) {
             style={styles.item}
           >
             {tab.icon({ focused, ink: colors.ink, bg: colors.bg, grey: colors.ink3 })}
-          </Pressable>
+          </PressableScale>
         );
       })}
     </View>
@@ -111,14 +112,14 @@ export default function TabsLayout() {
   return (
     <View style={styles.root}>
       <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false }} />
-      <Pressable
+      <PressableScale
         accessibilityRole="button"
         accessibilityLabel="Add"
         onPress={() => router.push('/add-menu')}
         style={[styles.fab, { backgroundColor: colors.btnBg, bottom: tabBarHeight + insets.bottom + 16 }]}
       >
         <Plus color={colors.btnFg} size={28} />
-      </Pressable>
+      </PressableScale>
     </View>
   );
 }

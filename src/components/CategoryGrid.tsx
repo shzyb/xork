@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react-native';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { PressableScale } from './PressableScale';
 import { sheet } from '../theme';
 import type { Category } from '../types';
 import { CategoryIcon } from './CategoryIcon';
@@ -15,7 +16,7 @@ export function CategoryGrid({ categories, selectedId, onSelect, onNew }: {
   return (
     <View style={styles.grid}>
       {categories.map((c) => (
-        <Pressable
+        <PressableScale
           key={c.id}
           accessibilityRole="button"
           accessibilityState={{ selected: selectedId === c.id }}
@@ -28,14 +29,14 @@ export function CategoryGrid({ categories, selectedId, onSelect, onNew }: {
           <Text style={[styles.text, selectedId === c.id && { color: sheet.ink }]} numberOfLines={2}>
             {c.name}
           </Text>
-        </Pressable>
+        </PressableScale>
       ))}
-      <Pressable accessibilityRole="button" accessibilityLabel="New category" onPress={onNew} style={styles.cell}>
+      <PressableScale accessibilityRole="button" accessibilityLabel="New category" onPress={onNew} style={styles.cell}>
         <View style={styles.newIcon}>
           <Plus color={sheet.ink2} size={22} />
         </View>
         <Text style={styles.text}>New</Text>
-      </Pressable>
+      </PressableScale>
     </View>
   );
 }

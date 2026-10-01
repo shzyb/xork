@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
 import { FadeScrollView } from '../src/components/FadeScrollView';
 import { ChevronLeft, ChevronRight } from 'lucide-react-native';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { PressableScale } from '../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../src/components/Button';
 import { getAccountsWithBalance } from '../src/db';
@@ -19,9 +20,9 @@ export default function Accounts() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.back}>
+      <PressableScale accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.back}>
         <ChevronLeft color={colors.ink} size={26} />
-      </Pressable>
+      </PressableScale>
       <FadeScrollView style={styles.flex} contentContainerStyle={styles.content}>
         <Text style={[styles.title, { color: colors.ink }]}>Accounts</Text>
         {accounts && (
@@ -30,7 +31,7 @@ export default function Accounts() {
               {accounts.length} account{accounts.length === 1 ? '' : 's'} · {formatMoney(total)} in total
             </Text>
             {accounts.map((a) => (
-              <Pressable
+              <PressableScale
                 key={a.id}
                 accessibilityRole="button"
                 onPress={() => router.push({ pathname: '/account/detail/[id]', params: { id: String(a.id) } })}
@@ -54,7 +55,7 @@ export default function Accounts() {
                   )}
                 </View>
                 <ChevronRight color={colors.ink3} size={20} />
-              </Pressable>
+              </PressableScale>
             ))}
           </>
         )}

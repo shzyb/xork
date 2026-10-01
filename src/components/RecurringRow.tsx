@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { PressableScale } from './PressableScale';
 import { FREQUENCY_LABEL, prettyDate } from '../dates';
 import { formatMoney } from '../money';
 import { fontSize, useColors } from '../theme';
@@ -14,7 +15,7 @@ export function RecurringRow({ item, date }: { item: RecurringItem; date?: strin
   const income = item.type === 'income';
 
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       onPress={() => router.push({ pathname: '/recurring/detail/[id]', params: { id: String(item.id) } })}
       style={[styles.row, !item.active && { opacity: 0.55 }]}
@@ -34,7 +35,7 @@ export function RecurringRow({ item, date }: { item: RecurringItem; date?: strin
           {date ? prettyDate(date) : item.active ? `Next ${prettyDate(item.next_date)}` : 'Paused'}
         </Text>
       </View>
-    </Pressable>
+    </PressableScale>
   );
 }
 

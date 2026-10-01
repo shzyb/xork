@@ -1,7 +1,8 @@
 import { ChevronDown, Receipt, Search, SearchX, X } from 'lucide-react-native';
 import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { PressableScale } from '../../src/components/PressableScale';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
 import { EmptyState } from '../../src/components/EmptyState';
@@ -130,16 +131,16 @@ export default function Activity() {
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} keyboardShouldPersistTaps="handled">
               {chipsOn && (
-                <Pressable
+                <PressableScale
                   accessibilityRole="button"
                   onPress={() => { setFilter({ ...NO_FILTER }); setLimit(PAGE); }}
                   style={[styles.chip, { backgroundColor: colors.fill }]}
                 >
                   <Text style={[styles.chipText, { color: colors.ink }]}>Clear</Text>
-                </Pressable>
+                </PressableScale>
               )}
               {chips.map((c) => (
-                <Pressable
+                <PressableScale
                   key={c.key}
                   accessibilityRole="button"
                   accessibilityState={{ selected: c.on }}
@@ -148,13 +149,13 @@ export default function Activity() {
                 >
                   <Text style={[styles.chipText, { color: c.on ? colors.btnFg : colors.ink }]} numberOfLines={1}>{c.label}</Text>
                   {c.on ? (
-                    <Pressable accessibilityRole="button" accessibilityLabel="Remove filter" onPress={c.clear} hitSlop={10} style={styles.chipX}>
+                    <PressableScale accessibilityRole="button" accessibilityLabel="Remove filter" onPress={c.clear} hitSlop={10} style={styles.chipX}>
                       <X color={colors.btnFg} size={11} strokeWidth={3} />
-                    </Pressable>
+                    </PressableScale>
                   ) : (
                     <ChevronDown color={colors.ink2} size={15} strokeWidth={2.2} />
                   )}
-                </Pressable>
+                </PressableScale>
               ))}
             </ScrollView>
           </View>
@@ -164,13 +165,13 @@ export default function Activity() {
           {rows && totals && (rows.length === 0 ? (
             filtered ? (
               <EmptyState Icon={SearchX} title="No results" text="Nothing matches your search or filters.">
-                <Pressable
+                <PressableScale
                   accessibilityRole="button"
                   onPress={() => { setFilter({ ...NO_FILTER }); setLimit(PAGE); }}
                   style={[styles.pill, { backgroundColor: colors.fill, marginTop: spacing.sm }]}
                 >
                   <Text style={[styles.chipText, { color: colors.ink }]}>Clear filters</Text>
-                </Pressable>
+                </PressableScale>
               </EmptyState>
             ) : (
               <EmptyState Icon={Receipt} title="No transactions yet" text="Everything you log shows up here, newest first." />
@@ -183,9 +184,9 @@ export default function Activity() {
               <TransactionList rows={rows} />
               {totals.count > rows.length && (
                 <View style={styles.empty}>
-                  <Pressable accessibilityRole="button" onPress={() => setLimit(limit + PAGE)} style={[styles.pill, { backgroundColor: colors.fill }]}>
+                  <PressableScale accessibilityRole="button" onPress={() => setLimit(limit + PAGE)} style={[styles.pill, { backgroundColor: colors.fill }]}>
                     <Text style={[styles.chipText, { color: colors.ink }]}>Show more</Text>
-                  </Pressable>
+                  </PressableScale>
                 </View>
               )}
             </>

@@ -2,7 +2,8 @@ import { useRouter } from 'expo-router';
 import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { ArrowDown, ArrowUp, CalendarClock, Eye, EyeOff, Plus, Receipt, Settings } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { PressableScale } from '../../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '../../src/components/EmptyState';
 import { RecurringRow } from '../../src/components/RecurringRow';
@@ -40,12 +41,12 @@ export default function Home() {
         <View style={styles.topbar}>
           <Text style={[styles.brand, { color: colors.ink }]}>Home</Text>
           <View style={styles.actions}>
-            <Pressable accessibilityRole="button" accessibilityLabel={hidden ? 'Show balances' : 'Hide balances'} onPress={() => setHidden(!hidden)} style={styles.iconButton}>
+            <PressableScale accessibilityRole="button" accessibilityLabel={hidden ? 'Show balances' : 'Hide balances'} onPress={() => setHidden(!hidden)} style={styles.iconButton}>
               {hidden ? <EyeOff color={colors.ink} size={22} /> : <Eye color={colors.ink} size={22} />}
-            </Pressable>
-            <Pressable accessibilityRole="button" accessibilityLabel="Settings" onPress={() => router.push('/settings')} style={styles.iconButton}>
+            </PressableScale>
+            <PressableScale accessibilityRole="button" accessibilityLabel="Settings" onPress={() => router.push('/settings')} style={styles.iconButton}>
               <Settings color={colors.ink} size={22} />
-            </Pressable>
+            </PressableScale>
           </View>
         </View>
 
@@ -70,11 +71,11 @@ export default function Home() {
 
         <View style={[styles.tabs, { borderBottomColor: colors.line }]}>
           {TABS.map((key) => (
-            <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected: tab === key }} onPress={() => setTab(key)}>
+            <PressableScale key={key} accessibilityRole="tab" accessibilityState={{ selected: tab === key }} onPress={() => setTab(key)}>
               <Text style={[styles.tab, { color: tab === key ? colors.ink : colors.ink3 }]}>
                 {TAB_LABELS[key]}
               </Text>
-            </Pressable>
+            </PressableScale>
           ))}
         </View>
 
@@ -93,7 +94,7 @@ export default function Home() {
             {key === 'accounts' && accounts && (
               <>
                 {accounts.map((a) => (
-                  <Pressable
+                  <PressableScale
                     key={a.id}
                     accessibilityRole="button"
                     onPress={() => router.push({ pathname: '/account/detail/[id]', params: { id: String(a.id) } })}
@@ -116,9 +117,9 @@ export default function Home() {
                         <Text style={{ color: colors.ink3, fontSize: 13, marginTop: 1 }}>Owed {mask(-a.balance_minor)}</Text>
                       )}
                     </View>
-                  </Pressable>
+                  </PressableScale>
                 ))}
-                <Pressable
+                <PressableScale
                   accessibilityRole="button"
                   onPress={() => router.push({ pathname: '/account/[id]', params: { id: 'new' } })}
                   style={styles.row}
@@ -127,7 +128,7 @@ export default function Home() {
                     <Plus color={colors.ink} size={20} />
                   </View>
                   <Text style={[styles.title, { color: colors.ink }]}>Add an account</Text>
-                </Pressable>
+                </PressableScale>
               </>
             )}
 

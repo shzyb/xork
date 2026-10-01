@@ -2,7 +2,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { ArrowLeftRight, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
+import { PressableScale } from '../../src/components/PressableScale';
 import { Button } from '../../src/components/Button';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
 import { Sheet } from '../../src/components/Sheet';
@@ -77,7 +78,7 @@ export default function TransactionDetail() {
 
         <View style={styles.card}>
           {details.map(({ label, value, onPress }, i) => (
-            <Pressable
+            <PressableScale
               key={label}
               disabled={!onPress}
               accessibilityRole={onPress ? 'button' : undefined}
@@ -86,7 +87,7 @@ export default function TransactionDetail() {
             >
               <Text style={styles.detailLabel}>{label}</Text>
               <Text style={[styles.detailValue, onPress && styles.detailLink]}>{value}</Text>
-            </Pressable>
+            </PressableScale>
           ))}
         </View>
 
@@ -99,10 +100,10 @@ export default function TransactionDetail() {
           background={sheet.btnBg}
           color={sheet.btnFg}
         />
-        <Pressable accessibilityRole="button" onPress={confirmDelete} style={styles.delete}>
+        <PressableScale accessibilityRole="button" onPress={confirmDelete} style={styles.delete}>
           <Trash2 color={sheet.neg} size={18} />
           <Text style={styles.deleteText}>Delete</Text>
-        </Pressable>
+        </PressableScale>
       </View>
     </Sheet>
   );

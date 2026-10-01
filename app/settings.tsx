@@ -6,7 +6,8 @@ import * as Sharing from 'expo-sharing';
 import { ChevronRight, Download, Globe, Landmark, Tag, Trash2, Upload } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
+import { PressableScale } from '../src/components/PressableScale';
 import { parseBackup } from '../src/backup';
 import { Sheet } from '../src/components/Sheet';
 import { SheetHeader } from '../src/components/SheetHeader';
@@ -158,7 +159,7 @@ function ActionRow({ Icon, title, subtitle, onPress, end, disabled, danger }: {
   danger?: boolean;
 }) {
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       disabled={disabled}
       onPress={onPress}
@@ -172,7 +173,7 @@ function ActionRow({ Icon, title, subtitle, onPress, end, disabled, danger }: {
         <Text style={styles.rowSub}>{subtitle}</Text>
       </View>
       {end}
-    </Pressable>
+    </PressableScale>
   );
 }
 

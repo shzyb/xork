@@ -3,7 +3,8 @@ import { FadeScrollView } from '../../../src/components/FadeScrollView';
 import { Pause, Play, SkipForward, Trash2, Pencil } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
+import { PressableScale } from '../../../src/components/PressableScale';
 import { Button } from '../../../src/components/Button';
 import { CategoryIcon } from '../../../src/components/CategoryIcon';
 import { Sheet } from '../../../src/components/Sheet';
@@ -122,10 +123,10 @@ export default function RecurringDetail() {
             onPress={() => run(() => setRecurringActive(item.id, !item.active))}
           />
         </View>
-        <Pressable accessibilityRole="button" onPress={confirmDelete} style={styles.delete}>
+        <PressableScale accessibilityRole="button" onPress={confirmDelete} style={styles.delete}>
           <Trash2 color={sheet.neg} size={18} />
           <Text style={styles.deleteText}>Delete recurring item</Text>
-        </Pressable>
+        </PressableScale>
         {error !== '' && <Text style={styles.error}>{error}</Text>}
       </FadeScrollView>
     </Sheet>
@@ -134,10 +135,10 @@ export default function RecurringDetail() {
 
 function ActionButton({ Icon, label, onPress }: { Icon: LucideIcon; label: string; onPress: () => void }) {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={styles.action}>
+    <PressableScale accessibilityRole="button" onPress={onPress} style={styles.action}>
       <Icon color={sheet.ink} size={17} />
       <Text style={styles.actionText}>{label}</Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 

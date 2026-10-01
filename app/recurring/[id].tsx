@@ -3,7 +3,8 @@ import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { StatusBar } from 'expo-status-bar';
 import { Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Switch, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, StyleSheet, Switch, View } from 'react-native';
+import { PressableScale } from '../../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AccountChips } from '../../src/components/AccountChips';
 import { Button } from '../../src/components/Button';
@@ -102,7 +103,7 @@ function RecurringForm({ editing, accounts, categories }: {
         <FadeScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
           <View style={styles.segment}>
             {([['expense', 'Money out'], ['income', 'Money in']] as const).map(([key, label]) => (
-              <Pressable
+              <PressableScale
                 key={key}
                 accessibilityRole="button"
                 accessibilityState={{ selected: type === key }}
@@ -110,7 +111,7 @@ function RecurringForm({ editing, accounts, categories }: {
                 style={[styles.segmentItem, type === key && { backgroundColor: sheet.card2 }]}
               >
                 <Text style={[styles.segmentText, type === key && { color: sheet.ink }]}>{label}</Text>
-              </Pressable>
+              </PressableScale>
             ))}
           </View>
           <Field label="Name" value={name} onChangeText={setName} placeholder="e.g. Rent" maxLength={32} />
@@ -125,7 +126,7 @@ function RecurringForm({ editing, accounts, categories }: {
           <Text style={styles.label}>How often</Text>
           <View style={styles.segment}>
             {(['weekly', 'monthly', 'yearly'] as const).map((key) => (
-              <Pressable
+              <PressableScale
                 key={key}
                 accessibilityRole="button"
                 accessibilityState={{ selected: freq === key }}
@@ -133,7 +134,7 @@ function RecurringForm({ editing, accounts, categories }: {
                 style={[styles.segmentItem, freq === key && { backgroundColor: sheet.card2 }]}
               >
                 <Text style={[styles.segmentText, freq === key && { color: sheet.ink }]}>{FREQUENCY_LABEL[key]}</Text>
-              </Pressable>
+              </PressableScale>
             ))}
           </View>
           <Text style={styles.label}>{editing ? 'Next date' : 'First date'}</Text>
@@ -161,10 +162,10 @@ function RecurringForm({ editing, accounts, categories }: {
         <View style={styles.footer}>
           <Button title={editing ? 'Save changes' : 'Schedule it'} onPress={save} background={sheet.btnBg} color={sheet.btnFg} />
           {editing && (
-            <Pressable accessibilityRole="button" onPress={confirmDelete} style={styles.delete}>
+            <PressableScale accessibilityRole="button" onPress={confirmDelete} style={styles.delete}>
               <Trash2 color={sheet.neg} size={18} />
               <Text style={styles.deleteText}>Delete recurring item</Text>
-            </Pressable>
+            </PressableScale>
           )}
         </View>
       </KeyboardAvoidingView>

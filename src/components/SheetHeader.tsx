@@ -1,5 +1,6 @@
 import { X } from 'lucide-react-native';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { PressableScale } from './PressableScale';
 import { sheet, spacing } from '../theme';
 import { Text } from './Text';
 
@@ -7,9 +8,9 @@ export function SheetHeader({ title, onClose }: { title: string; onClose: () => 
   return (
     <View style={styles.header}>
       <Text style={styles.title}>{title}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={styles.close}>
+      <PressableScale accessibilityRole="button" accessibilityLabel="Close" onPress={onClose} style={styles.close}>
         <X color={sheet.ink} size={18} />
-      </Pressable>
+      </PressableScale>
     </View>
   );
 }

@@ -3,7 +3,8 @@ import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { StatusBar } from 'expo-status-bar';
 import { Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { PressableScale } from '../../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/Button';
 import { CATEGORY_ICONS, CategoryIcon } from '../../src/components/CategoryIcon';
@@ -84,7 +85,7 @@ function CategoryForm({ editing, startKind }: { editing: Category | null; startK
           {!editing && (
             <View style={styles.segment}>
               {([['expense', 'Spending'], ['income', 'Income']] as const).map(([key, label]) => (
-                <Pressable
+                <PressableScale
                   key={key}
                   accessibilityRole="button"
                   accessibilityState={{ selected: kind === key }}
@@ -92,7 +93,7 @@ function CategoryForm({ editing, startKind }: { editing: Category | null; startK
                   style={[styles.segmentItem, kind === key && { backgroundColor: sheet.card2 }]}
                 >
                   <Text style={[styles.segmentText, kind === key && { color: sheet.ink }]}>{label}</Text>
-                </Pressable>
+                </PressableScale>
               ))}
             </View>
           )}
@@ -106,7 +107,7 @@ function CategoryForm({ editing, startKind }: { editing: Category | null; startK
           <Text style={styles.label}>Icon</Text>
           <View style={styles.icons}>
             {CATEGORY_ICONS.map((iconName) => (
-              <Pressable
+              <PressableScale
                 key={iconName}
                 accessibilityRole="button"
                 accessibilityLabel={iconName}
@@ -117,7 +118,7 @@ function CategoryForm({ editing, startKind }: { editing: Category | null; startK
                 <View style={iconName === icon && styles.iconSelected}>
                   <CategoryIcon name={iconName} color={iconName === icon ? color : sheet.card2} size={44} />
                 </View>
-              </Pressable>
+              </PressableScale>
             ))}
           </View>
           <Text style={styles.label}>Colour</Text>
@@ -136,10 +137,10 @@ function CategoryForm({ editing, startKind }: { editing: Category | null; startK
         <View style={styles.footer}>
           <Button title={editing ? 'Save changes' : 'Create category'} onPress={save} background={sheet.btnBg} color={sheet.btnFg} />
           {editing && !editing.is_default && (
-            <Pressable accessibilityRole="button" onPress={confirmDelete} style={styles.delete}>
+            <PressableScale accessibilityRole="button" onPress={confirmDelete} style={styles.delete}>
               <Trash2 color={sheet.neg} size={18} />
               <Text style={styles.deleteText}>Delete category</Text>
-            </Pressable>
+            </PressableScale>
           )}
         </View>
       </KeyboardAvoidingView>

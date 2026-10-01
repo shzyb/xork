@@ -2,7 +2,8 @@ import { useRouter } from 'expo-router';
 import { FadeScrollView } from '../src/components/FadeScrollView';
 import { ChevronRight } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { PressableScale } from '../src/components/PressableScale';
 import { Button } from '../src/components/Button';
 import { CategoryIcon } from '../src/components/CategoryIcon';
 import { Sheet } from '../src/components/Sheet';
@@ -31,7 +32,7 @@ export default function Categories() {
       <SheetHeader title="Categories" onClose={() => router.back()} />
       <View style={styles.segment}>
         {([['expense', 'Spending'], ['income', 'Income']] as const).map(([key, label]) => (
-          <Pressable
+          <PressableScale
             key={key}
             accessibilityRole="button"
             accessibilityState={{ selected: kind === key }}
@@ -39,12 +40,12 @@ export default function Categories() {
             style={[styles.segmentItem, kind === key && { backgroundColor: sheet.card2 }]}
           >
             <Text style={[styles.segmentText, kind === key && { color: sheet.ink }]}>{label}</Text>
-          </Pressable>
+          </PressableScale>
         ))}
       </View>
       <FadeScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         {data?.categories.filter((c) => c.kind === kind).map((c) => (
-          <Pressable
+          <PressableScale
             key={c.id}
             accessibilityRole="button"
             onPress={() => router.push({ pathname: '/category/[id]', params: { id: String(c.id) } })}
@@ -58,7 +59,7 @@ export default function Categories() {
               </Text>
             </View>
             <ChevronRight color={sheet.ink3} size={20} />
-          </Pressable>
+          </PressableScale>
         ))}
       </FadeScrollView>
       <View style={styles.footer}>

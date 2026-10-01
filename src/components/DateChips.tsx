@@ -1,7 +1,8 @@
 import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { Calendar } from 'lucide-react-native';
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
+import { PressableScale } from './PressableScale';
 import { fromDay, prettyDate, toDay } from '../dates';
 import { sheet } from '../theme';
 import { Text } from './Text';
@@ -58,7 +59,7 @@ export function DateChips({ value, onChange, presets }: {
 
 function Chip({ label, on, icon, onPress }: { label: string; on: boolean; icon?: boolean; onPress: () => void }) {
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
       accessibilityState={{ selected: on }}
       onPress={onPress}
@@ -66,7 +67,7 @@ function Chip({ label, on, icon, onPress }: { label: string; on: boolean; icon?:
     >
       {icon && <Calendar color={on ? sheet.btnFg : sheet.ink2} size={15} />}
       <Text style={[styles.chipText, { color: on ? sheet.btnFg : sheet.ink }]}>{label}</Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 

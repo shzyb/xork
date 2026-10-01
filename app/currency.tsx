@@ -2,7 +2,8 @@ import { useRouter } from 'expo-router';
 import { FadeScrollView } from '../src/components/FadeScrollView';
 import { Check, TriangleAlert } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { PressableScale } from '../src/components/PressableScale';
 import { Button } from '../src/components/Button';
 import { Sheet } from '../src/components/Sheet';
 import { SheetHeader } from '../src/components/SheetHeader';
@@ -40,7 +41,7 @@ function CurrencyPicker({ currentCode }: { currentCode: string }) {
       <FadeScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <Text style={styles.intro}>Everything in the app is shown in one currency.</Text>
         {CURRENCIES.map((c) => (
-          <Pressable
+          <PressableScale
             key={c.code}
             accessibilityRole="button"
             accessibilityState={{ selected: c.code === code }}
@@ -55,7 +56,7 @@ function CurrencyPicker({ currentCode }: { currentCode: string }) {
               <Text style={styles.code}>{c.code}</Text>
             </View>
             {c.code === code && <Check color={sheet.pos} size={20} strokeWidth={2.6} />}
-          </Pressable>
+          </PressableScale>
         ))}
         {changed && (
           <View style={styles.callout}>

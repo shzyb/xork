@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { PressableScale } from './PressableScale';
 import { sheet } from '../theme';
 
 export function ColorSwatches({ colors, selected, onSelect }: {
@@ -9,7 +10,7 @@ export function ColorSwatches({ colors, selected, onSelect }: {
   return (
     <View style={styles.row}>
       {colors.map((color) => (
-        <Pressable
+        <PressableScale
           key={color}
           accessibilityRole="button"
           accessibilityLabel={`Colour ${color}`}

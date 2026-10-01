@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { PressableScale } from './PressableScale';
 import { Text } from './Text';
 
 export function Button({ title, onPress, background, color }: {
@@ -8,9 +9,9 @@ export function Button({ title, onPress, background, color }: {
   color: string;
 }) {
   return (
-    <Pressable accessibilityRole="button" onPress={onPress} style={[styles.button, { backgroundColor: background }]}>
+    <PressableScale accessibilityRole="button" onPress={onPress} style={[styles.button, { backgroundColor: background }]}>
       <Text style={[styles.text, { color }]}>{title}</Text>
-    </Pressable>
+    </PressableScale>
   );
 }
 

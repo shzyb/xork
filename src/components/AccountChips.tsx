@@ -1,4 +1,5 @@
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { PressableScale } from './PressableScale';
 import { sheet } from '../theme';
 import { Text } from './Text';
 
@@ -14,7 +15,7 @@ export function AccountChips({ label, accounts, selectedId, onSelect }: {
       <Text style={styles.label}>{label}</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
         {accounts.map((a) => (
-          <Pressable
+          <PressableScale
             key={a.id}
             accessibilityRole="button"
             accessibilityState={{ selected: a.id === selectedId }}
@@ -25,7 +26,7 @@ export function AccountChips({ label, accounts, selectedId, onSelect }: {
               <Text style={styles.initial}>{a.name.trim().charAt(0).toUpperCase() || '?'}</Text>
             </View>
             <Text style={[styles.name, a.id !== selectedId && { color: sheet.ink2 }]} numberOfLines={1}>{a.name}</Text>
-          </Pressable>
+          </PressableScale>
         ))}
       </ScrollView>
     </View>

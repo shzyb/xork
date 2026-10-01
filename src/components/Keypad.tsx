@@ -1,5 +1,6 @@
 import { Delete } from 'lucide-react-native';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { PressableScale } from './PressableScale';
 import { sheet } from '../theme';
 import { Text } from './Text';
 
@@ -13,7 +14,7 @@ export function Keypad({ onKey, decimals }: { onKey: (key: string) => void; deci
         key === '.' && decimals === 0 ? (
           <View key={key} style={styles.key} />
         ) : (
-          <Pressable
+          <PressableScale
             key={key}
             accessibilityRole="button"
             accessibilityLabel={key === 'back' ? 'Delete' : key}
@@ -21,7 +22,7 @@ export function Keypad({ onKey, decimals }: { onKey: (key: string) => void; deci
             style={styles.key}
           >
             {key === 'back' ? <Delete color={sheet.ink} size={26} /> : <Text style={styles.text}>{key}</Text>}
-          </Pressable>
+          </PressableScale>
         ),
       )}
     </View>
