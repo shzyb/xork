@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/Button';
+import { EmptyState } from '../../src/components/EmptyState';
 import { RecurringRow } from '../../src/components/RecurringRow';
 import { SwipePages } from '../../src/components/SwipePages';
 import { getRecurring } from '../../src/db';
@@ -71,6 +72,17 @@ export default function Recurring() {
               renderPage={(key) => {
                 const shown = items.filter((r) => key === 'all' || (key === 'income' ? r.type === 'income' : isSubscription(r)));
                 const upcoming = upcomingOccurrences(shown, today(), 30);
+                if (shown.length === 0) {
+                  return (
+                    <EmptyState
+                      Icon={Repeat}
+                      title={items.length === 0 ? 'Nothing scheduled yet' : key === 'income' ? 'No recurring income' : 'No subscriptions'}
+                      text={items.length === 0
+                        ? "Add rent, bills, subscriptions or your salary so you can see what's coming before it lands."
+                        : 'Tap + to add one.'}
+                    />
+                  );
+                }
                 return (
                   <>
                     <Text style={[styles.section, { color: colors.ink }]}>Next 30 days</Text>
@@ -90,18 +102,7 @@ export default function Recurring() {
                     <Text style={[styles.section, { color: colors.ink }]}>
                       Everything scheduled <Text style={{ color: colors.ink3 }}>· {shown.length}</Text>
                     </Text>
-                    {items.length === 0 ? (
-                      <View style={styles.empty}>
-                        <Text style={[styles.emptyTitle, { color: colors.ink }]}>Nothing scheduled yet</Text>
-                        <Text style={{ color: colors.ink2, textAlign: 'center' }}>
-                          Add rent, bills, subscriptions or your salary so you can see what's coming before it lands.
-                        </Text>
-                      </View>
-                    ) : shown.length === 0 ? (
-                      <Text style={{ color: colors.ink2, paddingVertical: spacing.md }}>Nothing here yet.</Text>
-                    ) : (
-                      shown.map((item) => <RecurringRow key={item.id} item={item} />)
-                    )}
+                    {shown.map((item) => <RecurringRow key={item.id} item={item} />)}
 
                     <View style={styles.footer}>
                       <Button title="Add a recurring item" onPress={openNew} background={colors.btnBg} color={colors.btnFg} />
@@ -132,7 +133,5 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 13.5, fontWeight: '600' },
   section: { fontSize: 20, fontWeight: '700', marginTop: 24 },
   dateHead: { fontSize: 14, fontWeight: '600', paddingTop: 14, paddingBottom: 2 },
-  empty: { alignItems: 'center', gap: 6, paddingVertical: 28 },
-  emptyTitle: { fontSize: 17, fontWeight: '700' },
   footer: { marginTop: spacing.xl },
 });

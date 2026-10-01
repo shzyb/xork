@@ -6,8 +6,8 @@ import { spacing, tabBarHeight } from '../theme';
 
 // The content under a row of tab labels, one page per tab, that you can swipe between.
 // It sits inside a screen that scrolls vertically with `spacing.xl` side padding and the bottom tab bar.
-// Each page is only as tall as its own content, but the whole area always fills the screen below the labels,
-// so a swipe works even when a list is short.
+// Each page is at least as tall as the free space below the labels (so a swipe works on a short list and an
+// EmptyState can centre itself in it) and grows with its content.
 export function SwipePages<T extends string>({ keys, active, onChange, renderPage }: {
   keys: T[];
   active: T;
@@ -42,7 +42,7 @@ export function SwipePages<T extends string>({ keys, active, onChange, renderPag
       {keys.map((key) => (
         <View
           key={key}
-          style={{ width: pageWidth }}
+          style={{ width: pageWidth, minHeight }}
           onLayout={(e) => {
             const pageHeight = e.nativeEvent.layout.height;
             setHeights((prev) => (prev[key] === pageHeight ? prev : { ...prev, [key]: pageHeight }));

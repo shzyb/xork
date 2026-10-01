@@ -1,8 +1,9 @@
 import { useRouter } from 'expo-router';
-import { ArrowDown, ArrowUp, Eye, EyeOff, Plus, Settings } from 'lucide-react-native';
+import { ArrowDown, ArrowUp, CalendarClock, Eye, EyeOff, Plus, Receipt, Settings } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { EmptyState } from '../../src/components/EmptyState';
 import { RecurringRow } from '../../src/components/RecurringRow';
 import { SwipePages } from '../../src/components/SwipePages';
 import { TransactionList } from '../../src/components/TransactionList';
@@ -82,10 +83,7 @@ export default function Home() {
           renderPage={(key) => (
             <>
             {key === 'recent' && recent && (recent.length === 0 ? (
-              <View style={styles.empty}>
-                <Text style={[styles.emptyTitle, { color: colors.ink }]}>No transactions yet</Text>
-                <Text style={{ color: colors.ink2 }}>Tap + to log your first expense or income.</Text>
-              </View>
+              <EmptyState Icon={Receipt} title="No transactions yet" text="Tap + to log your first expense or income." />
             ) : (
               <TransactionList rows={recent} />
             ))}
@@ -120,9 +118,7 @@ export default function Home() {
             )}
 
             {key === 'upcoming' && recurring && (upcoming.length === 0 ? (
-              <View style={styles.empty}>
-                <Text style={{ color: colors.ink2 }}>Nothing due in the next 7 days.</Text>
-              </View>
+              <EmptyState Icon={CalendarClock} title="Nothing due soon" text="Recurring bills and income due in the next 7 days will show up here." />
             ) : (
               upcoming.map(({ item, date }) => <RecurringRow key={`${item.id}-${date}`} item={item} date={date} />)
             ))}
@@ -152,6 +148,4 @@ const styles = StyleSheet.create({
   initialText: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
   title: { flex: 1, fontSize: 16.5, fontWeight: '600' },
   amount: { fontSize: 16.5, fontWeight: '600' },
-  empty: { alignItems: 'center', gap: 6, paddingVertical: 36 },
-  emptyTitle: { fontSize: 17, fontWeight: '700' },
 });

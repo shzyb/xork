@@ -1,8 +1,9 @@
-import { ChevronDown, Search, X } from 'lucide-react-native';
+import { ChevronDown, Receipt, Search, SearchX, X } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
+import { EmptyState } from '../../src/components/EmptyState';
 import { PickerSheet } from '../../src/components/PickerSheet';
 import type { PickerOption } from '../../src/components/PickerSheet';
 import { TransactionList } from '../../src/components/TransactionList';
@@ -11,7 +12,7 @@ import {
 } from '../../src/db';
 import { monthLabel } from '../../src/dates';
 import { formatMoney } from '../../src/money';
-import { fontSize, spacing, useColors } from '../../src/theme';
+import { fontSize, spacing, tabBarHeight, useColors } from '../../src/theme';
 import type { TransactionFilter } from '../../src/types';
 import { useData } from '../../src/useData';
 import { Text, TextInput } from '../../src/components/Text';
@@ -22,6 +23,7 @@ const TYPE_LABELS = { all: 'Everything', expense: 'Expenses', income: 'Income', 
 
 export default function Activity() {
   const colors = useColors();
+  const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<TransactionFilter>(NO_FILTER);
   const [limit, setLimit] = useState(PAGE);
   const [picker, setPicker] = useState<FilterKey | null>(null);
@@ -109,7 +111,7 @@ export default function Activity() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
-      <ScrollView stickyHeaderIndices={[1]} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+      <ScrollView stickyHeaderIndices={[1]} keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, rows?.length === 0 && styles.contentEmpty, rows?.length === 0 && { paddingBottom: tabBarHeight + insets.bottom }]}>
         <Text style={[styles.title, { color: colors.ink }]}>Activity</Text>
 
         <View style={[styles.filters, { backgroundColor: colors.bg }]}>
@@ -156,24 +158,20 @@ export default function Activity() {
           </ScrollView>
         </View>
 
-        <View>
+        <View style={rows?.length === 0 ? styles.fill : undefined}>
           {rows && totals && (rows.length === 0 ? (
             filtered ? (
-              <View style={styles.empty}>
-                <Text style={[styles.emptyTitle, { color: colors.ink }]}>Your filters returned no results</Text>
+              <EmptyState Icon={SearchX} title="No results" text="Nothing matches your search or filters.">
                 <Pressable
                   accessibilityRole="button"
                   onPress={() => { setFilter({ ...NO_FILTER }); setLimit(PAGE); }}
-                  style={[styles.pill, { backgroundColor: colors.fill }]}
+                  style={[styles.pill, { backgroundColor: colors.fill, marginTop: spacing.sm }]}
                 >
                   <Text style={[styles.chipText, { color: colors.ink }]}>Clear filters</Text>
                 </Pressable>
-              </View>
+              </EmptyState>
             ) : (
-              <View style={styles.empty}>
-                <Text style={[styles.emptyTitle, { color: colors.ink }]}>No transactions yet</Text>
-                <Text style={{ color: colors.ink2 }}>Everything you log shows up here, newest first.</Text>
-              </View>
+              <EmptyState Icon={Receipt} title="No transactions yet" text="Everything you log shows up here, newest first." />
             )
           ) : (
             <>
@@ -202,6 +200,8 @@ export default function Activity() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingHorizontal: spacing.xl, paddingBottom: 140 },
+  contentEmpty: { flexGrow: 1 },
+  fill: { flex: 1 },
   title: { fontSize: fontSize.screen, fontWeight: '800', marginTop: spacing.md },
   filters: { paddingTop: spacing.sm, paddingBottom: spacing.xs },
   search: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, height: 44, borderRadius: 12, paddingHorizontal: spacing.md },
@@ -212,7 +212,6 @@ const styles = StyleSheet.create({
   chipX: { width: 18, height: 18, borderRadius: 9, backgroundColor: 'rgba(127,127,127,0.35)', alignItems: 'center', justifyContent: 'center', marginRight: -4 },
   summary: { fontSize: 14, paddingTop: 10 },
   empty: { alignItems: 'center', gap: 12, paddingVertical: 36 },
-  emptyTitle: { fontSize: 17, fontWeight: '700' },
   pill: { height: 40, paddingHorizontal: 16, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   initial: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   initialText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
