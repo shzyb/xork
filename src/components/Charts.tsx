@@ -24,6 +24,11 @@ export function RunningTotalChart({ data, month, prevMonth, elapsed, width }: {
   const previous = runningTotal(data.prevDaily, days);
   if (current[current.length - 1] === 0 && previous[days - 1] === 0) return null;
 
+  // The library sizes the y-axis from the first line only, so give it the bigger of the two months, rounded up.
+  const rawStep = Math.max(current[current.length - 1], previous[days - 1]) / 100 / 3;
+  const unit = 10 ** Math.floor(Math.log10(rawStep));
+  const top = Math.ceil(rawStep / unit) * unit * 3;
+
   const chartWidth = width - 56;
   const edge = 8; // room so the dot on the last day and the first day isn't cut off
   const gap = (chartWidth - edge * 2) / (days - 1);
@@ -49,6 +54,7 @@ export function RunningTotalChart({ data, month, prevMonth, elapsed, width }: {
         endSpacing={edge}
         spacing={gap}
         noOfSections={3}
+        maxValue={top}
         yAxisThickness={0}
         xAxisThickness={0}
         rulesColor={colors.line}
