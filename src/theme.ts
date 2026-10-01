@@ -1,4 +1,4 @@
-import { useColorScheme } from 'react-native';
+import { Appearance, useColorScheme } from 'react-native';
 
 const light = {
   bg: '#FFFFFF',
@@ -32,6 +32,11 @@ const dark: typeof light = {
 
 export function useColors() {
   return useColorScheme() === 'dark' ? dark : light;
+}
+
+// Light or dark for the whole app, including native pieces like alerts and the keyboard. Anything else follows the phone.
+export function applyTheme(setting: string | null) {
+  Appearance.setColorScheme(setting === 'light' || setting === 'dark' ? setting : 'unspecified');
 }
 
 // Height of the bottom tab bar, without the phone's bottom inset.

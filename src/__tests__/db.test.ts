@@ -1,4 +1,4 @@
-import { getRecurringActivity, logRecurringNow, setRecurringActive, skipRecurring, deleteAllData, exportAll, NO_FILTER, replaceAllData, addAccount, addCategory, addRecurring, deleteRecurring, logDueRecurring, updateRecurring, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, updateAccount, updateCategory, updateTransaction } from '../db';
+import { getRecurringActivity, logRecurringNow, setRecurringActive, skipRecurring, deleteAllData, exportAll, NO_FILTER, replaceAllData, addAccount, addCategory, addRecurring, deleteRecurring, logDueRecurring, updateRecurring, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, setTheme, updateAccount, updateCategory, updateTransaction } from '../db';
 import { formatMoney } from '../money';
 
 function fakeDb(overrides: Partial<Db> = {}): Db {
@@ -148,6 +148,7 @@ describe.each([
   ['updateAccount', () => updateAccount(3, { name: 'Bank', type: 'debit', opening_minor: 5000, color: '#3B82F6', limit_minor: null, due_day: null }), 'UPDATE accounts'],
   ['addCategory', () => addCategory(FOOD), 'INSERT INTO categories'],
   ['updateCategory', () => updateCategory(3, FOOD), 'UPDATE categories'],
+  ['setTheme', () => setTheme('dark'), 'INSERT OR REPLACE INTO settings'],
 ])('%s', (_name, run, sql) => {
   it('bumps version and calls listeners', async () => {
     const db = fakeDb();

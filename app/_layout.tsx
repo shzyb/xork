@@ -5,8 +5,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { FONT_FILES } from '../src/components/Text';
-import { isOnboarded, logDueRecurring, openDb } from '../src/db';
-import { sheet } from '../src/theme';
+import { getSetting, isOnboarded, logDueRecurring, openDb } from '../src/db';
+import { applyTheme, sheet } from '../src/theme';
 import { useData } from '../src/useData';
 
 SplashScreen.preventAutoHideAsync();
@@ -21,7 +21,10 @@ export default function RootLayout() {
 
   // Due recurring items are logged before the splash hides, so Home opens already up to date.
   useEffect(() => {
-    openDb().then(logDueRecurring).then(() => setDbReady(true));
+    openDb()
+      .then(logDueRecurring)
+      .then(async () => applyTheme(await getSetting('theme')))
+      .then(() => setDbReady(true));
   }, []);
 
   // ...and again whenever the app comes back to the foreground.
@@ -38,6 +41,12 @@ export default function RootLayout() {
 
 function Routes() {
   const onboarded = useData(isOnboarded);
+  const theme = useData(() => getSetting('theme'));
+
+  // The choice in Settings (or "Delete all data", which clears it) takes effect on every open screen.
+  useEffect(() => {
+    if (theme !== undefined) applyTheme(theme);
+  }, [theme]);
 
   useEffect(() => {
     if (onboarded !== undefined) SplashScreen.hideAsync();

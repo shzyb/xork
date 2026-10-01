@@ -1,3 +1,11 @@
+export type ThemeSetting = 'system' | 'light' | 'dark';
+
+export const THEME_OPTIONS: { value: ThemeSetting; label: string }[] = [
+  { value: 'system', label: 'System' },
+  { value: 'light', label: 'Light' },
+  { value: 'dark', label: 'Dark' },
+];
+
 export type AccountType = 'cash' | 'debit' | 'savings' | 'credit';
 
 export const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [

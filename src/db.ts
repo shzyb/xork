@@ -4,7 +4,7 @@ import { formatMoney, setAppCurrency } from './money';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, SCHEMA } from './seed';
 import { BACKUP_VERSION } from './backup';
 import type { Backup } from './backup';
-import type { Account, CardInsight, Category, CategorySpend, DaySpend, InsightsData, MonthTotals, Recurring, RecurringRow, Transaction, TransactionFilter, TransactionRow } from './types';
+import type { Account, CardInsight, Category, CategorySpend, DaySpend, InsightsData, MonthTotals, Recurring, RecurringRow, Transaction, ThemeSetting, TransactionFilter, TransactionRow } from './types';
 
 // The small part of expo-sqlite that we use, so tests can pass a fake.
 export type Db = {
@@ -119,6 +119,10 @@ export async function setCurrency(code: string) {
     await handle.runAsync(UPSERT_SETTING, 'currency', code);
     setAppCurrency(code);
   });
+}
+
+export async function setTheme(theme: ThemeSetting) {
+  await write((handle) => handle.runAsync(UPSERT_SETTING, 'theme', theme));
 }
 
 // First launch: save the chosen currency and mark the welcome screen as done, together.
