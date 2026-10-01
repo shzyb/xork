@@ -116,7 +116,7 @@ function AccountForm({ editing, accountCount }: { editing: Account | null; accou
             ))}
           </ScrollView>
           <Field
-            label={isCredit ? 'Starting amount owed' : 'Starting balance'}
+            label={isCredit ? 'Owed when you start tracking' : 'Starting balance'}
             value={opening}
             onChangeText={setOpening}
             placeholder="0"

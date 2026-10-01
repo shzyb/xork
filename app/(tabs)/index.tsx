@@ -108,7 +108,14 @@ export default function Home() {
                         {ACCOUNT_TYPES.find((t) => t.value === a.type)?.label}
                       </Text>
                     </View>
-                    <Text style={[styles.amount, { color: colors.ink }]}>{mask(a.balance_minor)}</Text>
+                    <View style={styles.end}>
+                      <Text style={[styles.amount, { color: colors.ink }]}>
+                        {mask(a.type === 'credit' && a.limit_minor ? Math.max(0, a.limit_minor + a.balance_minor) : a.balance_minor)}
+                      </Text>
+                      {a.type === 'credit' && a.limit_minor && (
+                        <Text style={{ color: colors.ink3, fontSize: 13, marginTop: 1 }}>Owed {mask(-a.balance_minor)}</Text>
+                      )}
+                    </View>
                   </Pressable>
                 ))}
                 <Pressable
@@ -156,5 +163,6 @@ const styles = StyleSheet.create({
   title: { flex: 1, fontSize: 16.5, fontWeight: '600' },
   nameBox: { flex: 1 },
   name: { fontSize: 16.5, fontWeight: '600' },
+  end: { alignItems: 'flex-end' },
   amount: { fontSize: 16.5, fontWeight: '600' },
 });

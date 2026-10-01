@@ -31,7 +31,7 @@ export default function AccountDetail() {
 
   const details: [string, string][] = [
     ['Type', ACCOUNT_TYPES.find((t) => t.value === account.type)?.label ?? ''],
-    [credit ? 'Starting amount owed' : 'Starting balance', formatMoney(Math.abs(account.opening_minor))],
+    [credit ? 'Owed when you start tracking' : 'Starting balance', formatMoney(Math.abs(account.opening_minor))],
   ];
   if (credit && account.limit_minor) {
     details.push(['Credit limit', formatMoney(account.limit_minor)]);

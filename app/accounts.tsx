@@ -45,7 +45,14 @@ export default function Accounts() {
                     {ACCOUNT_TYPES.find((t) => t.value === a.type)?.label}
                   </Text>
                 </View>
-                <Text style={[styles.amount, { color: colors.ink }]}>{formatMoney(a.balance_minor)}</Text>
+                <View style={styles.end}>
+                  <Text style={[styles.amount, { color: colors.ink }]}>
+                    {formatMoney(a.type === 'credit' && a.limit_minor ? Math.max(0, a.limit_minor + a.balance_minor) : a.balance_minor)}
+                  </Text>
+                  {a.type === 'credit' && a.limit_minor && (
+                    <Text style={{ color: colors.ink3, fontSize: 13, marginTop: 1 }}>Owed {formatMoney(-a.balance_minor)}</Text>
+                  )}
+                </View>
                 <ChevronRight color={colors.ink3} size={20} />
               </Pressable>
             ))}
@@ -75,6 +82,7 @@ const styles = StyleSheet.create({
   initialText: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
   nameBox: { flex: 1 },
   name: { fontSize: 16.5, fontWeight: '600' },
+  end: { alignItems: 'flex-end' },
   amount: { fontSize: 16.5, fontWeight: '600' },
   footer: { paddingTop: 10, paddingBottom: spacing.lg },
 });
