@@ -39,6 +39,11 @@ export function applyTheme(setting: string | null) {
   Appearance.setColorScheme(setting === 'light' || setting === 'dark' ? setting : 'unspecified');
 }
 
+// The colour behind a tray's contents: black in light mode, a soft grey in dark mode.
+export function useTrayColor() {
+  return useColorScheme() === 'dark' ? sheet.trayDark : sheet.bg;
+}
+
 // Height of the bottom tab bar, without the phone's bottom inset.
 export const tabBarHeight = 56;
 
@@ -64,7 +69,7 @@ export const sheet = {
   pos: '#4ADE80',
   warn: '#FFB340',
   scrim: 'rgba(0,0,0,0.32)',
-  edge: 'rgba(255,255,255,0.14)', // outline for the tray in dark mode, where black sits on black
+  trayDark: '#262628', // the tray's colour in dark mode, so it stands out from the black screen
   btnBg: '#FFFFFF',
   btnFg: '#000000',
 };

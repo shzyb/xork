@@ -1,8 +1,8 @@
 import { useNavigation } from 'expo-router';
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, useColorScheme, useWindowDimensions, View } from 'react-native';
+import { Animated, Easing, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { sheet } from '../theme';
+import { sheet, useTrayColor } from '../theme';
 
 const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
 const ENTER_MS = 260;
@@ -15,7 +15,7 @@ export function Sheet({ onClose, children }: { onClose: () => void; children: Re
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const navigation = useNavigation();
-  const dark = useColorScheme() === 'dark';
+  const trayColor = useTrayColor();
   const slide = useRef(new Animated.Value(height)).current;
   const dim = useRef(new Animated.Value(0)).current;
   const hiddenAt = useRef(height);
@@ -56,7 +56,7 @@ export function Sheet({ onClose, children }: { onClose: () => void; children: Re
         }}
         style={[
           styles.tray,
-          dark && { borderWidth: 1, borderColor: sheet.edge },
+          { backgroundColor: trayColor },
           { maxHeight: height - insets.top - 24, marginBottom: 8 + insets.bottom, transform: [{ translateY: slide }] },
         ]}
       >

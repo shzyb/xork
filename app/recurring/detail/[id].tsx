@@ -15,7 +15,7 @@ import {
 } from '../../../src/db';
 import { FREQUENCY_LABEL, fullDate, prettyDate, today } from '../../../src/dates';
 import { formatMoney } from '../../../src/money';
-import { sheet, spacing } from '../../../src/theme';
+import { sheet, spacing, useTrayColor } from '../../../src/theme';
 import { useData } from '../../../src/useData';
 import { Text } from '../../../src/components/Text';
 
@@ -28,6 +28,7 @@ export default function RecurringDetail() {
     return item ? { item, activity: await getRecurringActivity(item.id) } : null;
   }, [id]);
   const [error, setError] = useState('');
+  const trayColor = useTrayColor();
 
   if (!data) return null;
   const { item, activity } = data;
@@ -71,7 +72,7 @@ export default function RecurringDetail() {
       <SheetHeader title="" onClose={() => router.back()} />
       <FadeScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={styles.hero}>
-          <CategoryIcon name={item.category_icon} color={item.category_color} size={64} recurring surface={sheet.bg} />
+          <CategoryIcon name={item.category_icon} color={item.category_color} size={64} recurring surface={trayColor} />
           <Text style={styles.kind}>{item.name}</Text>
           <Text style={[styles.amount, income && { color: sheet.pos }]}>
             {income ? '+ ' : ''}{formatMoney(item.amount_minor)}
