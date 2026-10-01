@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
+import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { ArrowDown, Plus, Repeat } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/Button';
 import { EmptyState } from '../../src/components/EmptyState';
@@ -34,7 +35,7 @@ export default function Recurring() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <FadeScrollView contentContainerStyle={styles.content}>
         <View style={styles.topbar}>
           <Text style={[styles.title, { color: colors.ink }]}>Recurring</Text>
           <Pressable accessibilityRole="button" accessibilityLabel="Add recurring item" onPress={openNew} style={styles.iconButton}>
@@ -114,7 +115,7 @@ export default function Recurring() {
 
           </>
         )}
-      </ScrollView>
+      </FadeScrollView>
     </SafeAreaView>
   );
 }

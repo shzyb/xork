@@ -1,8 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { StatusBar } from 'expo-status-bar';
 import { Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/Button';
 import { ColorSwatches } from '../../src/components/ColorSwatches';
@@ -72,7 +73,7 @@ function AccountForm({ editing, accountCount }: { editing: Account | null; accou
       <StatusBar style="light" />
       <SheetHeader title={editing ? 'Edit account' : 'New account'} onClose={() => router.back()} />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+        <FadeScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
           <View style={styles.preview}>
             <View style={[styles.initial, { backgroundColor: color }]}>
               <Text style={styles.initialText}>{name.trim().charAt(0).toUpperCase() || '?'}</Text>
@@ -89,7 +90,7 @@ function AccountForm({ editing, accountCount }: { editing: Account | null; accou
           <Text style={styles.label}>Colour</Text>
           <ColorSwatches colors={accountColors} selected={color} onSelect={setColor} />
           {error !== '' && <Text style={styles.error}>{error}</Text>}
-        </ScrollView>
+        </FadeScrollView>
         <View style={styles.footer}>
           <Button title={editing ? 'Save changes' : 'Add account'} onPress={save} background={sheet.btnBg} color={sheet.btnFg} />
           {editing && (

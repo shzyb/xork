@@ -1,6 +1,7 @@
 import { getLocales } from 'expo-localization';
+import { FadeScrollView } from '../src/components/FadeScrollView';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Check } from 'lucide-react-native';
 import { Button } from '../src/components/Button';
@@ -16,7 +17,7 @@ export default function Welcome() {
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]}>
       <Text style={[styles.title, { color: colors.ink }]}>Which currency do you use?</Text>
-      <ScrollView style={styles.list}>
+      <FadeScrollView style={styles.list}>
         {CURRENCIES.map((currency) => {
           const on = currency.code === selected;
           return (
@@ -36,7 +37,7 @@ export default function Welcome() {
             </Pressable>
           );
         })}
-      </ScrollView>
+      </FadeScrollView>
       <View style={styles.footer}>
         <Button title="Continue" background={colors.btnBg} color={colors.btnFg} onPress={() => completeWelcome(selected)} />
       </View>

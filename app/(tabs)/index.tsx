@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
+import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { ArrowDown, ArrowUp, CalendarClock, Eye, EyeOff, Plus, Receipt, Settings } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '../../src/components/EmptyState';
 import { RecurringRow } from '../../src/components/RecurringRow';
@@ -34,7 +35,7 @@ export default function Home() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <FadeScrollView contentContainerStyle={styles.content}>
         <View style={styles.topbar}>
           <Text style={[styles.brand, { color: colors.ink }]}>Home</Text>
           <View style={styles.actions}>
@@ -125,7 +126,7 @@ export default function Home() {
             </>
           )}
         />
-      </ScrollView>
+      </FadeScrollView>
     </SafeAreaView>
   );
 }
@@ -134,8 +135,8 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingHorizontal: spacing.xl, paddingBottom: 140 },
   topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md },
-  brand: { fontSize: 25, fontWeight: '700' },
-  actions: { flexDirection: 'row', alignItems: 'center' },
+  brand: { fontSize: fontSize.screen, fontWeight: '800' },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -10 },
   balance: { fontSize: fontSize.big, fontWeight: '800', letterSpacing: -1.5 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm },

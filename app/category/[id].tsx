@@ -1,8 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { StatusBar } from 'expo-status-bar';
 import { Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/Button';
 import { CATEGORY_ICONS, CategoryIcon } from '../../src/components/CategoryIcon';
@@ -76,7 +77,7 @@ function CategoryForm({ editing, startKind }: { editing: Category | null; startK
       <StatusBar style="light" />
       <SheetHeader title={editing ? 'Edit category' : 'New category'} onClose={() => router.back()} />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+        <FadeScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
           <View style={styles.preview}>
             <CategoryIcon name={icon} color={color} size={64} />
           </View>
@@ -131,7 +132,7 @@ function CategoryForm({ editing, startKind }: { editing: Category | null; startK
             />
           )}
           {error !== '' && <Text style={styles.error}>{error}</Text>}
-        </ScrollView>
+        </FadeScrollView>
         <View style={styles.footer}>
           <Button title={editing ? 'Save changes' : 'Create category'} onPress={save} background={sheet.btnBg} color={sheet.btnFg} />
           {editing && !editing.is_default && (

@@ -1,6 +1,7 @@
 import { Check } from 'lucide-react-native';
+import { FadeScrollView } from './FadeScrollView';
 import type { ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { sheet } from '../theme';
 import { Sheet } from './Sheet';
 import { SheetHeader } from './SheetHeader';
@@ -21,7 +22,7 @@ export function PickerSheet<T extends string | number | null>({ title, options, 
       <View style={styles.dim}>
         <Sheet onClose={onClose}>
           <SheetHeader title={title} onClose={onClose} />
-          <ScrollView style={styles.list}>
+          <FadeScrollView style={styles.list}>
             {options.map((o) => (
               <Pressable
                 key={String(o.value)}
@@ -38,7 +39,7 @@ export function PickerSheet<T extends string | number | null>({ title, options, 
                 {o.value === current && <Check color={sheet.pos} size={20} strokeWidth={2.6} />}
               </Pressable>
             ))}
-          </ScrollView>
+          </FadeScrollView>
         </Sheet>
       </View>
     </Modal>

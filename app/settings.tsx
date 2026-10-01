@@ -1,11 +1,12 @@
 import * as DocumentPicker from 'expo-document-picker';
+import { FadeScrollView } from '../src/components/FadeScrollView';
 import { File, Paths } from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
 import { ChevronRight, Download, Globe, Landmark, Tag, Trash2, Upload } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { parseBackup } from '../src/backup';
 import { Sheet } from '../src/components/Sheet';
 import { SheetHeader } from '../src/components/SheetHeader';
@@ -95,7 +96,7 @@ export default function Settings() {
   return (
     <Sheet onClose={() => router.back()}>
       <SheetHeader title="Settings" onClose={() => router.back()} />
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <FadeScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <ActionRow
           Icon={Landmark}
           title="Accounts"
@@ -142,7 +143,7 @@ export default function Settings() {
         <Text style={styles.note}>
           Your data lives only on this phone. Nothing is sent anywhere. Export a backup to keep it safe.
         </Text>
-      </ScrollView>
+      </FadeScrollView>
     </Sheet>
   );
 }

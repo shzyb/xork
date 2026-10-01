@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
+import { FadeScrollView } from '../src/components/FadeScrollView';
 import { ChevronRight } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '../src/components/Button';
 import { CategoryIcon } from '../src/components/CategoryIcon';
 import { Sheet } from '../src/components/Sheet';
@@ -41,7 +42,7 @@ export default function Categories() {
           </Pressable>
         ))}
       </View>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <FadeScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         {data?.categories.filter((c) => c.kind === kind).map((c) => (
           <Pressable
             key={c.id}
@@ -59,7 +60,7 @@ export default function Categories() {
             <ChevronRight color={sheet.ink3} size={20} />
           </Pressable>
         ))}
-      </ScrollView>
+      </FadeScrollView>
       <View style={styles.footer}>
         <Button
           title={kind === 'income' ? 'New income category' : 'New spending category'}

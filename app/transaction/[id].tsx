@@ -1,7 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { ArrowLeftRight, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '../../src/components/Button';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
 import { Sheet } from '../../src/components/Sheet';
@@ -59,7 +60,7 @@ export default function TransactionDetail() {
   return (
     <Sheet onClose={() => router.back()}>
       <SheetHeader title="" onClose={() => router.back()} />
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <FadeScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={styles.hero}>
           {transfer ? (
             <View style={styles.transferIcon}>
@@ -90,7 +91,7 @@ export default function TransactionDetail() {
         </View>
 
         {error !== '' && <Text style={styles.error}>{error}</Text>}
-      </ScrollView>
+      </FadeScrollView>
       <View style={styles.footer}>
         <Button
           title="Edit"

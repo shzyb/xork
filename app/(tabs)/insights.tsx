@@ -1,7 +1,8 @@
 import { ArrowDown, ArrowUp, Gauge, Repeat, TrendingDown, TrendingUp, TriangleAlert } from 'lucide-react-native';
+import { FadeScrollView } from '../../src/components/FadeScrollView';
 import type { LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
 import { CashFlowChart, RunningTotalChart } from '../../src/components/Charts';
@@ -38,7 +39,7 @@ export default function Insights() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.content}>
+      <FadeScrollView contentContainerStyle={styles.content}>
         <Text style={[styles.title, { color: colors.ink }]}>Insights</Text>
 
         {data && (
@@ -54,7 +55,7 @@ export default function Insights() {
             onSelectMonth={setMonth}
           />
         )}
-      </ScrollView>
+      </FadeScrollView>
     </SafeAreaView>
   );
 }

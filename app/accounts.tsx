@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router';
+import { FadeScrollView } from '../src/components/FadeScrollView';
 import { ChevronRight } from 'lucide-react-native';
-import { ScrollView, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '../src/components/Button';
 import { Sheet } from '../src/components/Sheet';
 import { SheetHeader } from '../src/components/SheetHeader';
@@ -18,7 +19,7 @@ export default function Accounts() {
   return (
     <Sheet onClose={() => router.back()}>
       <SheetHeader title="Accounts" onClose={() => router.back()} />
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <FadeScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         {accounts && (
           <>
             <Text style={styles.intro}>
@@ -41,7 +42,7 @@ export default function Accounts() {
             ))}
           </>
         )}
-      </ScrollView>
+      </FadeScrollView>
       <View style={styles.footer}>
         <Button
           title="Add an account"

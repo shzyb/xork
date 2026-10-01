@@ -1,8 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { FadeScrollView } from '../src/components/FadeScrollView';
 import { StatusBar } from 'expo-status-bar';
 import { ChevronLeft, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AccountChips } from '../src/components/AccountChips';
 import { Button } from '../src/components/Button';
@@ -187,7 +188,7 @@ function AddForm({ accounts, categories, editing, startType }: {
         </>
       ) : (
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScrollView style={styles.flex} contentContainerStyle={styles.details} keyboardShouldPersistTaps="handled">
+          <FadeScrollView style={styles.flex} contentContainerStyle={styles.details} keyboardShouldPersistTaps="handled">
             <Pressable accessibilityRole="button" accessibilityLabel="Change amount" onPress={() => setStep(1)} style={styles.hero}>
               <Text style={[styles.heroAmount, type === 'income' && { color: sheet.pos }]}>
                 {type === 'income' ? '+ ' : ''}{formatMoney(minor)}
@@ -229,7 +230,7 @@ function AddForm({ accounts, categories, editing, startType }: {
             />
 
             {error !== '' && <Text style={styles.error}>{error}</Text>}
-          </ScrollView>
+          </FadeScrollView>
           <View style={styles.footer}>
             <Button title={editing ? 'Save changes' : SAVE_LABELS[type]} onPress={save} background={sheet.btnBg} color={sheet.btnFg} />
           </View>

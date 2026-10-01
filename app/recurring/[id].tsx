@@ -1,8 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { StatusBar } from 'expo-status-bar';
 import { Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AccountChips } from '../../src/components/AccountChips';
 import { Button } from '../../src/components/Button';
@@ -98,7 +99,7 @@ function RecurringForm({ editing, accounts, categories }: {
       <StatusBar style="light" />
       <SheetHeader title={editing ? 'Edit recurring item' : 'New recurring item'} onClose={() => router.back()} />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
+        <FadeScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
           <View style={styles.segment}>
             {([['expense', 'Money out'], ['income', 'Money in']] as const).map(([key, label]) => (
               <Pressable
@@ -156,7 +157,7 @@ function RecurringForm({ editing, accounts, categories }: {
             <Switch value={active} onValueChange={setActive} trackColor={{ true: sheet.pos, false: sheet.card2 }} />
           </View>
           {error !== '' && <Text style={styles.error}>{error}</Text>}
-        </ScrollView>
+        </FadeScrollView>
         <View style={styles.footer}>
           <Button title={editing ? 'Save changes' : 'Schedule it'} onPress={save} background={sheet.btnBg} color={sheet.btnFg} />
           {editing && (

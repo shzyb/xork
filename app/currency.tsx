@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
+import { FadeScrollView } from '../src/components/FadeScrollView';
 import { Check, TriangleAlert } from 'lucide-react-native';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '../src/components/Button';
 import { Sheet } from '../src/components/Sheet';
 import { SheetHeader } from '../src/components/SheetHeader';
@@ -36,7 +37,7 @@ function CurrencyPicker({ currentCode }: { currentCode: string }) {
   return (
     <Sheet onClose={() => router.back()}>
       <SheetHeader title="Currency" onClose={() => router.back()} />
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <FadeScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <Text style={styles.intro}>Everything in the app is shown in one currency.</Text>
         {CURRENCIES.map((c) => (
           <Pressable
@@ -65,7 +66,7 @@ function CurrencyPicker({ currentCode }: { currentCode: string }) {
           </View>
         )}
         {error !== '' && <Text style={styles.error}>{error}</Text>}
-      </ScrollView>
+      </FadeScrollView>
       <View style={styles.footer}>
         <Button
           title={changed ? `Switch to ${next.name}` : 'Pick a different currency'}

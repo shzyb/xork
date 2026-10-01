@@ -1,8 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { FadeScrollView } from '../../../src/components/FadeScrollView';
 import { Pause, Play, SkipForward, Trash2, Pencil } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { Button } from '../../../src/components/Button';
 import { CategoryIcon } from '../../../src/components/CategoryIcon';
 import { Sheet } from '../../../src/components/Sheet';
@@ -67,7 +68,7 @@ export default function RecurringDetail() {
   return (
     <Sheet onClose={() => router.back()}>
       <SheetHeader title="" onClose={() => router.back()} />
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <FadeScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={styles.hero}>
           <CategoryIcon name={item.category_icon} color={item.category_color} size={64} recurring surface={sheet.bg} />
           <Text style={styles.kind}>{item.name}</Text>
@@ -126,7 +127,7 @@ export default function RecurringDetail() {
           <Text style={styles.deleteText}>Delete recurring item</Text>
         </Pressable>
         {error !== '' && <Text style={styles.error}>{error}</Text>}
-      </ScrollView>
+      </FadeScrollView>
     </Sheet>
   );
 }
