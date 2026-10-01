@@ -1,4 +1,4 @@
-import { getRecurringActivity, logRecurringNow, setRecurringActive, skipRecurring, deleteAllData, exportAll, NO_FILTER, replaceAllData, addAccount, addCategory, addRecurring, deleteRecurring, logDueRecurring, updateRecurring, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, setTheme, updateAccount, updateCategory, updateTransaction } from '../db';
+import { getRecurringActivity, logRecurringNow, setRecurringActive, skipRecurring, deleteAllData, exportAll, NO_FILTER, replaceAllData, addAccount, addCategory, addRecurring, deleteRecurring, logDueRecurring, updateRecurring, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, setHideBalances, setTheme, updateAccount, updateCategory, updateTransaction } from '../db';
 import { formatMoney } from '../money';
 
 function fakeDb(overrides: Partial<Db> = {}): Db {
@@ -149,6 +149,7 @@ describe.each([
   ['addCategory', () => addCategory(FOOD), 'INSERT INTO categories'],
   ['updateCategory', () => updateCategory(3, FOOD), 'UPDATE categories'],
   ['setTheme', () => setTheme('dark'), 'INSERT OR REPLACE INTO settings'],
+  ['setHideBalances', () => setHideBalances(true), 'INSERT OR REPLACE INTO settings'],
 ])('%s', (_name, run, sql) => {
   it('bumps version and calls listeners', async () => {
     const db = fakeDb();

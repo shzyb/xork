@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { ArrowDown, ArrowUp, CalendarClock, Eye, EyeOff, Plus, Receipt, Settings } from 'lucide-react-native';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { PressableScale } from '../../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,7 +9,7 @@ import { EmptyState } from '../../src/components/EmptyState';
 import { RecurringRow } from '../../src/components/RecurringRow';
 import { SwipePages } from '../../src/components/SwipePages';
 import { TransactionList } from '../../src/components/TransactionList';
-import { getAccountsWithBalance, getMonthSummary, getRecurring, getTransactions, NO_FILTER } from '../../src/db';
+import { getAccountsWithBalance, getMonthSummary, getRecurring, getSetting, getTransactions, NO_FILTER } from '../../src/db';
 import { currentMonth, monthLabel, today, upcomingOccurrences } from '../../src/dates';
 import { formatMoney } from '../../src/money';
 import { fabClearance, fontSize, spacing, useColors } from '../../src/theme';
@@ -25,7 +25,11 @@ export default function Home() {
   const colors = useColors();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('recent');
-  const [hidden, setHidden] = useState(false);
+  const hideOnOpen = useData(() => getSetting('hide_balances'));
+  const [shown, setShown] = useState<boolean | null>(null);
+  const hidden = shown === null ? hideOnOpen === '1' : !shown;
+  // Changing "Hide balances on open" in Appearance takes over from the eye button.
+  useEffect(() => setShown(null), [hideOnOpen]);
   const mask = (minor: number) => (hidden ? '••••••' : formatMoney(minor));
   const accounts = useData(getAccountsWithBalance);
   const month = useData(() => getMonthSummary(currentMonth()));
@@ -41,7 +45,7 @@ export default function Home() {
         <View style={styles.topbar}>
           <Text style={[styles.brand, { color: colors.ink }]}>Home</Text>
           <View style={styles.actions}>
-            <PressableScale accessibilityRole="button" accessibilityLabel={hidden ? 'Show balances' : 'Hide balances'} onPress={() => setHidden(!hidden)} style={styles.iconButton}>
+            <PressableScale accessibilityRole="button" accessibilityLabel={hidden ? 'Show balances' : 'Hide balances'} onPress={() => setShown(hidden)} style={styles.iconButton}>
               {hidden ? <EyeOff color={colors.ink} size={22} /> : <Eye color={colors.ink} size={22} />}
             </PressableScale>
             <PressableScale accessibilityRole="button" accessibilityLabel="Settings" onPress={() => router.push('/settings')} style={styles.iconButton}>
@@ -51,7 +55,7 @@ export default function Home() {
         </View>
 
         <Text style={{ color: colors.ink2, fontSize: fontSize.body, marginTop: spacing.lg }}>Total balance</Text>
-        {total !== undefined && <Text style={[styles.balance, { color: colors.ink }]}>{mask(total)}</Text>}
+        {total !== undefined && hideOnOpen !== undefined && <Text style={[styles.balance, { color: colors.ink }]}>{mask(total)}</Text>}
 
         {month && (
           <>
@@ -91,7 +95,7 @@ export default function Home() {
               <TransactionList rows={recent} />
             ))}
 
-            {key === 'accounts' && accounts && (
+            {key === 'accounts' && accounts && hideOnOpen !== undefined && (
               <>
                 {accounts.map((a) => (
                   <PressableScale

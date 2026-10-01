@@ -125,6 +125,10 @@ export async function setTheme(theme: ThemeSetting) {
   await write((handle) => handle.runAsync(UPSERT_SETTING, 'theme', theme));
 }
 
+export async function setHideBalances(on: boolean) {
+  await write((handle) => handle.runAsync(UPSERT_SETTING, 'hide_balances', on ? '1' : '0'));
+}
+
 // First launch: save the chosen currency and mark the welcome screen as done, together.
 export async function completeWelcome(code: string) {
   await write(async (handle) => {

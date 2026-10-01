@@ -1,11 +1,11 @@
 import { useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Switch, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PressableScale } from '../src/components/PressableScale';
 import { Text } from '../src/components/Text';
-import { getSetting, setTheme } from '../src/db';
+import { getSetting, setHideBalances, setTheme } from '../src/db';
 import { fontSize, spacing, useColors } from '../src/theme';
 import { THEME_OPTIONS } from '../src/types';
 import type { ThemeSetting } from '../src/types';
@@ -49,8 +49,18 @@ export default function Appearance() {
   const colors = useColors();
   const router = useRouter();
   const saved = useData(() => getSetting('theme'));
+  const hideOnOpen = useData(() => getSetting('hide_balances')) === '1';
   const [error, setError] = useState('');
   const theme: ThemeSetting = saved === 'light' || saved === 'dark' ? saved : 'system';
+
+  async function toggleHide(on: boolean) {
+    setError('');
+    try {
+      await setHideBalances(on);
+    } catch {
+      setError('Could not save. Try again.');
+    }
+  }
 
   async function choose(next: ThemeSetting) {
     setError('');
@@ -92,6 +102,13 @@ export default function Appearance() {
           );
         })}
       </View>
+      <View style={styles.toggleRow}>
+        <View style={styles.main}>
+          <Text style={[styles.toggleTitle, { color: colors.ink }]}>Hide balances on open</Text>
+          <Text style={{ color: colors.ink2, fontSize: 13.5 }}>Amounts on Home stay hidden until you tap the eye</Text>
+        </View>
+        <Switch value={hideOnOpen} onValueChange={toggleHide} trackColor={{ true: colors.pos, false: colors.fill2 }} />
+      </View>
       {error !== '' && <Text style={[styles.error, { color: colors.neg }]}>{error}</Text>}
     </SafeAreaView>
   );
@@ -113,5 +130,8 @@ const styles = StyleSheet.create({
   button: { marginTop: 'auto', height: 14, borderRadius: 7 },
   rightHalf: { position: 'absolute', top: 0, bottom: 0, right: 0, width: '50%', overflow: 'hidden' },
   label: { fontSize: 14.5 },
+  toggleRow: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64, marginTop: spacing.xl },
+  main: { flex: 1 },
+  toggleTitle: { fontSize: 16.5, fontWeight: '600' },
   error: { fontSize: 14.5, fontWeight: '600', marginTop: 14 },
 });

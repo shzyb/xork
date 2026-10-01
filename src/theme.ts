@@ -69,7 +69,7 @@ export const sheet = {
   pos: '#4ADE80',
   warn: '#FFB340',
   scrim: 'rgba(0,0,0,0.32)',
-  trayDark: '#262628', // the tray's colour in dark mode, so it stands out from the black screen
+  trayDark: '#141414', // the tray's colour in dark mode, so it stands out from the black screen
   btnBg: '#FFFFFF',
   btnFg: '#000000',
 };
