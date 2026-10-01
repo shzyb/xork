@@ -12,6 +12,7 @@ import { getAccountsWithBalance, getMonthSummary, getRecurring, getTransactions,
 import { currentMonth, monthLabel, today, upcomingOccurrences } from '../../src/dates';
 import { formatMoney } from '../../src/money';
 import { fontSize, spacing, useColors } from '../../src/theme';
+import { ACCOUNT_TYPES } from '../../src/types';
 import { useData } from '../../src/useData';
 import { Text } from '../../src/components/Text';
 
@@ -101,7 +102,12 @@ export default function Home() {
                     <View style={[styles.initial, { backgroundColor: a.color }]}>
                       <Text style={styles.initialText}>{a.name.trim().charAt(0).toUpperCase() || '?'}</Text>
                     </View>
-                    <Text style={[styles.title, { color: colors.ink }]} numberOfLines={1}>{a.name}</Text>
+                    <View style={styles.nameBox}>
+                      <Text style={[styles.name, { color: colors.ink }]} numberOfLines={1}>{a.name}</Text>
+                      <Text style={{ color: colors.ink3, fontSize: 13, marginTop: 1 }}>
+                        {ACCOUNT_TYPES.find((t) => t.value === a.type)?.label}
+                      </Text>
+                    </View>
                     <Text style={[styles.amount, { color: colors.ink }]}>{mask(a.balance_minor)}</Text>
                   </Pressable>
                 ))}
@@ -148,5 +154,7 @@ const styles = StyleSheet.create({
   initial: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   initialText: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
   title: { flex: 1, fontSize: 16.5, fontWeight: '600' },
+  nameBox: { flex: 1 },
+  name: { fontSize: 16.5, fontWeight: '600' },
   amount: { fontSize: 16.5, fontWeight: '600' },
 });
