@@ -55,6 +55,9 @@ export const sheet = {
   btnFg: '#000000',
 };
 
+// Icon circles in the add sheet.
+export const actionColors = { expense: '#EF4444', income: '#34A853', transfer: '#3B82F6' };
+
 export const accountColors = ['#111111', '#FF9F0A', '#3B82F6', '#8B5CF6', '#EC4899', '#14B8A6', '#EF4444'];
 
 export const categoryColors = [
