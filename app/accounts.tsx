@@ -5,8 +5,6 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../src/components/Button';
 import { getAccountsWithBalance } from '../src/db';
-import { today } from '../src/dates';
-import { creditStatus, dueText } from '../src/insights';
 import { formatMoney } from '../src/money';
 import { fontSize, spacing, useColors } from '../src/theme';
 import { ACCOUNT_TYPES } from '../src/types';
@@ -31,36 +29,26 @@ export default function Accounts() {
             <Text style={{ color: colors.ink2, fontSize: 15, marginTop: 4, marginBottom: spacing.md }}>
               {accounts.length} account{accounts.length === 1 ? '' : 's'} · {formatMoney(total)} in total
             </Text>
-            {accounts.map((a) => {
-              const credit = a.type === 'credit' && a.limit_minor ? creditStatus(-a.balance_minor, a.limit_minor) : null;
-              const tint = credit?.state === 'warn' ? colors.warn : credit && credit.state !== 'ok' ? colors.neg : colors.ink2;
-              return (
-                <Pressable
-                  key={a.id}
-                  accessibilityRole="button"
-                  onPress={() => router.push({ pathname: '/account/[id]', params: { id: String(a.id) } })}
-                  style={styles.row}
-                >
-                  <View style={[styles.initial, { backgroundColor: a.color }]}>
-                    <Text style={styles.initialText}>{a.name.trim().charAt(0).toUpperCase() || '?'}</Text>
-                  </View>
-                  <View style={styles.nameBox}>
-                    <Text style={[styles.name, { color: colors.ink }]} numberOfLines={1}>{a.name}</Text>
-                    <Text style={{ color: colors.ink3, fontSize: 13, marginTop: 1 }}>
-                      {ACCOUNT_TYPES.find((t) => t.value === a.type)?.label}
-                    </Text>
-                    {credit && a.limit_minor && (
-                      <Text style={{ color: tint, fontSize: 12.5, marginTop: 2 }}>
-                        {credit.state === 'full' ? 'At the limit' : `${formatMoney(credit.left)} left of ${formatMoney(a.limit_minor)}`}
-                        {a.due_day ? ` · ${dueText(a.due_day, today())}` : ''}
-                      </Text>
-                    )}
-                  </View>
-                  <Text style={[styles.amount, { color: colors.ink }]}>{formatMoney(a.balance_minor)}</Text>
-                  <ChevronRight color={colors.ink3} size={20} />
-                </Pressable>
-              );
-            })}
+            {accounts.map((a) => (
+              <Pressable
+                key={a.id}
+                accessibilityRole="button"
+                onPress={() => router.push({ pathname: '/account/[id]', params: { id: String(a.id) } })}
+                style={styles.row}
+              >
+                <View style={[styles.initial, { backgroundColor: a.color }]}>
+                  <Text style={styles.initialText}>{a.name.trim().charAt(0).toUpperCase() || '?'}</Text>
+                </View>
+                <View style={styles.nameBox}>
+                  <Text style={[styles.name, { color: colors.ink }]} numberOfLines={1}>{a.name}</Text>
+                  <Text style={{ color: colors.ink3, fontSize: 13, marginTop: 1 }}>
+                    {ACCOUNT_TYPES.find((t) => t.value === a.type)?.label}
+                  </Text>
+                </View>
+                <Text style={[styles.amount, { color: colors.ink }]}>{formatMoney(a.balance_minor)}</Text>
+                <ChevronRight color={colors.ink3} size={20} />
+              </Pressable>
+            ))}
           </>
         )}
       </FadeScrollView>
