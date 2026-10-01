@@ -179,8 +179,7 @@ export default function Activity() {
           ) : (
             <>
               <Text style={[styles.summary, { color: colors.ink2 }]}>
-                {totals.count} transaction{totals.count === 1 ? '' : 's'}  ·  Out{' '}
-                <Text style={{ color: colors.ink, fontWeight: '700' }}>{formatMoney(totals.out_minor)}</Text>  ·  In{' '}
+                {totals.count} transaction{totals.count === 1 ? '' : 's'}  ·  In{' '}
                 <Text style={{ color: colors.pos, fontWeight: '700' }}>{formatMoney(totals.in_minor)}</Text>
               </Text>
               <TransactionList rows={rows} />
