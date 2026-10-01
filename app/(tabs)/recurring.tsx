@@ -11,7 +11,7 @@ import { SwipePages } from '../../src/components/SwipePages';
 import { getRecurring } from '../../src/db';
 import { prettyDate, today, upcomingOccurrences } from '../../src/dates';
 import { formatMoney, monthlyMinor } from '../../src/money';
-import { fontSize, spacing, useColors } from '../../src/theme';
+import { fabClearance, fontSize, spacing, useColors } from '../../src/theme';
 import type { RecurringRow as RecurringItem } from '../../src/types';
 import { useData } from '../../src/useData';
 import { Text } from '../../src/components/Text';
@@ -122,7 +122,7 @@ export default function Recurring() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { paddingHorizontal: spacing.xl, paddingBottom: 140 },
+  content: { paddingHorizontal: spacing.xl, paddingBottom: fabClearance },
   topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md },
   title: { fontSize: fontSize.screen, fontWeight: '800' },
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -10 },

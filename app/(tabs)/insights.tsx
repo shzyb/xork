@@ -12,7 +12,7 @@ import { currentMonth, daysInMonth, lastMonths, monthName, monthShort, shiftMont
 import { budgetStatus, buildNotes, creditStatus, delta, dueText, keptPercent, spendComparison } from '../../src/insights';
 import type { Note } from '../../src/insights';
 import { formatMoney } from '../../src/money';
-import { fontSize, spacing, useColors } from '../../src/theme';
+import { fabClearance, fontSize, spacing, useColors } from '../../src/theme';
 import type { CardInsight, InsightsData } from '../../src/types';
 import { useData } from '../../src/useData';
 import { Text } from '../../src/components/Text';
@@ -317,7 +317,7 @@ function MonthChips({ selected, earliest, onSelect }: {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { paddingHorizontal: spacing.xl, paddingBottom: 140 },
+  content: { paddingHorizontal: spacing.xl, paddingBottom: fabClearance },
   title: { fontSize: fontSize.screen, fontWeight: '800', marginTop: spacing.md },
   chips: { flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.sm },
   chipHit: { flex: 1, height: 44, alignItems: 'center', justifyContent: 'center' },

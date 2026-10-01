@@ -13,7 +13,7 @@ import {
 } from '../../src/db';
 import { monthLabel } from '../../src/dates';
 import { formatMoney } from '../../src/money';
-import { fontSize, spacing, tabBarHeight, useColors } from '../../src/theme';
+import { fabClearance, fontSize, spacing, tabBarHeight, useColors } from '../../src/theme';
 import type { TransactionFilter } from '../../src/types';
 import { useData } from '../../src/useData';
 import { Text, TextInput } from '../../src/components/Text';
@@ -202,7 +202,7 @@ export default function Activity() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { paddingHorizontal: spacing.xl, paddingBottom: 140 },
+  content: { paddingHorizontal: spacing.xl, paddingBottom: fabClearance },
   contentEmpty: { flexGrow: 1 },
   fill: { flex: 1 },
   title: { fontSize: fontSize.screen, fontWeight: '800', marginTop: spacing.md },

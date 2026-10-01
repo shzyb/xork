@@ -11,7 +11,7 @@ import { TransactionList } from '../../src/components/TransactionList';
 import { getAccountsWithBalance, getMonthSummary, getRecurring, getTransactions, NO_FILTER } from '../../src/db';
 import { currentMonth, monthLabel, today, upcomingOccurrences } from '../../src/dates';
 import { formatMoney } from '../../src/money';
-import { fontSize, spacing, useColors } from '../../src/theme';
+import { fabClearance, fontSize, spacing, useColors } from '../../src/theme';
 import { ACCOUNT_TYPES } from '../../src/types';
 import { useData } from '../../src/useData';
 import { Text } from '../../src/components/Text';
@@ -139,7 +139,7 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { paddingHorizontal: spacing.xl, paddingBottom: 140 },
+  content: { paddingHorizontal: spacing.xl, paddingBottom: fabClearance },
   topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md },
   brand: { fontSize: fontSize.screen, fontWeight: '800' },
   actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
