@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ArrowDown, ArrowUp, Plus, Settings } from 'lucide-react-native';
+import { ArrowDown, ArrowUp, Eye, EyeOff, Plus, Settings } from 'lucide-react-native';
 import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -21,6 +21,8 @@ export default function Home() {
   const colors = useColors();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('recent');
+  const [hidden, setHidden] = useState(false);
+  const mask = (minor: number) => (hidden ? '••••••' : formatMoney(minor));
   const accounts = useData(getAccountsWithBalance);
   const month = useData(() => getMonthSummary(currentMonth()));
   const recent = useData(() => getTransactions(NO_FILTER, 8));
@@ -34,13 +36,18 @@ export default function Home() {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.topbar}>
           <Text style={[styles.brand, { color: colors.ink }]}>Home</Text>
-          <Pressable accessibilityRole="button" accessibilityLabel="Settings" onPress={() => router.push('/settings')} style={styles.iconButton}>
-            <Settings color={colors.ink} size={22} />
-          </Pressable>
+          <View style={styles.actions}>
+            <Pressable accessibilityRole="button" accessibilityLabel={hidden ? 'Show balances' : 'Hide balances'} onPress={() => setHidden(!hidden)} style={styles.iconButton}>
+              {hidden ? <EyeOff color={colors.ink} size={22} /> : <Eye color={colors.ink} size={22} />}
+            </Pressable>
+            <Pressable accessibilityRole="button" accessibilityLabel="Settings" onPress={() => router.push('/settings')} style={styles.iconButton}>
+              <Settings color={colors.ink} size={22} />
+            </Pressable>
+          </View>
         </View>
 
         <Text style={{ color: colors.ink2, fontSize: fontSize.body, marginTop: spacing.lg }}>Total balance</Text>
-        {total !== undefined && <Text style={[styles.balance, { color: colors.ink }]}>{formatMoney(total)}</Text>}
+        {total !== undefined && <Text style={[styles.balance, { color: colors.ink }]}>{mask(total)}</Text>}
 
         {month && (
           <>
@@ -96,7 +103,7 @@ export default function Home() {
                       <Text style={styles.initialText}>{a.name.trim().charAt(0).toUpperCase() || '?'}</Text>
                     </View>
                     <Text style={[styles.title, { color: colors.ink }]} numberOfLines={1}>{a.name}</Text>
-                    <Text style={[styles.amount, { color: colors.ink }]}>{formatMoney(a.balance_minor)}</Text>
+                    <Text style={[styles.amount, { color: colors.ink }]}>{mask(a.balance_minor)}</Text>
                   </Pressable>
                 ))}
                 <Pressable
@@ -132,6 +139,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.xl, paddingBottom: 140 },
   topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md },
   brand: { fontSize: 25, fontWeight: '700' },
+  actions: { flexDirection: 'row', alignItems: 'center' },
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -10 },
   balance: { fontSize: fontSize.big, fontWeight: '800', letterSpacing: -1.5 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm },
