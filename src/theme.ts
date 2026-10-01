@@ -64,6 +64,7 @@ export const sheet = {
   pos: '#4ADE80',
   warn: '#FFB340',
   scrim: 'rgba(0,0,0,0.32)',
+  edge: 'rgba(255,255,255,0.14)', // outline for the tray in dark mode, where black sits on black
   btnBg: '#FFFFFF',
   btnFg: '#000000',
 };
