@@ -20,12 +20,8 @@ import type { Account, Category, TransactionRow, TransactionType } from '../src/
 import { useData } from '../src/useData';
 import { Text, TextInput } from '../src/components/Text';
 
-const TYPES: { key: TransactionType; label: string }[] = [
-  { key: 'expense', label: 'Expense' },
-  { key: 'income', label: 'Income' },
-  { key: 'transfer', label: 'Move' },
-];
 const TITLES = { expense: 'Expense', income: 'Income', transfer: 'Move money' };
+const EDIT_TITLES = { expense: 'Edit expense', income: 'Edit income', transfer: 'Edit transfer' };
 const SAVE_LABELS = { expense: 'Add expense', income: 'Add income', transfer: 'Move money' };
 
 // With ?id=5 the form edits that transaction; without it, it adds a new one, starting as ?type= (default expense).
@@ -49,7 +45,7 @@ function AddForm({ accounts, categories, editing, startType }: {
   const router = useRouter();
 
   const [step, setStep] = useState<1 | 2>(1);
-  const [type, setType] = useState<TransactionType>(editing?.type ?? startType);
+  const type = editing?.type ?? startType;
   const [amount, setAmount] = useState(editing ? minorToTyped(editing.amount_minor) : '');
   const [fromSel, setFromSel] = useState<number | null>(editing?.account_id ?? null);
   const [toSel, setToSel] = useState<number | null>(editing?.to_account_id ?? null);
@@ -78,12 +74,6 @@ function AddForm({ accounts, categories, editing, startType }: {
       return;
     }
     setAmount(amount === '0' ? key : amount + key);
-  }
-
-  function changeType(next: TransactionType) {
-    setType(next);
-    setCategoryId(null);
-    setError('');
   }
 
   const draft = () => ({
@@ -153,13 +143,19 @@ function AddForm({ accounts, categories, editing, startType }: {
       <StatusBar style="light" />
       <View style={styles.header}>
         {step === 1 ? (
-          <RoundButton label="Close" onPress={() => router.back()}><X color={sheet.ink} size={18} /></RoundButton>
+          editing ? (
+            <RoundButton label="Close" onPress={() => router.back()}><X color={sheet.ink} size={18} /></RoundButton>
+          ) : (
+            <RoundButton label="Back to menu" onPress={() => router.replace('/add-menu')}>
+              <ChevronLeft color={sheet.ink} size={20} />
+            </RoundButton>
+          )
         ) : (
           <RoundButton label="Back" onPress={() => { setError(''); setStep(1); }}>
             <ChevronLeft color={sheet.ink} size={20} />
           </RoundButton>
         )}
-        <Text style={styles.headerTitle}>{step === 1 ? (editing ? 'Edit transaction' : TITLES[type]) : type === 'transfer' ? 'Details' : type === 'income' ? 'Where from?' : 'What for?'}</Text>
+        <Text style={styles.headerTitle}>{step === 1 ? (editing ? EDIT_TITLES[type] : TITLES[type]) : type === 'transfer' ? 'Details' : type === 'income' ? 'Where from?' : 'What for?'}</Text>
         {step === 2 ? (
           <RoundButton label="Close" onPress={() => router.back()}><X color={sheet.ink} size={18} /></RoundButton>
         ) : (
@@ -170,20 +166,6 @@ function AddForm({ accounts, categories, editing, startType }: {
       {step === 1 ? (
         <>
           <View style={styles.body}>
-            <View style={styles.segment}>
-              {TYPES.map((t) => (
-                <PressableScale
-                  key={t.key}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: type === t.key }}
-                  onPress={() => changeType(t.key)}
-                  style={[styles.segmentItem, type === t.key && { backgroundColor: sheet.card2 }]}
-                >
-                  <Text style={[styles.segmentText, type === t.key && { color: sheet.ink }]}>{t.label}</Text>
-                </PressableScale>
-              ))}
-            </View>
-
             <AccountChips
               label={type === 'income' ? 'Into' : 'From'}
               accounts={accounts}
@@ -222,7 +204,7 @@ function AddForm({ accounts, categories, editing, startType }: {
         <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
           <FadeScrollView style={styles.flex} contentContainerStyle={styles.details} keyboardShouldPersistTaps="handled">
             <PressableScale accessibilityRole="button" accessibilityLabel="Change amount" onPress={() => setStep(1)} style={styles.hero}>
-              <Text style={[styles.heroAmount, type === 'income' && { color: sheet.pos }]}>
+              <Text style={styles.heroAmount}>
                 {type === 'income' ? '+ ' : ''}{formatMoney(minor)}
               </Text>
               <Text style={styles.under}>
@@ -288,9 +270,6 @@ const styles = StyleSheet.create({
   round: { width: 44, height: 44, borderRadius: 22, backgroundColor: sheet.card, alignItems: 'center', justifyContent: 'center' },
   roundSpacer: { width: 44 },
   body: { flex: 1 },
-  segment: { flexDirection: 'row', backgroundColor: sheet.card, borderRadius: 22, padding: 3, gap: 3 },
-  segmentItem: { flex: 1, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
-  segmentText: { color: sheet.ink2, fontSize: 14.5, fontWeight: '600' },
   amountBox: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 14 },
   amount: { color: sheet.ink, fontSize: 68, fontWeight: '800', letterSpacing: -2, maxWidth: '100%' },
   symbol: { color: sheet.ink2, fontSize: 32, fontWeight: '700', letterSpacing: 0 },
