@@ -1,5 +1,6 @@
 import { Tabs, useRouter } from 'expo-router';
 import { ChartPie, Clock, Plus, Repeat } from 'lucide-react-native';
+import { useRef } from 'react';
 import type { ComponentProps, ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { PressableScale } from '../../src/components/PressableScale';
@@ -108,6 +109,15 @@ export default function TabsLayout() {
   const colors = useColors();
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const opening = useRef(false);
+
+  // A quick double tap would otherwise push the tray twice.
+  function openMenu() {
+    if (opening.current) return;
+    opening.current = true;
+    setTimeout(() => { opening.current = false; }, 700);
+    router.push('/add-menu');
+  }
 
   return (
     <View style={styles.root}>
@@ -115,7 +125,7 @@ export default function TabsLayout() {
       <PressableScale
         accessibilityRole="button"
         accessibilityLabel="Add"
-        onPress={() => router.push('/add-menu')}
+        onPress={openMenu}
         style={[styles.fab, { backgroundColor: colors.btnBg, bottom: tabBarHeight + insets.bottom + 16 }]}
       >
         <Plus color={colors.btnFg} size={28} />

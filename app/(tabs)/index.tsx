@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { ArrowDown, ArrowUp, CalendarClock, Eye, EyeOff, Plus, Receipt, Settings } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { PressableScale } from '../../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,11 +25,19 @@ export default function Home() {
   const colors = useColors();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('recent');
+  const openingSettings = useRef(false);
   const hideOnOpen = useData(() => getSetting('hide_balances'));
   const [shown, setShown] = useState<boolean | null>(null);
   const hidden = shown === null ? hideOnOpen === '1' : !shown;
   // Changing "Hide balances on open" in Appearance takes over from the eye button.
   useEffect(() => setShown(null), [hideOnOpen]);
+  // A quick double tap would otherwise push Settings twice.
+  function openSettings() {
+    if (openingSettings.current) return;
+    openingSettings.current = true;
+    setTimeout(() => { openingSettings.current = false; }, 700);
+    router.push('/settings');
+  }
   const mask = (minor: number) => (hidden ? '••••••' : formatMoney(minor));
   const accounts = useData(getAccountsWithBalance);
   const month = useData(() => getMonthSummary(currentMonth()));
@@ -48,7 +56,7 @@ export default function Home() {
             <PressableScale accessibilityRole="button" accessibilityLabel={hidden ? 'Show balances' : 'Hide balances'} onPress={() => setShown(hidden)} style={styles.iconButton}>
               {hidden ? <EyeOff color={colors.ink} size={22} /> : <Eye color={colors.ink} size={22} />}
             </PressableScale>
-            <PressableScale accessibilityRole="button" accessibilityLabel="Settings" onPress={() => router.push('/settings')} style={styles.iconButton}>
+            <PressableScale accessibilityRole="button" accessibilityLabel="Settings" onPress={openSettings} style={styles.iconButton}>
               <Settings color={colors.ink} size={22} />
             </PressableScale>
           </View>
