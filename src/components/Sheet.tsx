@@ -21,13 +21,21 @@ export function Sheet({ onClose, children }: { onClose: () => void; children: Re
   const hiddenAt = useRef(height);
   const entered = useRef(false);
   const closing = useRef(false);
+  const running = useRef<Animated.CompositeAnimation | null>(null);
 
+  // `done` only runs if the animation played to the end, not if the tray was removed (or reopened) part-way.
   function run(slideTo: number, dimTo: number, duration: number, done?: () => void) {
-    Animated.parallel([
+    const animation = Animated.parallel([
       Animated.timing(slide, { toValue: slideTo, duration, easing: EASE_OUT, useNativeDriver: true }),
       Animated.timing(dim, { toValue: dimTo, duration, easing: EASE_OUT, useNativeDriver: true }),
-    ]).start(() => done?.());
+    ]);
+    running.current = animation;
+    animation.start(({ finished }) => {
+      if (finished) done?.();
+    });
   }
+
+  useEffect(() => () => running.current?.stop(), []);
 
   // Hold back a "go back" until the exit has played, then let it through. Replace and push are left alone.
   useEffect(
@@ -37,7 +45,9 @@ export function Sheet({ onClose, children }: { onClose: () => void; children: Re
         if (closing.current || (type !== 'GO_BACK' && type !== 'POP')) return;
         e.preventDefault();
         closing.current = true;
-        run(hiddenAt.current, 0, EXIT_MS, () => navigation.dispatch(e.data.action));
+        run(hiddenAt.current, 0, EXIT_MS, () => {
+          if (navigation.canGoBack()) navigation.dispatch(e.data.action);
+        });
       }),
     [navigation],
   );
