@@ -64,11 +64,11 @@ function Routes() {
       <Stack.Protected guard={onboarded}>
         <Stack.Screen name="(tabs)" />
         {TRAYS.map((name) => (
-          <Stack.Screen key={name} name={name} options={TRAY_OPTIONS} />
+          <Stack.Screen key={name} name={name} options={TRAY_OPTIONS} dangerouslySingular />
         ))}
-        <Stack.Screen name="accounts" />
-        <Stack.Screen name="categories" />
-        <Stack.Screen name="appearance" />
+        <Stack.Screen name="accounts" dangerouslySingular />
+        <Stack.Screen name="categories" dangerouslySingular />
+        <Stack.Screen name="appearance" dangerouslySingular />
         {['add', 'account/[id]', 'category/[id]', 'recurring/[id]'].map((name) => (
           <Stack.Screen key={name} name={name} options={{ presentation: 'modal', contentStyle: { backgroundColor: sheet.bg } }} />
         ))}
