@@ -64,7 +64,8 @@ export function parseBackup(text: string): ParseResult {
   for (const c of categories as unknown[]) {
     if (
       !isRecord(c) || !isInt(c.id) || !isStr(c.name) || !isStr(c.icon) || !isStr(c.color) ||
-      (c.kind !== 'expense' && c.kind !== 'income') || !isNullableInt(c.budget_minor) || (c.is_default !== 0 && c.is_default !== 1)
+      (c.kind !== 'expense' && c.kind !== 'income') || !isNullableInt(c.budget_minor) || (c.is_default !== 0 && c.is_default !== 1) ||
+      (c.sort_order !== undefined && !isInt(c.sort_order))
     ) {
       return fail('A category in this backup is damaged.');
     }

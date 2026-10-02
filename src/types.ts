@@ -36,6 +36,7 @@ export type Category = {
   color: string;
   budget_minor: number | null;
   is_default: number;
+  sort_order: number;
 };
 
 export type TransactionType = 'expense' | 'income' | 'transfer';

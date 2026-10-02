@@ -11,10 +11,10 @@ const valid = (): Backup => ({
     { id: 2, name: 'Bank', type: 'debit', opening_minor: 500000, color: '#3B82F6', limit_minor: null, due_day: null, created_at: 'x' },
   ],
   categories: [
-    { id: 1, name: 'Groceries', kind: 'expense', icon: 'shopping-cart', color: '#34A853', budget_minor: 4500000, is_default: 0 },
-    { id: 2, name: 'Other', kind: 'expense', icon: 'tag', color: '#64748B', budget_minor: null, is_default: 1 },
-    { id: 3, name: 'Salary', kind: 'income', icon: 'briefcase', color: '#16A34A', budget_minor: null, is_default: 0 },
-    { id: 4, name: 'Other income', kind: 'income', icon: 'sparkle', color: '#64748B', budget_minor: null, is_default: 1 },
+    { id: 1, name: 'Groceries', kind: 'expense', icon: 'shopping-cart', color: '#34A853', budget_minor: 4500000, is_default: 0, sort_order: 0 },
+    { id: 2, name: 'Other', kind: 'expense', icon: 'tag', color: '#64748B', budget_minor: null, is_default: 1, sort_order: 0 },
+    { id: 3, name: 'Salary', kind: 'income', icon: 'briefcase', color: '#16A34A', budget_minor: null, is_default: 0, sort_order: 0 },
+    { id: 4, name: 'Other income', kind: 'income', icon: 'sparkle', color: '#64748B', budget_minor: null, is_default: 1, sort_order: 0 },
   ],
   recurring: [
     { id: 1, name: 'Rent', type: 'expense', amount_minor: 8500000, account_id: 2, category_id: 1, freq: 'monthly', anchor_day: 1, next_date: '2026-10-01', active: 1 },
@@ -89,6 +89,11 @@ describe('parseBackup', () => {
     const b = valid() as unknown as Record<string, unknown>;
     delete b.transactions;
     expect(parse(b)).toEqual({ ok: false, error: 'This backup file is damaged.' });
+  });
+
+  it('accepts a backup from before categories had an order, but not a damaged order', () => {
+    expect(change((b) => { delete (b.categories[0] as Partial<typeof b.categories[0]>).sort_order; }).ok).toBe(true);
+    expect(change((b) => { (b.categories[0] as unknown as { sort_order: string }).sort_order = 'first'; }).ok).toBe(false);
   });
 
   it('rejects damaged records', () => {

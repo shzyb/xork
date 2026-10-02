@@ -46,6 +46,7 @@ async function migrate(handle: Db) {
   if (version < 2) await migrateToV2(handle);
   if (version < 3) await migrateToV3(handle);
   if (version < 4) await migrateToV4(handle);
+  if (version < 5) await migrateToV5(handle);
 }
 
 // The default categories and the "Cash" account. Used for a new database and after "Delete all data".
@@ -95,6 +96,15 @@ async function migrateToV4(handle: Db) {
     await handle.execAsync('ALTER TABLE accounts ADD COLUMN limit_minor INTEGER');
     await handle.execAsync('ALTER TABLE accounts ADD COLUMN due_day INTEGER');
     await handle.execAsync('PRAGMA user_version = 4');
+  });
+}
+
+// Categories get a manual order. Existing ones keep the order they had (by id).
+async function migrateToV5(handle: Db) {
+  await handle.withTransactionAsync(async () => {
+    await handle.execAsync('ALTER TABLE categories ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0');
+    await handle.execAsync('UPDATE categories SET sort_order = id');
+    await handle.execAsync('PRAGMA user_version = 5');
   });
 }
 
@@ -213,8 +223,9 @@ export async function getAccountsWithBalance(): Promise<(Account & { balance_min
   return db!.getAllAsync(`SELECT a.*, ${BALANCE} AS balance_minor FROM accounts a ORDER BY a.id`);
 }
 
+// Own order first; the two "Other" categories always come last. Equal orders fall back to id.
 export async function getCategories(): Promise<Category[]> {
-  return db!.getAllAsync('SELECT * FROM categories ORDER BY id');
+  return db!.getAllAsync('SELECT * FROM categories ORDER BY is_default, sort_order, id');
 }
 
 // Transfers are not income or spending, so they are left out.
@@ -377,9 +388,21 @@ export async function getCategory(id: number): Promise<Category | null> {
 export async function addCategory(c: NewCategory) {
   await write((handle) =>
     handle.runAsync(
-      'INSERT INTO categories (name, kind, icon, color, budget_minor, is_default) VALUES (?, ?, ?, ?, ?, 0)',
-      c.name, c.kind, c.icon, c.color, c.budget_minor,
+      `INSERT INTO categories (name, kind, icon, color, budget_minor, is_default, sort_order)
+       VALUES (?, ?, ?, ?, ?, 0, COALESCE((SELECT MIN(sort_order) FROM categories WHERE kind = ?), 0) - 1)`,
+      c.name, c.kind, c.icon, c.color, c.budget_minor, c.kind,
     ),
+  );
+}
+
+// ids is one kind's categories in their new order (without the Other category, which stays last).
+export async function reorderCategories(ids: number[]) {
+  await write((handle) =>
+    handle.withTransactionAsync(async () => {
+      for (const [position, id] of ids.entries()) {
+        await handle.runAsync('UPDATE categories SET sort_order = ? WHERE id = ?', position, id);
+      }
+    }),
   );
 }
 
@@ -624,8 +647,8 @@ export async function replaceAllData(backup: Backup) {
       }
       for (const c of backup.categories) {
         await handle.runAsync(
-          'INSERT INTO categories (id, name, kind, icon, color, budget_minor, is_default) VALUES (?, ?, ?, ?, ?, ?, ?)',
-          c.id, c.name, c.kind, c.icon, c.color, c.budget_minor, c.is_default,
+          'INSERT INTO categories (id, name, kind, icon, color, budget_minor, is_default, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          c.id, c.name, c.kind, c.icon, c.color, c.budget_minor, c.is_default, c.sort_order ?? 0, // older backups have no order
         );
       }
       for (const r of backup.recurring) {
