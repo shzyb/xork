@@ -4,13 +4,16 @@ import { ScrollView } from 'react-native';
 import type { ScrollViewProps } from 'react-native';
 import { fadingEdge } from '../theme';
 
-// A vertical ScrollView that fades the top edge only once you have scrolled down, and the bottom edge only while
-// there is more below. (React Native's own fadingEdgeLength on Android keeps both edges faded all the time.)
+// A ScrollView that fades its start edge only once you have scrolled, and its end edge only while there is more
+// beyond it. (React Native's own fadingEdgeLength on Android keeps both edges faded all the time.)
+// Vertical by default; with `horizontal` it fades left and right, at half the length to suit a short row.
 // `fadeTop={false}` is for a screen with a sticky header at the top.
 export function FadeScrollView({ fadeTop = true, onScroll, onLayout, onContentSizeChange, ...rest }: ScrollViewProps & { fadeTop?: boolean; ref?: Ref<ScrollView> }) {
   const [start, setStart] = useState(false);
   const [end, setEnd] = useState(false);
   const measured = useRef({ y: 0, view: 0, content: 0 });
+  const horizontal = rest.horizontal === true;
+  const length = horizontal ? fadingEdge / 2 : fadingEdge;
 
   function update() {
     const { y, view, content } = measured.current;
@@ -22,19 +25,19 @@ export function FadeScrollView({ fadeTop = true, onScroll, onLayout, onContentSi
     <ScrollView
       {...rest}
       scrollEventThrottle={16}
-      fadingEdgeLength={{ start: fadeTop && start ? fadingEdge : 0, end: end ? fadingEdge : 0 }}
+      fadingEdgeLength={{ start: fadeTop && start ? length : 0, end: end ? length : 0 }}
       onScroll={(e) => {
-        measured.current.y = e.nativeEvent.contentOffset.y;
+        measured.current.y = horizontal ? e.nativeEvent.contentOffset.x : e.nativeEvent.contentOffset.y;
         update();
         onScroll?.(e);
       }}
       onLayout={(e) => {
-        measured.current.view = e.nativeEvent.layout.height;
+        measured.current.view = horizontal ? e.nativeEvent.layout.width : e.nativeEvent.layout.height;
         update();
         onLayout?.(e);
       }}
       onContentSizeChange={(w, h) => {
-        measured.current.content = h;
+        measured.current.content = horizontal ? w : h;
         update();
         onContentSizeChange?.(w, h);
       }}
