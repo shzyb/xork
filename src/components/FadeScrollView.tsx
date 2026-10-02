@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import type { Ref } from 'react';
 import { ScrollView } from 'react-native';
 import type { ScrollViewProps } from 'react-native';
 import { fadingEdge } from '../theme';
@@ -6,7 +7,7 @@ import { fadingEdge } from '../theme';
 // A vertical ScrollView that fades the top edge only once you have scrolled down, and the bottom edge only while
 // there is more below. (React Native's own fadingEdgeLength on Android keeps both edges faded all the time.)
 // `fadeTop={false}` is for a screen with a sticky header at the top.
-export function FadeScrollView({ fadeTop = true, onScroll, onLayout, onContentSizeChange, ...rest }: ScrollViewProps & { fadeTop?: boolean }) {
+export function FadeScrollView({ fadeTop = true, onScroll, onLayout, onContentSizeChange, ...rest }: ScrollViewProps & { fadeTop?: boolean; ref?: Ref<ScrollView> }) {
   const [start, setStart] = useState(false);
   const [end, setEnd] = useState(false);
   const measured = useRef({ y: 0, view: 0, content: 0 });

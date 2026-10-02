@@ -2,8 +2,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FadeScrollView } from '../src/components/FadeScrollView';
 import { StatusBar } from 'expo-status-bar';
 import { ChevronLeft, X } from 'lucide-react-native';
-import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
 import { PressableScale } from '../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AccountChips } from '../src/components/AccountChips';
@@ -53,6 +53,7 @@ function AddForm({ accounts, categories, editing, startType }: {
   const [note, setNote] = useState(editing?.note ?? '');
   const [date, setDate] = useState(editing?.date ?? today());
   const [error, setError] = useState('');
+  const scroll = useRef<ScrollView>(null);
 
   const fromId = fromSel ?? accounts[0].id;
   const toId = toSel ?? accounts.find((a) => a.id !== fromId)?.id ?? fromId;
@@ -201,8 +202,8 @@ function AddForm({ accounts, categories, editing, startType }: {
           </View>
         </>
       ) : (
-        <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <FadeScrollView style={styles.flex} contentContainerStyle={styles.details} keyboardShouldPersistTaps="handled">
+        <KeyboardAvoidingView style={styles.flex} behavior="padding">
+          <FadeScrollView ref={scroll} style={styles.flex} contentContainerStyle={styles.details} keyboardShouldPersistTaps="handled">
             <PressableScale accessibilityRole="button" accessibilityLabel="Change amount" onPress={() => setStep(1)} style={styles.hero}>
               <Text style={styles.heroAmount}>
                 {type === 'income' ? '+ ' : ''}{formatMoney(minor)}
@@ -230,6 +231,7 @@ function AddForm({ accounts, categories, editing, startType }: {
             <TextInput
               value={note}
               onChangeText={setNote}
+              onFocus={() => setTimeout(() => scroll.current?.scrollToEnd(), 250)}
               maxLength={60}
               placeholder={type === 'expense' ? 'e.g. Imtiaz Supermarket' : type === 'income' ? 'e.g. September salary' : 'e.g. Monthly saving'}
               placeholderTextColor={sheet.ink3}
