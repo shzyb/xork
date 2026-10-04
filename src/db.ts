@@ -548,6 +548,14 @@ async function getDailySpending(month: string): Promise<DaySpend[]> {
   );
 }
 
+// Daily spending for this month and last, for the small chart on Home.
+export async function getSpendTrend(): Promise<{ daily: DaySpend[]; prevDaily: DaySpend[] }> {
+  const month = currentMonth();
+  const daily = await getDailySpending(month);
+  const prevDaily = await getDailySpending(shiftMonth(month, -1));
+  return { daily, prevDaily };
+}
+
 // Money in and out for the six months ending at `endMonth`. Months with nothing are zero.
 async function getMonthlyTotals(endMonth: string): Promise<MonthTotals[]> {
   const months = lastMonths(endMonth, 6);

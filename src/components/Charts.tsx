@@ -4,30 +4,39 @@ import { daysInMonth, monthName, monthShort } from '../dates';
 import { runningTotal } from '../insights';
 import { compactMoney, formatMoney } from '../money';
 import { spacing, useColors } from '../theme';
-import type { InsightsData } from '../types';
+import type { DaySpend, InsightsData } from '../types';
 import { Text } from './Text';
+
+// The top of the y-axis for a biggest value in minor units: rounded up so the three sections get round numbers.
+function niceTop(maxMinor: number): number {
+  const rawStep = maxMinor / 100 / 3;
+  const unit = 10 ** Math.floor(Math.log10(rawStep));
+  return Math.ceil(rawStep / unit) * unit * 3;
+}
+
+const TIP = 130; // width of the touch tooltip
 
 // The whole month on the x-axis: last month dashed in full, this month solid up to today with a dot at the end.
 // Last month is the first line because the chart takes its day labels from it. Touch and drag to read a day.
-export function RunningTotalChart({ data, month, prevMonth, elapsed, width }: {
-  data: InsightsData;
+export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed, width, height }: {
+  daily: DaySpend[];
+  prevDaily: DaySpend[];
   month: string;
   prevMonth: string;
   elapsed: number | undefined;
   width: number;
+  height: number;
 }) {
   const colors = useColors();
   const days = Math.max(daysInMonth(month), daysInMonth(prevMonth));
   // Reaches the last day with spending, so a transaction dated ahead of today still draws.
-  const lastDay = Math.max(elapsed ?? 0, ...data.daily.map((d) => d.day));
-  const current = runningTotal(data.daily, elapsed === undefined ? daysInMonth(month) : lastDay);
-  const previous = runningTotal(data.prevDaily, days);
+  const lastDay = Math.max(elapsed ?? 0, ...daily.map((d) => d.day));
+  const current = runningTotal(daily, elapsed === undefined ? daysInMonth(month) : lastDay);
+  const previous = runningTotal(prevDaily, days);
   if (current[current.length - 1] === 0 && previous[days - 1] === 0) return null;
 
   // The library sizes the y-axis from the first line only, so give it the bigger of the two months, rounded up.
-  const rawStep = Math.max(current[current.length - 1], previous[days - 1]) / 100 / 3;
-  const unit = 10 ** Math.floor(Math.log10(rawStep));
-  const top = Math.ceil(rawStep / unit) * unit * 3;
+  const top = niceTop(Math.max(current[current.length - 1], previous[days - 1]));
 
   const chartWidth = width - 56;
   const edge = 8; // room so the dot on the last day and the first day isn't cut off
@@ -49,7 +58,7 @@ export function RunningTotalChart({ data, month, prevMonth, elapsed, width }: {
         dataPointsRadius2={5}
         curved
         width={chartWidth}
-        height={170}
+        height={height}
         initialSpacing={edge}
         endSpacing={edge}
         spacing={gap}
@@ -62,24 +71,36 @@ export function RunningTotalChart({ data, month, prevMonth, elapsed, width }: {
         yAxisLabelWidth={44}
         formatYLabel={(label) => compactMoney(Number(label) * 100)}
         disableScroll
+        // The library parks a marker on each line, and on a day with no data yet (after today) it leaves this month's
+        // marker stranded at its last position. The strip and tooltip already show both values, so no markers.
         pointerConfig={{
+          hidePointer1: true,
+          hidePointer2: true,
           pointerStripColor: colors.ink3,
           pointerColor: colors.ink,
           radius: 4,
-          pointerLabelWidth: 150,
+          // The library only places the label next to the touch point on its own. Pinned to the top instead:
+          // it sits at a fixed height, and the label centres itself on the line, kept inside the chart.
+          pointerLabelWidth: TIP,
           pointerLabelHeight: 64,
-          autoAdjustPointerLabelPosition: true,
-          pointerLabelComponent: (items: { value: number }[], _secondary: unknown, index: number) => (
-            <View style={[styles.tooltip, { backgroundColor: colors.btnBg }]}>
-              <Text style={{ color: colors.btnFg, fontWeight: '700', fontSize: 12.5 }}>Day {index + 1}</Text>
-              {index < current.length && (
-                <Text style={{ color: colors.btnFg, fontSize: 12.5 }}>{monthShort(month)} {formatMoney(current[index])}</Text>
-              )}
-              <Text style={{ color: colors.btnFg, fontSize: 12.5, opacity: 0.7 }}>
-                {monthShort(prevMonth)} {formatMoney(previous[index])}
-              </Text>
-            </View>
-          ),
+          autoAdjustPointerLabelPosition: false,
+          shiftPointerLabelY: TIP / 2 - 4,
+          pointerLabelComponent: (_items: unknown, _secondary: unknown, index: number) => {
+            const x = edge + index * gap; // where the line is, from the start of the lines
+            const origin = x - 6; // where the library puts the left edge of the label
+            const offset = Math.min(Math.max(-TIP / 2 + 6, -origin), chartWidth - TIP - origin);
+            return (
+              <View style={[styles.tooltip, { backgroundColor: colors.btnBg, width: TIP, marginLeft: offset }]}>
+                <Text style={{ color: colors.btnFg, fontWeight: '700', fontSize: 12.5 }}>Day {index + 1}</Text>
+                {index < current.length && (
+                  <Text style={{ color: colors.btnFg, fontSize: 12.5 }}>{monthShort(month)} {formatMoney(current[index])}</Text>
+                )}
+                <Text style={{ color: colors.btnFg, fontSize: 12.5, opacity: 0.7 }}>
+                  {monthShort(prevMonth)} {formatMoney(previous[index])}
+                </Text>
+              </View>
+            );
+          },
         }}
       />
       <View style={{ height: 18, marginLeft: 44, marginTop: 6 }}>
