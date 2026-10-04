@@ -1,4 +1,4 @@
-import { lastEmoji, suggestEmoji, toEmoji } from '../emoji';
+import { suggestEmoji, toEmoji } from '../emoji';
 
 describe('toEmoji', () => {
   it('turns an old icon name into its emoji and leaves an emoji alone', () => {
@@ -17,24 +17,5 @@ describe('suggestEmoji', () => {
     expect(suggestEmoji('food coffee pizza gym fuel car bike').length).toBe(5);
     expect(suggestEmoji('Zzzzz')).toEqual([]);
     expect(suggestEmoji('   ')).toEqual([]);
-  });
-});
-
-describe('lastEmoji', () => {
-  it('takes the newest emoji typed after the old one', () => {
-    expect(lastEmoji('🍕🍔')).toBe('🍔');
-  });
-
-  it('keeps joined emoji, skin tones, flags and variation selectors whole', () => {
-    expect(lastEmoji('🍕👨‍👩‍👧')).toBe('👨‍👩‍👧');
-    expect(lastEmoji('👍🏽')).toBe('👍🏽');
-    expect(lastEmoji('🇵🇰')).toBe('🇵🇰');
-    expect(lastEmoji('🏋️')).toBe('🏋️');
-  });
-
-  it('ignores letters, digits and spaces, and gives nothing when there is no emoji', () => {
-    expect(lastEmoji('abc 12')).toBe('');
-    expect(lastEmoji('🍕 x')).toBe('🍕');
-    expect(lastEmoji('')).toBe('');
   });
 });

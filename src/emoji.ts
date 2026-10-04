@@ -1,5 +1,4 @@
-// Category emoji: the names the old icons had, a few suggestions for a typed category name, and a helper that
-// keeps only the last emoji typed into the emoji field.
+// Category emoji: the names the old icons had, and a few suggestions for a typed category name.
 
 // The old Lucide icon names, and the emoji that replace them.
 const ICON_EMOJI: Record<string, string> = {
@@ -56,30 +55,4 @@ export function suggestEmoji(name: string): string[] {
     if (words.some((word) => text.includes(word)) && !found.includes(emoji)) found.push(emoji);
   }
   return found.slice(0, 5);
-}
-
-const ZWJ = 0x200d;
-const VARIATION = 0xfe0f;
-const isSkinTone = (cp: number) => cp >= 0x1f3fb && cp <= 0x1f3ff;
-const isRegional = (cp: number) => cp >= 0x1f1e6 && cp <= 0x1f1ff;
-
-// The last emoji in whatever was typed, or '' when there is none. The field keeps the old emoji while you type,
-// so the newest one is the one to use. Joined emoji (families, skin tones, flags) count as one.
-export function lastEmoji(text: string): string {
-  const points = Array.from(text).map((c) => c.codePointAt(0) as number);
-  let last = '';
-  for (let i = 0; i < points.length; ) {
-    if (points[i] <= 0xff) { i += 1; continue; } // letters, digits, spaces
-    let end = i + 1;
-    if (isRegional(points[i]) && end < points.length && isRegional(points[end])) end += 1;
-    while (end < points.length) {
-      const cp = points[end];
-      if (cp === VARIATION || isSkinTone(cp) || cp === 0x20e3) end += 1;
-      else if (cp === ZWJ && end + 1 < points.length) end += 2;
-      else break;
-    }
-    last = String.fromCodePoint(...points.slice(i, end));
-    i = end;
-  }
-  return last;
 }

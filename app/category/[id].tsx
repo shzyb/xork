@@ -7,16 +7,17 @@ import { Alert, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-n
 import { PressableScale } from '../../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/Button';
-import { CategoryIcon } from '../../src/components/CategoryIcon';
+import { ColorSwatches } from '../../src/components/ColorSwatches';
 import { Field } from '../../src/components/Field';
 import { SheetHeader } from '../../src/components/SheetHeader';
 import { addCategory, deleteCategory, getCategories, getCategory, updateCategory } from '../../src/db';
-import { lastEmoji, suggestEmoji } from '../../src/emoji';
+import EmojiPicker from 'rn-emoji-keyboard';
+import { suggestEmoji } from '../../src/emoji';
 import { currentDecimals, minorToTyped, parseAmount } from '../../src/money';
 import { categoryColors, sheet, spacing } from '../../src/theme';
 import type { Category, CategoryKind } from '../../src/types';
 import { useData } from '../../src/useData';
-import { Text, TextInput } from '../../src/components/Text';
+import { Text } from '../../src/components/Text';
 
 // /category/new?kind=income adds a category, /category/5 edits category 5.
 export default function CategoryScreen() {
@@ -35,9 +36,10 @@ function CategoryForm({ editing, startKind, count }: { editing: Category | null;
   const router = useRouter();
   const [kind, setKind] = useState<CategoryKind>(editing?.kind ?? startKind);
   const [name, setName] = useState(editing?.name ?? '');
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [picked, setPicked] = useState(editing?.icon ?? ''); // empty until you choose one; then the top suggestion is used
-  // A new category takes the next colour in the list. Colours are not edited.
-  const color = editing?.color ?? categoryColors[count % categoryColors.length];
+  // A new category starts on the next colour in the list. It shows as a soft tint behind the emoji.
+  const [color, setColor] = useState(editing?.color ?? categoryColors[count % categoryColors.length]);
   const suggestions = suggestEmoji(name);
   const emoji = picked || suggestions[0] || (kind === 'income' ? '💰' : '🏷️');
   const [budget, setBudget] = useState(editing?.budget_minor ? minorToTyped(editing.budget_minor) : '');
@@ -84,24 +86,17 @@ function CategoryForm({ editing, startKind, count }: { editing: Category | null;
       <SheetHeader title={editing ? 'Edit category' : 'New category'} onClose={() => router.back()} />
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <FadeScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
-          <View style={styles.preview}>
-            <CategoryIcon name={emoji} color={color} size={64} />
+          <View style={styles.hero}>
+            <PressableScale
+              accessibilityRole="button"
+              accessibilityLabel="Change emoji"
+              onPress={() => setPickerOpen(true)}
+              style={[styles.emojiCircle, { backgroundColor: `${color}33` }]}
+            >
+              <Text style={{ fontSize: 40, lineHeight: 52, includeFontPadding: false }}>{emoji}</Text>
+            </PressableScale>
+            <Text style={styles.heroHint}>Tap to change the emoji</Text>
           </View>
-          {!editing && (
-            <View style={styles.segment}>
-              {([['expense', 'Expense'], ['income', 'Income']] as const).map(([key, label]) => (
-                <PressableScale
-                  key={key}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: kind === key }}
-                  onPress={() => setKind(key)}
-                  style={[styles.segmentItem, kind === key && { backgroundColor: sheet.card2 }]}
-                >
-                  <Text style={[styles.segmentText, kind === key && { color: sheet.ink }]}>{label}</Text>
-                </PressableScale>
-              ))}
-            </View>
-          )}
           <Field
             label="Name"
             value={name}
@@ -109,28 +104,42 @@ function CategoryForm({ editing, startKind, count }: { editing: Category | null;
             placeholder={kind === 'income' ? 'e.g. Bonus' : 'e.g. Pets'}
             maxLength={24}
           />
-          <Text style={styles.label}>Emoji</Text>
-          <View style={styles.emojiRow}>
-            <TextInput
-              accessibilityLabel="Emoji. Use your emoji keyboard."
-              value={emoji}
-              onChangeText={(text) => setPicked(lastEmoji(text) || picked)}
-              selectTextOnFocus
-              style={styles.emojiInput}
-            />
-            {suggestions.map((e) => (
-              <PressableScale
-                key={e}
-                accessibilityRole="button"
-                accessibilityLabel={`Use ${e}`}
-                accessibilityState={{ selected: e === emoji }}
-                onPress={() => setPicked(e)}
-                style={[styles.suggestion, e === emoji && styles.suggestionOn]}
-              >
-                <Text style={{ fontSize: 24 }}>{e}</Text>
-              </PressableScale>
-            ))}
-          </View>
+          {suggestions.length > 0 && (
+            <View style={styles.suggestions}>
+              {suggestions.map((e) => (
+                <PressableScale
+                  key={e}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Use ${e}`}
+                  accessibilityState={{ selected: e === emoji }}
+                  onPress={() => setPicked(e)}
+                  style={[styles.suggestion, e === emoji && styles.suggestionOn]}
+                >
+                  <Text style={{ fontSize: 24 }}>{e}</Text>
+                </PressableScale>
+              ))}
+            </View>
+          )}
+          {!editing && (
+            <>
+              <Text style={styles.label}>Type</Text>
+              <View style={styles.types}>
+                {([['expense', 'Expense'], ['income', 'Income']] as const).map(([key, label]) => (
+                  <PressableScale
+                    key={key}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: kind === key }}
+                    onPress={() => setKind(key)}
+                    style={[styles.type, kind === key && styles.typeSelected]}
+                  >
+                    <Text style={[styles.typeText, kind === key && styles.typeTextSelected]}>{label}</Text>
+                  </PressableScale>
+                ))}
+              </View>
+            </>
+          )}
+          <Text style={styles.label}>Colour</Text>
+          <ColorSwatches colors={categoryColors} selected={color} onSelect={setColor} />
           {kind === 'expense' && (
             <Field
               label="Monthly budget (optional)"
@@ -152,6 +161,18 @@ function CategoryForm({ editing, startKind, count }: { editing: Category | null;
           )}
         </View>
       </KeyboardAvoidingView>
+      <EmojiPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onEmojiSelected={(e) => setPicked(e.emoji)}
+        enableSearchBar
+        theme={{
+          backdrop: sheet.scrim, container: sheet.card, header: sheet.ink2, knob: sheet.ink3,
+          search: { background: sheet.card2, text: sheet.ink, placeholder: sheet.ink3, icon: sheet.ink2 },
+          category: { icon: sheet.ink3, iconActive: sheet.ink, container: sheet.card2, containerActive: sheet.ink3 },
+          emoji: { selected: sheet.card2 },
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -160,13 +181,16 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: sheet.bg, paddingHorizontal: spacing.xl },
   flex: { flex: 1 },
   content: { paddingBottom: spacing.lg },
-  preview: { alignItems: 'center', paddingVertical: 4, paddingBottom: 10 },
-  segment: { flexDirection: 'row', backgroundColor: sheet.card, borderRadius: 22, padding: 3, gap: 3 },
-  segmentItem: { flex: 1, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
-  segmentText: { color: sheet.ink2, fontSize: 14.5, fontWeight: '600' },
   label: { color: sheet.ink2, fontSize: 14, fontWeight: '600', marginTop: 20, marginBottom: 8 },
-  emojiRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  emojiInput: { width: 56, height: 56, borderRadius: 16, backgroundColor: sheet.card, textAlign: 'center', fontSize: 28, color: sheet.ink },
+  hero: { alignItems: 'center', paddingBottom: 4 },
+  emojiCircle: { width: 88, height: 88, borderRadius: 44, alignItems: 'center', justifyContent: 'center' },
+  heroHint: { color: sheet.ink3, fontSize: 13, marginTop: 8 },
+  types: { flexDirection: 'row', gap: 8 },
+  type: { minHeight: 44, paddingHorizontal: 18, borderRadius: 22, backgroundColor: sheet.card, alignItems: 'center', justifyContent: 'center' },
+  typeSelected: { backgroundColor: sheet.ink },
+  typeText: { color: sheet.ink2, fontSize: 15, fontWeight: '600' },
+  typeTextSelected: { color: sheet.bg },
+  suggestions: { flexDirection: 'row', gap: 6, marginTop: 10 },
   suggestion: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   suggestionOn: { backgroundColor: sheet.card2 },
   error: { color: sheet.neg, fontSize: 14.5, fontWeight: '600', marginTop: 14, textAlign: 'center' },
