@@ -32,6 +32,11 @@ function Line({ t }: { t: TransactionRow }) {
   const router = useRouter();
   const income = t.type === 'income';
   const transfer = t.type === 'transfer';
+  const note = t.note.trim();
+  const category = transfer ? 'Transfer' : t.category_name ?? 'Other';
+  const accounts = transfer ? `${t.account_name} → ${t.to_account_name ?? 'deleted account'}` : t.account_name;
+  // A note becomes the title; the category then moves down beside the account. Transfers have no category to show.
+  const subtitle = note && !transfer ? `${category} · ${accounts}` : accounts;
 
   return (
     <PressableScale
@@ -48,10 +53,10 @@ function Line({ t }: { t: TransactionRow }) {
       )}
       <View style={styles.main}>
         <Text style={[styles.title, { color: colors.ink }]} numberOfLines={1}>
-          {transfer ? 'Transfer' : t.category_name ?? 'Other'}
+          {note || category}
         </Text>
         <Text style={{ color: colors.ink2, fontSize: fontSize.small }} numberOfLines={1}>
-          {transfer ? `${t.account_name} → ${t.to_account_name ?? 'deleted account'}` : t.account_name}
+          {subtitle}
         </Text>
       </View>
       <Text style={[styles.amount, { color: income ? colors.pos : colors.ink }]}>
