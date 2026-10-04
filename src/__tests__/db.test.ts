@@ -5,7 +5,7 @@ function fakeDb(overrides: Partial<Db> = {}): Db {
   return {
     execAsync: jest.fn().mockResolvedValue(undefined),
     runAsync: jest.fn().mockResolvedValue({}),
-    getFirstAsync: jest.fn().mockResolvedValue({ user_version: 5 }),
+    getFirstAsync: jest.fn().mockResolvedValue({ user_version: 6 }),
     getAllAsync: jest.fn().mockResolvedValue([]),
     withTransactionAsync: jest.fn(async (task: () => Promise<void>) => task()),
     ...overrides,
@@ -264,7 +264,7 @@ describe('deleteCategory', () => {
   it('moves transactions and recurring items to Other, then deletes, in one SQL transaction', async () => {
     const getFirstAsync = jest
       .fn()
-      .mockResolvedValueOnce({ user_version: 5 })
+      .mockResolvedValueOnce({ user_version: 6 })
       .mockResolvedValueOnce(null) // currency setting during openDb
       .mockResolvedValueOnce({ kind: 'expense', is_default: 0 })
       .mockResolvedValueOnce({ id: 24 });
@@ -286,7 +286,7 @@ describe('deleteCategory', () => {
   it('refuses to delete an Other category and changes nothing', async () => {
     const getFirstAsync = jest
       .fn()
-      .mockResolvedValueOnce({ user_version: 5 })
+      .mockResolvedValueOnce({ user_version: 6 })
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ kind: 'expense', is_default: 1 });
     const db = fakeDb({ getFirstAsync });
@@ -318,7 +318,7 @@ describe('logDueRecurring', () => {
   const due = (next_date: string) => ({ id: 7, ...RENT, next_date });
   const dbWith = (rows: unknown[], count: number) =>
     fakeDb({
-      getFirstAsync: jest.fn().mockResolvedValueOnce({ user_version: 5 }).mockResolvedValueOnce(null).mockResolvedValue({ count }),
+      getFirstAsync: jest.fn().mockResolvedValueOnce({ user_version: 6 }).mockResolvedValueOnce(null).mockResolvedValue({ count }),
       getAllAsync: jest.fn().mockResolvedValue(rows),
     });
 
@@ -378,7 +378,7 @@ describe('recurring detail actions', () => {
 
   const item = (next_date: string, active = 1) => ({ id: 7, ...RENT, next_date, active });
   const dbWith = (found: unknown) =>
-    fakeDb({ getFirstAsync: jest.fn().mockResolvedValueOnce({ user_version: 5 }).mockResolvedValueOnce(null).mockResolvedValue(found) });
+    fakeDb({ getFirstAsync: jest.fn().mockResolvedValueOnce({ user_version: 6 }).mockResolvedValueOnce(null).mockResolvedValue(found) });
   const statements = (db: Db) => (db.runAsync as jest.Mock).mock.calls;
 
   it('logRecurringNow logs today for a future payment and moves to the one after, in one SQL transaction', async () => {
@@ -446,7 +446,7 @@ describe('recurring detail actions', () => {
   it('getRecurringActivity returns the history and this year’s total', async () => {
     const getFirstAsync = jest
       .fn()
-      .mockResolvedValueOnce({ user_version: 5 })
+      .mockResolvedValueOnce({ user_version: 6 })
       .mockResolvedValueOnce(null)
       .mockResolvedValue({ count: 4, total: 34000000 });
     const db = fakeDb({ getFirstAsync, getAllAsync: jest.fn().mockResolvedValue([{ id: 1 }]) });
@@ -530,6 +530,16 @@ describe('replaceAllData', () => {
     off();
   });
 
+  it('turns the icon names in an older backup into emoji', async () => {
+    const db = fakeDb();
+    await openDb(db);
+
+    await replaceAllData({ ...BACKUP, categories: [{ ...BACKUP.categories[0], icon: 'utensils' }, { ...BACKUP.categories[1], icon: '🏷️' }] });
+
+    expect(db.runAsync).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO categories'), 1, 'Groceries', 'expense', '🍽️', '#000', null, 0, 0);
+    expect(db.runAsync).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO categories'), 2, 'Other', 'expense', '🏷️', '#000', null, 1, 0);
+  });
+
   it('a failure part-way changes nothing and does not touch the currency', async () => {
     const runAsync = jest.fn().mockResolvedValue({});
     await openDb(fakeDb({ runAsync }));
@@ -585,7 +595,7 @@ describe('deleteAllData', () => {
 describe('exportAll', () => {
   it('returns every table with the currency and a version marker', async () => {
     const rows = [{ id: 1 }];
-    const getFirstAsync = jest.fn().mockResolvedValueOnce({ user_version: 5 }).mockResolvedValueOnce(null).mockResolvedValue({ value: 'AED' });
+    const getFirstAsync = jest.fn().mockResolvedValueOnce({ user_version: 6 }).mockResolvedValueOnce(null).mockResolvedValue({ value: 'AED' });
     await openDb(fakeDb({ getFirstAsync, getAllAsync: jest.fn().mockResolvedValue(rows) }));
 
     const backup = await exportAll();
@@ -626,21 +636,23 @@ describe('migration', () => {
     const db = fakeDb({ getFirstAsync: jest.fn().mockResolvedValue({ user_version: 0 }) });
     await openDb(db);
 
-    expect(db.withTransactionAsync).toHaveBeenCalledTimes(5);
+    expect(db.withTransactionAsync).toHaveBeenCalledTimes(6);
     expect(db.execAsync).toHaveBeenCalledWith('PRAGMA user_version = 1');
     expect(db.execAsync).toHaveBeenCalledWith('PRAGMA user_version = 2');
     expect(db.execAsync).toHaveBeenCalledWith('PRAGMA user_version = 3');
     expect(db.execAsync).toHaveBeenCalledWith('PRAGMA user_version = 4');
     expect(db.execAsync).toHaveBeenCalledWith('PRAGMA user_version = 5');
-    // 32 categories + 1 Cash account, then 32 icon updates
-    expect((db.runAsync as jest.Mock).mock.calls.length).toBe(65);
+    expect(db.execAsync).toHaveBeenCalledWith('PRAGMA user_version = 6');
+    // 32 categories + 1 Cash account, then 32 icon updates, then 32 emoji updates
+    expect((db.runAsync as jest.Mock).mock.calls.length).toBe(97);
+    expect(db.runAsync).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO categories'), 'Groceries', 'expense', '🛒', '#34A853', 0);
   });
 
   it('a version 1 database gets the icon update and the account type, and keeps its data', async () => {
     const db = fakeDb({ getFirstAsync: jest.fn().mockResolvedValue({ user_version: 1 }) });
     await openDb(db);
 
-    expect(db.withTransactionAsync).toHaveBeenCalledTimes(4);
+    expect(db.withTransactionAsync).toHaveBeenCalledTimes(5);
     expect(db.execAsync).not.toHaveBeenCalledWith(expect.stringContaining('CREATE TABLE'));
     expect(db.execAsync).toHaveBeenCalledWith(expect.stringContaining('ALTER TABLE accounts ADD COLUMN type'));
     expect(db.execAsync).toHaveBeenCalledWith(expect.stringContaining('ALTER TABLE accounts ADD COLUMN limit_minor'));
@@ -655,14 +667,24 @@ describe('migration', () => {
     const db = fakeDb({ getFirstAsync: jest.fn().mockResolvedValue({ user_version: 4 }) });
     await openDb(db);
 
-    expect(db.withTransactionAsync).toHaveBeenCalledTimes(1);
+    expect(db.withTransactionAsync).toHaveBeenCalledTimes(2);
     expect(db.execAsync).toHaveBeenCalledWith(expect.stringContaining('ALTER TABLE categories ADD COLUMN sort_order'));
     expect(db.execAsync).toHaveBeenCalledWith('UPDATE categories SET sort_order = id');
     expect(db.execAsync).toHaveBeenCalledWith('PRAGMA user_version = 5');
   });
 
-  it('does nothing when already migrated', async () => {
+  it('a version 5 database gets its icon names turned into emoji, and custom categories keep theirs', async () => {
     const db = fakeDb({ getFirstAsync: jest.fn().mockResolvedValue({ user_version: 5 }) });
+    await openDb(db);
+
+    expect(db.withTransactionAsync).toHaveBeenCalledTimes(1);
+    expect(db.runAsync).toHaveBeenCalledWith('UPDATE categories SET icon = ? WHERE icon = ?', '🍽️', 'utensils');
+    expect(db.runAsync).toHaveBeenCalledTimes(32);
+    expect(db.execAsync).toHaveBeenCalledWith('PRAGMA user_version = 6');
+  });
+
+  it('does nothing when already migrated', async () => {
+    const db = fakeDb({ getFirstAsync: jest.fn().mockResolvedValue({ user_version: 6 }) });
     await openDb(db);
     expect(db.withTransactionAsync).not.toHaveBeenCalled();
   });
@@ -677,7 +699,7 @@ describe('credit card limit', () => {
 
   // Opens a database, then queues what the limit check will read: the old transaction (when editing) and the card.
   async function open(rows: unknown[]) {
-    const getFirstAsync = jest.fn().mockResolvedValue({ user_version: 5 });
+    const getFirstAsync = jest.fn().mockResolvedValue({ user_version: 6 });
     const db = fakeDb({ getFirstAsync });
     await openDb(db);
     rows.forEach((row) => getFirstAsync.mockResolvedValueOnce(row));

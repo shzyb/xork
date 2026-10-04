@@ -1,6 +1,7 @@
 import { openDatabaseAsync } from 'expo-sqlite';
 import { currentMonth, firstOnOrAfter, lastMonths, monthRange, nextOccurrence, shiftMonth, today } from './dates';
 import { formatMoney, setAppCurrency } from './money';
+import { ICON_NAMES, toEmoji } from './emoji';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, SCHEMA } from './seed';
 import { BACKUP_VERSION } from './backup';
 import type { Backup } from './backup';
@@ -47,16 +48,17 @@ async function migrate(handle: Db) {
   if (version < 3) await migrateToV3(handle);
   if (version < 4) await migrateToV4(handle);
   if (version < 5) await migrateToV5(handle);
+  if (version < 6) await migrateToV6(handle);
 }
 
 // The default categories and the "Cash" account. Used for a new database and after "Delete all data".
 async function seedDefaults(handle: Db) {
   const insertCategory = 'INSERT INTO categories (name, kind, icon, color, is_default) VALUES (?, ?, ?, ?, ?)';
   for (const [name, icon, color] of EXPENSE_CATEGORIES) {
-    await handle.runAsync(insertCategory, name, 'expense', icon, color, name === 'Other' ? 1 : 0);
+    await handle.runAsync(insertCategory, name, 'expense', toEmoji(icon), color, name === 'Other' ? 1 : 0);
   }
   for (const [name, icon, color] of INCOME_CATEGORIES) {
-    await handle.runAsync(insertCategory, name, 'income', icon, color, name === 'Other income' ? 1 : 0);
+    await handle.runAsync(insertCategory, name, 'income', toEmoji(icon), color, name === 'Other income' ? 1 : 0);
   }
   await handle.runAsync(
     'INSERT INTO accounts (name, opening_minor, color, created_at) VALUES (?, ?, ?, ?)',
@@ -105,6 +107,14 @@ async function migrateToV5(handle: Db) {
     await handle.execAsync('ALTER TABLE categories ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0');
     await handle.execAsync('UPDATE categories SET sort_order = id');
     await handle.execAsync('PRAGMA user_version = 5');
+  });
+}
+
+// Categories use emoji instead of icons. Every icon name becomes its emoji; custom categories keep their look.
+async function migrateToV6(handle: Db) {
+  await handle.withTransactionAsync(async () => {
+    for (const name of ICON_NAMES) await handle.runAsync('UPDATE categories SET icon = ? WHERE icon = ?', toEmoji(name), name);
+    await handle.execAsync('PRAGMA user_version = 6');
   });
 }
 
@@ -662,7 +672,7 @@ export async function replaceAllData(backup: Backup) {
       for (const c of backup.categories) {
         await handle.runAsync(
           'INSERT INTO categories (id, name, kind, icon, color, budget_minor, is_default, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          c.id, c.name, c.kind, c.icon, c.color, c.budget_minor, c.is_default, c.sort_order ?? 0, // older backups have no order
+          c.id, c.name, c.kind, toEmoji(c.icon), c.color, c.budget_minor, c.is_default, c.sort_order ?? 0, // older backups have no order and use icon names
         );
       }
       for (const r of backup.recurring) {

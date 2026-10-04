@@ -7,16 +7,16 @@ import { Alert, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-n
 import { PressableScale } from '../../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../../src/components/Button';
-import { CATEGORY_ICONS, CategoryIcon } from '../../src/components/CategoryIcon';
-import { ColorSwatches } from '../../src/components/ColorSwatches';
+import { CategoryIcon } from '../../src/components/CategoryIcon';
 import { Field } from '../../src/components/Field';
 import { SheetHeader } from '../../src/components/SheetHeader';
-import { addCategory, deleteCategory, getCategory, updateCategory } from '../../src/db';
+import { addCategory, deleteCategory, getCategories, getCategory, updateCategory } from '../../src/db';
+import { lastEmoji, suggestEmoji } from '../../src/emoji';
 import { currentDecimals, minorToTyped, parseAmount } from '../../src/money';
 import { categoryColors, sheet, spacing } from '../../src/theme';
 import type { Category, CategoryKind } from '../../src/types';
 import { useData } from '../../src/useData';
-import { Text } from '../../src/components/Text';
+import { Text, TextInput } from '../../src/components/Text';
 
 // /category/new?kind=income adds a category, /category/5 edits category 5.
 export default function CategoryScreen() {
@@ -24,17 +24,22 @@ export default function CategoryScreen() {
   const isNew = id === 'new';
   const editing = useData(() => (isNew ? Promise.resolve(null) : getCategory(Number(id))), [id]);
 
-  if (editing === undefined) return null;
+  const count = useData(async () => (await getCategories()).length);
+
+  if (editing === undefined || count === undefined) return null;
   if (!isNew && editing === null) return null;
-  return <CategoryForm editing={editing} startKind={kind === 'income' ? 'income' : 'expense'} />;
+  return <CategoryForm editing={editing} startKind={kind === 'income' ? 'income' : 'expense'} count={count} />;
 }
 
-function CategoryForm({ editing, startKind }: { editing: Category | null; startKind: CategoryKind }) {
+function CategoryForm({ editing, startKind, count }: { editing: Category | null; startKind: CategoryKind; count: number }) {
   const router = useRouter();
   const [kind, setKind] = useState<CategoryKind>(editing?.kind ?? startKind);
   const [name, setName] = useState(editing?.name ?? '');
-  const [icon, setIcon] = useState(editing?.icon ?? (startKind === 'income' ? 'briefcase' : 'tag'));
-  const [color, setColor] = useState(editing?.color ?? categoryColors[0]);
+  const [picked, setPicked] = useState(editing?.icon ?? ''); // empty until you choose one; then the top suggestion is used
+  // A new category takes the next colour in the list. Colours are not edited.
+  const color = editing?.color ?? categoryColors[count % categoryColors.length];
+  const suggestions = suggestEmoji(name);
+  const emoji = picked || suggestions[0] || (kind === 'income' ? '💰' : '🏷️');
   const [budget, setBudget] = useState(editing?.budget_minor ? minorToTyped(editing.budget_minor) : '');
   const [error, setError] = useState('');
 
@@ -44,9 +49,9 @@ function CategoryForm({ editing, startKind }: { editing: Category | null; startK
     const budgetMinor = kind === 'expense' ? parseAmount(budget.trim()) || null : null;
     try {
       if (editing) {
-        await updateCategory(editing.id, { name: name.trim(), icon, color, budget_minor: budgetMinor });
+        await updateCategory(editing.id, { name: name.trim(), icon: emoji, color, budget_minor: budgetMinor });
       } else {
-        await addCategory({ name: name.trim(), kind, icon, color, budget_minor: budgetMinor });
+        await addCategory({ name: name.trim(), kind, icon: emoji, color, budget_minor: budgetMinor });
       }
       router.back();
     } catch {
@@ -80,7 +85,7 @@ function CategoryForm({ editing, startKind }: { editing: Category | null; startK
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <FadeScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
           <View style={styles.preview}>
-            <CategoryIcon name={icon} color={color} size={64} />
+            <CategoryIcon name={emoji} color={color} size={64} />
           </View>
           {!editing && (
             <View style={styles.segment}>
@@ -104,25 +109,28 @@ function CategoryForm({ editing, startKind }: { editing: Category | null; startK
             placeholder={kind === 'income' ? 'e.g. Bonus' : 'e.g. Pets'}
             maxLength={24}
           />
-          <Text style={styles.label}>Icon</Text>
-          <View style={styles.icons}>
-            {CATEGORY_ICONS.map((iconName) => (
+          <Text style={styles.label}>Emoji</Text>
+          <View style={styles.emojiRow}>
+            <TextInput
+              accessibilityLabel="Emoji. Use your emoji keyboard."
+              value={emoji}
+              onChangeText={(text) => setPicked(lastEmoji(text) || picked)}
+              selectTextOnFocus
+              style={styles.emojiInput}
+            />
+            {suggestions.map((e) => (
               <PressableScale
-                key={iconName}
+                key={e}
                 accessibilityRole="button"
-                accessibilityLabel={iconName}
-                accessibilityState={{ selected: iconName === icon }}
-                onPress={() => setIcon(iconName)}
-                style={styles.iconCell}
+                accessibilityLabel={`Use ${e}`}
+                accessibilityState={{ selected: e === emoji }}
+                onPress={() => setPicked(e)}
+                style={[styles.suggestion, e === emoji && styles.suggestionOn]}
               >
-                <View style={iconName === icon && styles.iconSelected}>
-                  <CategoryIcon name={iconName} color={iconName === icon ? color : sheet.card2} size={44} />
-                </View>
+                <Text style={{ fontSize: 24 }}>{e}</Text>
               </PressableScale>
             ))}
           </View>
-          <Text style={styles.label}>Colour</Text>
-          <ColorSwatches colors={categoryColors} selected={color} onSelect={setColor} />
           {kind === 'expense' && (
             <Field
               label="Monthly budget (optional)"
@@ -157,9 +165,10 @@ const styles = StyleSheet.create({
   segmentItem: { flex: 1, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   segmentText: { color: sheet.ink2, fontSize: 14.5, fontWeight: '600' },
   label: { color: sheet.ink2, fontSize: 14, fontWeight: '600', marginTop: 20, marginBottom: 8 },
-  icons: { flexDirection: 'row', flexWrap: 'wrap' },
-  iconCell: { width: '16.666%', alignItems: 'center', paddingVertical: 6 },
-  iconSelected: { padding: 3, borderRadius: 28, borderWidth: 2, borderColor: sheet.ink, margin: -5 },
+  emojiRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  emojiInput: { width: 56, height: 56, borderRadius: 16, backgroundColor: sheet.card, textAlign: 'center', fontSize: 28, color: sheet.ink },
+  suggestion: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  suggestionOn: { backgroundColor: sheet.card2 },
   error: { color: sheet.neg, fontSize: 14.5, fontWeight: '600', marginTop: 14, textAlign: 'center' },
   footer: { gap: 10, paddingTop: 6, paddingBottom: spacing.lg },
   delete: { height: 50, borderRadius: 25, backgroundColor: 'rgba(255,107,97,0.16)', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
