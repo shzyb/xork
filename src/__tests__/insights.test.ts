@@ -5,7 +5,7 @@ import type { CategorySpend } from '../types';
 beforeEach(() => setAppCurrency('USD'));
 
 const cat = (id: number, name: string, total_minor: number, budget_minor: number | null = null): CategorySpend => ({
-  id, name, icon: 'tag', color: '#000', budget_minor, total_minor,
+  id, name, icon: 'tag', color: '#000', budget_minor, total_minor, count: 1,
 });
 
 describe('runningTotal', () => {
@@ -71,7 +71,7 @@ describe('buildNotes', () => {
     month: '2026-09', prevMonth: '2026-08', isCurrent: false, elapsedDays: 30, spent: 100000,
     prevFullSpent: 90000, recurringOut: 0, spending: [] as CategorySpend[], prevSpending: [] as CategorySpend[],
   };
-  const text = (notes: ReturnType<typeof buildNotes>) => notes.map((n) => n.segments.map((s) => s.text).join(''));
+  const text = (notes: ReturnType<typeof buildNotes>) => notes.map((n) => `${n.title}. ${n.detail}`);
 
   it('reports the biggest rise and the biggest cut against last month', () => {
     const notes = buildNotes({
@@ -80,9 +80,10 @@ describe('buildNotes', () => {
       prevSpending: [cat(1, 'Groceries', 30000), cat(2, 'Dining out', 20000), cat(3, 'Fuel', 5000)],
     });
     expect(text(notes)).toEqual([
-      'Groceries rose 33% on August, $100.00 more.',
-      'You cut Dining out by $100.00 compared with August.',
+      'Groceries is up 33%. $100.00 more than August.',
+      'Dining out is down 50%. $100.00 less than August.',
     ]);
+    expect(notes.map((n) => [n.tone, n.categoryId])).toEqual([['bad', 1], ['good', 2]]);
   });
 
   it('ignores small changes', () => {
@@ -96,20 +97,20 @@ describe('buildNotes', () => {
 
   it('projects the month-end spending only for the current month', () => {
     const current = buildNotes({ ...base, isCurrent: true, elapsedDays: 10, spent: 30000 });
-    expect(text(current)).toEqual(["At this pace you'll spend about $900.00 by the end of the month, against $900.00 in August."]);
+    expect(text(current)).toEqual(['On pace for $900.00. By the end of the month, against $900.00 in August.']);
     expect(buildNotes({ ...base, spent: 30000 })).toEqual([]);
   });
 
   it('shows the recurring share', () => {
     const notes = buildNotes({ ...base, spent: 100000, recurringOut: 25000 });
-    expect(text(notes)).toEqual(['Recurring items made up 25% of your spending. The other $750.00 was day-to-day.']);
+    expect(text(notes)).toEqual(['25% was recurring. The other $750.00 was day-to-day.']);
   });
 
   it('flags one or several categories over budget', () => {
     const one = buildNotes({ ...base, spending: [cat(1, 'Dining out', 30000, 20000)] });
-    expect(text(one)).toEqual(['Dining out is over budget this month by $100.00.']);
+    expect(text(one)).toEqual(['Dining out is over budget. By $100.00 this month.']);
     const two = buildNotes({ ...base, spending: [cat(1, 'Dining out', 30000, 20000), cat(2, 'Fuel', 9000, 5000)] });
-    expect(text(two)).toEqual(['2 categories are over budget this month.']);
+    expect(text(two)).toEqual(['2 categories over budget. Each is past its monthly budget.']);
   });
 });
 

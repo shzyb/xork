@@ -64,7 +64,7 @@ export default function RecurringDetail() {
     [income ? 'Paid into' : 'Paid from', item.account_name],
     ['Category', item.category_name],
     ['Logging', 'Automatic on the day'],
-    [`${income ? 'Received' : 'Paid'} in ${year}`, `${formatMoney(activity.yearTotal)} · ${activity.yearCount}×`],
+    [`${income ? 'Income' : 'Expense'} in ${year}`, `${formatMoney(activity.yearTotal)} · ${activity.yearCount}×`],
   ];
 
   return (

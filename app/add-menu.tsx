@@ -18,14 +18,14 @@ export default function AddMenu() {
           Icon={ArrowUp}
           color={actionColors.expense}
           title="Expense"
-          subtitle="Money you spent"
+          subtitle="Log an expense"
           onPress={() => router.replace({ pathname: '/add', params: { type: 'expense' } })}
         />
         <Row
           Icon={ArrowDown}
           color={actionColors.income}
           title="Income"
-          subtitle="Money that came in"
+          subtitle="Log income"
           onPress={() => router.replace({ pathname: '/add', params: { type: 'income' } })}
         />
         <Row

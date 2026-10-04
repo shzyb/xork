@@ -84,7 +84,7 @@ function CategoryForm({ editing, startKind }: { editing: Category | null; startK
           </View>
           {!editing && (
             <View style={styles.segment}>
-              {([['expense', 'Spending'], ['income', 'Income']] as const).map(([key, label]) => (
+              {([['expense', 'Expense'], ['income', 'Income']] as const).map(([key, label]) => (
                 <PressableScale
                   key={key}
                   accessibilityRole="button"

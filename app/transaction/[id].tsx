@@ -70,7 +70,7 @@ export default function TransactionDetail() {
           ) : (
             <CategoryIcon name={t.category_icon} color={t.category_color} size={64} />
           )}
-          <Text style={styles.kind}>{transfer ? 'Moved between your accounts' : income ? 'Received' : 'Spent'}</Text>
+          <Text style={styles.kind}>{transfer ? 'Moved between your accounts' : income ? 'Income' : 'Expense'}</Text>
           <Text style={[styles.amount, income && { color: sheet.pos }]}>
             {income ? '+ ' : ''}{formatMoney(t.amount_minor)}
           </Text>

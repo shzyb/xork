@@ -41,8 +41,8 @@ export default function AccountDetail() {
     const due = dueText(account.due_day, today());
     details.push(['Payment', due.charAt(0).toUpperCase() + due.slice(1)]);
   }
-  details.push([`Spent in ${month}`, formatMoney(stats.spent_minor)]);
-  details.push([`Received in ${month}`, formatMoney(stats.in_minor)]);
+  details.push([`Expense in ${month}`, formatMoney(stats.spent_minor)]);
+  details.push([`Income in ${month}`, formatMoney(stats.in_minor)]);
   details.push(['Transactions', String(stats.count)]);
 
   return (

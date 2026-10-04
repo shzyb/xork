@@ -18,7 +18,7 @@ const TIP = 130; // width of the touch tooltip
 
 // The whole month on the x-axis: last month dashed in full, this month solid up to today with a dot at the end.
 // Last month is the first line because the chart takes its day labels from it. Touch and drag to read a day.
-export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed, width, height }: {
+export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed, width, height, hidden }: {
   daily: DaySpend[];
   prevDaily: DaySpend[];
   month: string;
@@ -26,8 +26,10 @@ export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed,
   elapsed: number | undefined;
   width: number;
   height: number;
+  hidden: boolean; // balances are hidden: no amounts on the axis or in the tooltip
 }) {
   const colors = useColors();
+  const money = (minor: number) => (hidden ? '••••••' : formatMoney(minor));
   const days = Math.max(daysInMonth(month), daysInMonth(prevMonth));
   // Reaches the last day with spending, so a transaction dated ahead of today still draws.
   const lastDay = Math.max(elapsed ?? 0, ...daily.map((d) => d.day));
@@ -69,7 +71,7 @@ export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed,
         rulesColor={colors.line}
         yAxisTextStyle={{ color: colors.ink3, fontSize: 11, fontFamily: 'OpenRunde-Regular' }}
         yAxisLabelWidth={44}
-        formatYLabel={(label) => compactMoney(Number(label) * 100)}
+        formatYLabel={(label) => (hidden ? '•••' : compactMoney(Number(label) * 100))}
         disableScroll
         // The library parks a marker on each line, and on a day with no data yet (after today) it leaves this month's
         // marker stranded at its last position. The strip and tooltip already show both values, so no markers.
@@ -93,10 +95,10 @@ export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed,
               <View style={[styles.tooltip, { backgroundColor: colors.btnBg, width: TIP, marginLeft: offset }]}>
                 <Text style={{ color: colors.btnFg, fontWeight: '700', fontSize: 12.5 }}>Day {index + 1}</Text>
                 {index < current.length && (
-                  <Text style={{ color: colors.btnFg, fontSize: 12.5 }}>{monthShort(month)} {formatMoney(current[index])}</Text>
+                  <Text style={{ color: colors.btnFg, fontSize: 12.5 }}>{monthShort(month)} {money(current[index])}</Text>
                 )}
                 <Text style={{ color: colors.btnFg, fontSize: 12.5, opacity: 0.7 }}>
-                  {monthShort(prevMonth)} {formatMoney(previous[index])}
+                  {monthShort(prevMonth)} {money(previous[index])}
                 </Text>
               </View>
             );
@@ -113,7 +115,6 @@ export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed,
       <View style={styles.legend}>
         <LegendItem color={colors.ink} label={monthName(month)} />
         <LegendItem color={colors.ink3} label={monthName(prevMonth)} dashed />
-        <Text style={{ color: colors.ink2, fontSize: 12.5 }}>Running total by day</Text>
       </View>
     </View>
   );
@@ -132,7 +133,9 @@ export function CashFlowChart({ monthly, selected, onSelect, width }: {
   const gap = 4;
   const group = chartWidth / monthly.length;
   const between = group - (barWidth * 2 + gap);
-  const chosen = monthly.find((m) => m.month === selected);
+  // Room above the tallest bar for its tooltip, which sits on top of the bar and would be cut off at the chart's edge.
+  const biggest = Math.max(...monthly.flatMap((m) => [m.in_minor, m.out_minor]));
+  const top = biggest > 0 ? niceTop(biggest * 1.4) : undefined;
 
   const bars = monthly.flatMap((m) => {
     const on = m.month === selected;
@@ -157,12 +160,13 @@ export function CashFlowChart({ monthly, selected, onSelect, width }: {
       <BarChart
         data={bars}
         barWidth={barWidth}
-        barBorderRadius={7}
+        barBorderRadius={3}
         width={chartWidth}
         height={150}
         initialSpacing={between / 2}
         endSpacing={0}
         noOfSections={3}
+        maxValue={top}
         yAxisThickness={0}
         xAxisThickness={0}
         rulesColor={colors.line}
@@ -170,16 +174,28 @@ export function CashFlowChart({ monthly, selected, onSelect, width }: {
         yAxisLabelWidth={44}
         formatYLabel={(label) => compactMoney(Number(label) * 100)}
         disableScroll
+        // Tap a bar to see its amount. The bars alternate in, out, in, out, so the index says which one it is.
+        renderTooltip={(_item: unknown, index: number) => {
+          const m = monthly[Math.floor(index / 2)];
+          const isIn = index % 2 === 0;
+          return (
+            <View style={[styles.tooltip, { backgroundColor: colors.btnBg, marginBottom: 6 }]}>
+              <Text style={{ color: colors.btnFg, opacity: 0.7, fontSize: 12.5 }} numberOfLines={1}>
+                {monthShort(m.month)} · {isIn ? 'Income' : 'Expense'}
+              </Text>
+              <Text style={{ color: colors.btnFg, fontWeight: '700', fontSize: 12.5 }} numberOfLines={1}>
+                {formatMoney(isIn ? m.in_minor : m.out_minor)}
+              </Text>
+            </View>
+          );
+        }}
+        autoCenterTooltip
+        leftShiftForLastIndexTooltip={40}
       />
       <View style={styles.legend}>
-        <LegendItem color={colors.pos} label="Money in" />
-        <LegendItem color={colors.ink} label="Money out" />
+        <LegendItem color={colors.pos} label="Income" />
+        <LegendItem color={colors.ink} label="Expense" />
       </View>
-      {chosen && (
-        <Text style={{ color: colors.ink2, fontSize: 13.5, marginTop: 6 }}>
-          {monthShort(chosen.month)}: in {formatMoney(chosen.in_minor)}, out {formatMoney(chosen.out_minor)}
-        </Text>
-      )}
     </View>
   );
 }

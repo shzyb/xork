@@ -81,7 +81,7 @@ export default function Activity() {
         ...(categories ?? []).map((c) => ({
           value: c.id,
           label: c.name,
-          sub: c.kind === 'income' ? 'Income' : 'Spending',
+          sub: c.kind === 'income' ? 'Income' : 'Expense',
           lead: <CategoryIcon name={c.icon} color={c.color} size={36} />,
         })),
       ];

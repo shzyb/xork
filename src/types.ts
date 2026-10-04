@@ -101,6 +101,7 @@ export type CategorySpend = {
   color: string;
   budget_minor: number | null;
   total_minor: number;
+  count: number;
 };
 
 export type MonthTotals = { month: string; in_minor: number; out_minor: number };

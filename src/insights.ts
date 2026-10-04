@@ -73,11 +73,13 @@ export function spendComparison(spent: number, prevSamePoint: number, isCurrent:
   };
 }
 
-export type Segment = { text: string; bold?: boolean };
-export type Note = { icon: 'trending-up' | 'trending-down' | 'gauge' | 'repeat' | 'triangle-alert'; color: string; segments: Segment[] };
-
-const bold = (text: string): Segment => ({ text, bold: true });
-const plain = (text: string): Segment => ({ text });
+export type Note = {
+  icon: 'trending-up' | 'trending-down' | 'gauge' | 'repeat' | 'triangle-alert';
+  tone: 'good' | 'bad' | 'warn' | 'neutral';
+  title: string;
+  detail: string;
+  categoryId?: number; // set when the note is about one category, so the card can open it
+};
 
 // The short "What stood out" notes. `prevSpending` is compared at the same point in the month.
 export function buildNotes(input: {
@@ -105,15 +107,19 @@ export function buildNotes(input: {
   if (rise) {
     notes.push({
       icon: 'trending-up',
-      color: '#EF4444',
-      segments: [bold(rise.c.name), plain(` rose ${Math.round((rise.diff / rise.previous) * 100)}% on ${prevName}, ${formatMoney(rise.diff)} more.`)],
+      tone: 'bad',
+      title: `${rise.c.name} is up ${Math.round((rise.diff / rise.previous) * 100)}%`,
+      detail: `${formatMoney(rise.diff)} more than ${prevName}.`,
+      categoryId: rise.c.id,
     });
   }
   if (cut) {
     notes.push({
       icon: 'trending-down',
-      color: '#34A853',
-      segments: [plain('You cut '), bold(cut.c.name), plain(` by ${formatMoney(-cut.diff)} compared with ${prevName}.`)],
+      tone: 'good',
+      title: `${cut.c.name} is down ${Math.round((-cut.diff / cut.previous) * 100)}%`,
+      detail: `${formatMoney(-cut.diff)} less than ${prevName}.`,
+      categoryId: cut.c.id,
     });
   }
 
@@ -122,24 +128,18 @@ export function buildNotes(input: {
     const projected = Math.round(((spent / elapsedDays) * days) / 100) * 100;
     notes.push({
       icon: 'gauge',
-      color: '#3B82F6',
-      segments: [
-        plain("At this pace you'll spend about "),
-        bold(formatMoney(projected)),
-        plain(` by the end of the month${prevFullSpent > 0 ? `, against ${formatMoney(prevFullSpent)} in ${prevName}` : ''}.`),
-      ],
+      tone: 'neutral',
+      title: `On pace for ${formatMoney(projected)}`,
+      detail: `By the end of the month${prevFullSpent > 0 ? `, against ${formatMoney(prevFullSpent)} in ${prevName}` : ''}.`,
     });
   }
 
   if (spent > 0 && recurringOut > 0) {
     notes.push({
       icon: 'repeat',
-      color: '#8B5CF6',
-      segments: [
-        plain('Recurring items made up '),
-        bold(`${Math.round((recurringOut / spent) * 100)}%`),
-        plain(` of your spending. The other ${formatMoney(spent - recurringOut)} was day-to-day.`),
-      ],
+      tone: 'neutral',
+      title: `${Math.round((recurringOut / spent) * 100)}% was recurring`,
+      detail: `The other ${formatMoney(spent - recurringOut)} was day-to-day.`,
     });
   }
 
@@ -147,14 +147,17 @@ export function buildNotes(input: {
   if (over.length === 1) {
     notes.push({
       icon: 'triangle-alert',
-      color: '#FF8A00',
-      segments: [bold(over[0].name), plain(` is over budget this month by ${formatMoney(over[0].total_minor - (over[0].budget_minor ?? 0))}.`)],
+      tone: 'warn',
+      title: `${over[0].name} is over budget`,
+      detail: `By ${formatMoney(over[0].total_minor - (over[0].budget_minor ?? 0))} this month.`,
+      categoryId: over[0].id,
     });
   } else if (over.length > 1) {
     notes.push({
       icon: 'triangle-alert',
-      color: '#FF8A00',
-      segments: [bold(`${over.length} categories`), plain(' are over budget this month.')],
+      tone: 'warn',
+      title: `${over.length} categories over budget`,
+      detail: 'Each is past its monthly budget.',
     });
   }
   return notes;

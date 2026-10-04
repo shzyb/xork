@@ -531,12 +531,18 @@ export async function getTotalsByCategory(kind: 'expense' | 'income', month: str
   const { start, end } = monthRange(month);
   const last = throughDay ? `${month}-${String(throughDay).padStart(2, '0')}` : end;
   return db!.getAllAsync(
-    `SELECT c.id, c.name, c.icon, c.color, c.budget_minor, SUM(t.amount_minor) AS total_minor
+    `SELECT c.id, c.name, c.icon, c.color, c.budget_minor, SUM(t.amount_minor) AS total_minor, COUNT(*) AS count
      FROM transactions t JOIN categories c ON c.id = t.category_id
      WHERE t.type = ? AND t.date BETWEEN ? AND ?
      GROUP BY c.id ORDER BY total_minor DESC`,
     kind, start, last,
   );
+}
+
+// The month of the oldest transaction, or null when there are none.
+export async function getEarliestMonth(): Promise<string | null> {
+  const row = await db!.getFirstAsync<{ month: string | null }>('SELECT MIN(substr(date, 1, 7)) AS month FROM transactions');
+  return row?.month ?? null;
 }
 
 async function getDailySpending(month: string): Promise<DaySpend[]> {
@@ -615,10 +621,10 @@ export async function getInsights(month: string): Promise<InsightsData> {
   );
   const monthly = await getMonthlyTotals(currentMonth());
   const cards = await getCardInsights(month);
-  const earliest = await db!.getFirstAsync<{ month: string | null }>('SELECT MIN(substr(date, 1, 7)) AS month FROM transactions');
+  const earliest = await getEarliestMonth();
   return {
     summary, prevSummary, spending, prevSpending, income, daily, prevDaily,
-    recurringOut: recurring?.total ?? 0, biggest: biggest ?? null, spendDays: spendDays?.days ?? 0, monthly, cards, earliestMonth: earliest?.month ?? null,
+    recurringOut: recurring?.total ?? 0, biggest: biggest ?? null, spendDays: spendDays?.days ?? 0, monthly, cards, earliestMonth: earliest,
   };
 }
 

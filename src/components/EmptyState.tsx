@@ -21,7 +21,8 @@ export function EmptyState({ Icon, title, text, children }: { Icon: LucideIcon; 
 }
 
 const styles = StyleSheet.create({
-  box: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 24 },
+  // flexGrow without flex's zero basis: the box is at least as tall as its content, so a short page can't clip it.
+  box: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 24, paddingVertical: 24 },
   icon: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   title: { fontSize: 18, fontWeight: '700', textAlign: 'center' },
   text: { fontSize: 15, lineHeight: 21, textAlign: 'center', maxWidth: 290 },

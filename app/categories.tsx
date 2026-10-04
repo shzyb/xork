@@ -67,7 +67,7 @@ export default function Categories() {
           <>
             <Text style={[styles.title, { color: colors.ink }]}>Categories</Text>
             <View style={[styles.segment, { backgroundColor: colors.fill }]}>
-              {([['expense', 'Spending'], ['income', 'Income']] as const).map(([key, label]) => (
+              {([['expense', 'Expense'], ['income', 'Income']] as const).map(([key, label]) => (
                 <PressableScale
                   key={key}
                   accessibilityRole="button"
@@ -86,7 +86,7 @@ export default function Categories() {
       />
       <View style={styles.footer}>
         <Button
-          title={kind === 'income' ? 'New income category' : 'New spending category'}
+          title={kind === 'income' ? 'New income category' : 'New expense category'}
           onPress={() => router.push({ pathname: '/category/[id]', params: { id: 'new', kind } })}
           background={colors.btnBg}
           color={colors.btnFg}

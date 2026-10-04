@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { FadeScrollView } from '../../src/components/FadeScrollView';
-import { CalendarClock, Eye, EyeOff, Plus, Receipt, Settings } from 'lucide-react-native';
+import { ArrowDown, ArrowUp, CalendarClock, Eye, EyeOff, Plus, Receipt, Settings } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { PressableScale } from '../../src/components/PressableScale';
@@ -49,6 +49,12 @@ export default function Home() {
   const recurring = useData(getRecurring);
   const upcoming = recurring ? upcomingOccurrences(recurring, today(), 7) : [];
 
+  const seeAll = (label: string, to: '/activity' | '/recurring') => (
+    <PressableScale accessibilityRole="button" onPress={() => router.navigate(to)} style={styles.seeAll}>
+      <Text style={{ color: colors.ink2, fontSize: 15, fontWeight: '600' }}>{label}</Text>
+    </PressableScale>
+  );
+
   // The small spending-vs-last-month block under the balance. A plain function, so the chart isn't remounted on every render.
   function renderTrend() {
     if (!trend) return null;
@@ -61,11 +67,16 @@ export default function Home() {
     const comparison = spendComparison(spent, prevSamePoint, true, prevMonth);
     return (
       <View style={styles.trend}>
-        <Text style={{ color: colors.ink2, fontSize: 15 }}>
-          {comparison
-            ? `${mask(Math.abs(spent - prevSamePoint))} ${comparison.more ? 'more' : 'less'} than this point in ${monthName(prevMonth)}`
-            : `${mask(spent)} spent so far in ${monthName(month)}`}
-        </Text>
+        <View style={styles.comparison}>
+          {comparison && (comparison.more
+            ? <ArrowUp color={colors.neg} size={16} strokeWidth={2.4} />
+            : <ArrowDown color={colors.pos} size={16} strokeWidth={2.4} />)}
+          <Text style={{ color: colors.ink2, fontSize: 15, flexShrink: 1 }}>
+            {comparison
+              ? `${mask(Math.abs(spent - prevSamePoint))} ${comparison.more ? 'more' : 'less'} than this point in ${monthName(prevMonth)}`
+              : `${mask(spent)} expenses so far in ${monthName(month)}`}
+          </Text>
+        </View>
         <RunningTotalChart
           daily={trend.daily}
           prevDaily={trend.prevDaily}
@@ -73,7 +84,8 @@ export default function Home() {
           prevMonth={prevMonth}
           elapsed={Number(today().slice(8))}
           width={width - spacing.xl * 2}
-          height={120}
+          height={96}
+          hidden={hidden}
         />
       </View>
     );
@@ -103,7 +115,7 @@ export default function Home() {
 
         <View style={[styles.tabs, { borderBottomColor: colors.line }]}>
           {TABS.map((key) => (
-            <PressableScale key={key} accessibilityRole="tab" accessibilityState={{ selected: tab === key }} onPress={() => setTab(key)}>
+            <PressableScale key={key} accessibilityRole="tab" accessibilityState={{ selected: tab === key }} onPress={() => setTab(key)} hitSlop={{ top: 12, bottom: 12, left: 6, right: 6 }}>
               <Text style={[styles.tab, { color: tab === key ? colors.ink : colors.ink3 }]}>
                 {TAB_LABELS[key]}
               </Text>
@@ -120,7 +132,10 @@ export default function Home() {
             {key === 'recent' && recent && (recent.length === 0 ? (
               <EmptyState Icon={Receipt} title="No transactions yet" text="Tap + to log your first expense or income." />
             ) : (
-              <TransactionList rows={recent} />
+              <>
+                <TransactionList rows={recent} />
+                {seeAll('See all transactions', '/activity')}
+              </>
             ))}
 
             {key === 'accounts' && accounts && hideOnOpen !== undefined && (
@@ -167,7 +182,10 @@ export default function Home() {
             {key === 'upcoming' && recurring && (upcoming.length === 0 ? (
               <EmptyState Icon={CalendarClock} title="Nothing due soon" text="Recurring bills and income due in the next 7 days will show up here." />
             ) : (
-              upcoming.map(({ item, date }) => <RecurringRow key={`${item.id}-${date}`} item={item} date={date} />)
+              <>
+                {upcoming.map(({ item, date }) => <RecurringRow key={`${item.id}-${date}`} item={item} date={date} />)}
+                {seeAll('See all recurring', '/recurring')}
+              </>
             ))}
             </>
           )}
@@ -186,6 +204,8 @@ const styles = StyleSheet.create({
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -10 },
   balance: { fontSize: fontSize.big, fontWeight: '800', letterSpacing: -1.5 },
   trend: { marginTop: spacing.lg },
+  comparison: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  seeAll: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
   tabs: { flexDirection: 'row', gap: 14, marginTop: 26, paddingBottom: 10, borderBottomWidth: StyleSheet.hairlineWidth },
   tab: { fontSize: fontSize.body, fontWeight: '700' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64 },

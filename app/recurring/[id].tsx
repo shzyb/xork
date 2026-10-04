@@ -103,7 +103,7 @@ function RecurringForm({ editing, accounts, categories }: {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <FadeScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
           <View style={styles.segment}>
-            {([['expense', 'Money out'], ['income', 'Money in']] as const).map(([key, label]) => (
+            {([['expense', 'Expense'], ['income', 'Income']] as const).map(([key, label]) => (
               <PressableScale
                 key={key}
                 accessibilityRole="button"
