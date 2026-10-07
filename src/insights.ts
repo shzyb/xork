@@ -1,6 +1,6 @@
 import { daysInMonth, monthName } from './dates';
 import { formatMoney } from './money';
-import type { CategorySpend, DaySpend } from './types';
+import type { CategorySpend, DaySpend, MonthTotals } from './types';
 
 // Cumulative spending by day, in minor units. `length` days long; days with no spending carry the total forward.
 export function runningTotal(daily: DaySpend[], length: number): number[] {
@@ -74,7 +74,7 @@ export function spendComparison(spent: number, prevSamePoint: number, isCurrent:
 }
 
 export type Note = {
-  icon: 'trending-up' | 'trending-down' | 'gauge' | 'repeat' | 'triangle-alert';
+  icon: 'trending-up' | 'trending-down' | 'gauge' | 'repeat' | 'triangle-alert' | 'piggy-bank';
   tone: 'good' | 'bad' | 'warn' | 'neutral';
   title: string;
   detail: string;
@@ -92,8 +92,9 @@ export function buildNotes(input: {
   recurringOut: number;
   spending: CategorySpend[];
   prevSpending: CategorySpend[];
+  monthly: MonthTotals[]; // the last 6 months, oldest first
 }): Note[] {
-  const { prevMonth, isCurrent, elapsedDays, spent, prevFullSpent, recurringOut, spending, prevSpending } = input;
+  const { prevMonth, isCurrent, elapsedDays, spent, prevFullSpent, recurringOut, spending, prevSpending, monthly } = input;
   const notes: Note[] = [];
   const prevName = monthName(prevMonth);
 
@@ -158,6 +159,41 @@ export function buildNotes(input: {
       tone: 'warn',
       title: `${over.length} categories over budget`,
       detail: 'Each is past its monthly budget.',
+    });
+  }
+
+  const nearly = isCurrent
+    ? spending
+        .filter((c) => c.budget_minor !== null && c.total_minor <= c.budget_minor && c.total_minor >= c.budget_minor * 0.8)
+        .sort((a, b) => b.total_minor / (b.budget_minor ?? 1) - a.total_minor / (a.budget_minor ?? 1))
+    : [];
+  if (nearly.length === 1) {
+    const budget = nearly[0].budget_minor ?? 0;
+    const daysLeft = daysInMonth(input.month) - elapsedDays;
+    notes.push({
+      icon: 'gauge',
+      tone: 'warn',
+      title: `${nearly[0].name} is at ${Math.round((nearly[0].total_minor / budget) * 100)}% of its budget`,
+      detail: `${formatMoney(budget - nearly[0].total_minor)} left${daysLeft > 0 ? `, with ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} to go` : ''}.`,
+      categoryId: nearly[0].id,
+    });
+  } else if (nearly.length > 1) {
+    notes.push({
+      icon: 'gauge',
+      tone: 'warn',
+      title: `${nearly.length} categories are close to their budget`,
+      detail: 'Each has used at least 80% of its monthly budget.',
+    });
+  }
+
+  let streak = 0;
+  for (let i = monthly.findIndex((m) => m.month === input.month); i >= 0 && monthly[i].in_minor > monthly[i].out_minor; i--) streak++;
+  if (streak >= 2) {
+    notes.push({
+      icon: 'piggy-bank',
+      tone: 'good',
+      title: `${streak} months of saving in a row`,
+      detail: 'You spent less than you earned in each of them.',
     });
   }
   return notes;

@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Gauge, Repeat, TrendingDown, TrendingUp, TriangleAlert } from 'lucide-react-native';
+import { Gauge, PiggyBank, Repeat, TrendingDown, TrendingUp, TriangleAlert } from 'lucide-react-native';
 import { FadeScrollView } from '../../src/components/FadeScrollView';
 import type { LucideIcon } from 'lucide-react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -10,9 +10,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
 import { CashFlowChart, RunningTotalChart } from '../../src/components/Charts';
 import { MonthChips } from '../../src/components/MonthChips';
-import { StatTile } from '../../src/components/StatTile';
 import { getInsights } from '../../src/db';
-import { currentMonth, daysInMonth, monthName, monthShort, shiftMonth, today } from '../../src/dates';
+import { currentMonth, daysInMonth, monthName, shiftMonth, today } from '../../src/dates';
 import { buildNotes, keptPercent, spendComparison } from '../../src/insights';
 import type { Note } from '../../src/insights';
 import { formatMoney } from '../../src/money';
@@ -27,6 +26,7 @@ const NOTE_ICONS: Record<Note['icon'], LucideIcon> = {
   gauge: Gauge,
   repeat: Repeat,
   'triangle-alert': TriangleAlert,
+  'piggy-bank': PiggyBank,
 };
 
 // The colour of the notes that are neither good nor bad news.
@@ -97,7 +97,7 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, onSele
   const kept = keptPercent(summary.in_minor, out);
   const notes = buildNotes({
     month, prevMonth, isCurrent, elapsedDays: elapsed ?? 1, spent: out, prevFullSpent: prevSummary.out_minor,
-    recurringOut, spending, prevSpending,
+    recurringOut, spending, prevSpending, monthly: data.monthly,
   });
   const noteWidth = Math.round(contentWidth * 0.72);
   const grouped = spending.length > TOP_COUNT;
@@ -133,16 +133,6 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, onSele
       <RunningTotalChart daily={data.daily} prevDaily={data.prevDaily} height={170} hidden={false} month={month} prevMonth={prevMonth} elapsed={elapsed} width={contentWidth} />
       <MonthChips selected={month} earliest={data.earliestMonth} onSelect={onSelectMonth} />
 
-      <View style={styles.duo}>
-        <View style={styles.duoCell}>
-          <Text style={{ color: colors.ink2, fontSize: 14 }}>Income</Text>
-          <Text style={[styles.duoValue, { color: colors.pos }]}>{formatMoney(summary.in_minor)}</Text>
-        </View>
-        <View style={[styles.duoCell, { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: colors.fill2 }]}>
-          <Text style={{ color: colors.ink2, fontSize: 14 }}>Left over</Text>
-          <Text style={[styles.duoValue, { color: colors.ink }]}>{formatMoney(summary.in_minor - out)}</Text>
-        </View>
-      </View>
       {kept !== null && (
         <View style={[styles.kept, { borderColor: colors.fill2 }]}>
           <Text style={{ color: colors.ink2, fontSize: 15 }}>
@@ -153,7 +143,6 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, onSele
 
       {notes.length > 0 && (
         <>
-          <Text style={[styles.section, { color: colors.ink }]}>What stood out</Text>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -188,41 +177,43 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, onSele
         </>
       )}
 
+      <Text style={[styles.section, { color: colors.ink }]}>Cash flow</Text>
+      <CashFlowChart monthly={data.monthly} selected={month} onSelect={onSelectMonth} width={contentWidth} />
+
+      <View style={styles.stats}>
+        <StatRow label="Income" value={formatMoney(summary.in_minor)} color={colors.pos} />
+        <StatRow label="Left over" value={formatMoney(summary.in_minor - out)} />
+        <StatRow label="Daily average" value={formatMoney(Math.round(out / (elapsed ?? daysInMonth(month))))} />
+        <StatRow label="Savings rate" value={`${kept ?? 0}%`} />
+        {isCurrent && <StatRow label="Projected spend" value={formatMoney(Math.round((out / (elapsed ?? 1)) * daysInMonth(month)))} />}
+        <StatRow label="Recurring share" value={`${out > 0 ? Math.round((recurringOut / out) * 100) : 0}%`} />
+        <StatRow label="Transactions logged" value={String([...spending, ...income].reduce((sum, c) => sum + c.count, 0))} />
+      </View>
+
       <Text style={[styles.section, { color: colors.ink }]}>Top categories</Text>
       {spending.length > 0 && (
         <View style={styles.stack}>
-          {top.map((c) => (
+          {(expanded ? spending : top).map((c) => (
             <View key={c.id} style={{ flex: c.total_minor, backgroundColor: c.color, minWidth: 3 }} />
           ))}
-          {grouped && <View style={{ flex: restTotal, backgroundColor: colors.ink3, minWidth: 3 }} />}
+          {grouped && !expanded && <View style={{ flex: restTotal, backgroundColor: colors.ink3, minWidth: 3 }} />}
         </View>
       )}
       {spending.length === 0 && income.length === 0 && (
         <Text style={{ color: colors.ink2, paddingVertical: spacing.md }}>Nothing logged in {monthName(month)}.</Text>
       )}
       {top.map((c) => spendingRow(c))}
+      {expanded && rest.map((c) => spendingRow(c))}
       {grouped && (
         <PressableScale
           accessibilityRole="button"
-          accessibilityLabel={`${rest.length} other categories`}
-          accessibilityState={{ expanded }}
+          accessibilityLabel={expanded ? 'Show fewer categories' : `Show ${rest.length} more categories`}
           onPress={onToggleExpanded}
-          style={styles.row}
+          style={[styles.more, { backgroundColor: colors.fill }]}
         >
-          <View style={[styles.groupIcon, { backgroundColor: colors.ink3 }]}>
-            {expanded ? <ChevronUp size={18} color="#fff" /> : <ChevronDown size={18} color="#fff" />}
-          </View>
-          <View style={styles.main}>
-            <Text style={[styles.rowTitle, { color: colors.ink }]} numberOfLines={1}>{rest.length} other categories</Text>
-            <Text style={{ color: colors.ink2, fontSize: 14 }}>{expanded ? 'Tap to hide' : 'Tap to show'}</Text>
-          </View>
-          <View style={styles.end}>
-            <Text style={[styles.rowTitle, { color: colors.ink }]}>{formatMoney(restTotal)}</Text>
-            <Text style={{ color: colors.ink2, fontSize: 14, marginTop: 2 }}>{percent(restTotal, out)}</Text>
-          </View>
+          <Text style={{ color: colors.ink, fontSize: 14, fontWeight: '600' }}>{expanded ? 'Show less' : 'Show more'}</Text>
         </PressableScale>
       )}
-      {expanded && rest.map((c) => spendingRow(c))}
       {income.map((c) => (
         <PressableScale key={c.id} accessibilityRole="button" accessibilityLabel={`${c.name} transactions`} onPress={() => open(c.id)} style={styles.row}>
           <CategoryIcon name={c.icon} color={c.color} size={36} />
@@ -237,21 +228,20 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, onSele
         </PressableScale>
       ))}
 
-      <View style={styles.tiles}>
-        <StatTile label="Daily average" value={formatMoney(Math.round(out / (elapsed ?? daysInMonth(month))))}
-          sub={prevSummary.out_minor > 0 ? `${formatMoney(Math.round(prevSummary.out_minor / daysInMonth(prevMonth)))} in ${monthShort(prevMonth)}` : 'Per day so far'} />
-        <StatTile label="Savings rate" value={kept === null ? '–' : `${kept}%`} sub={kept === null ? 'No income logged' : 'Of income kept'} />
-        <StatTile label="Biggest expense" value={data.biggest ? formatMoney(data.biggest.amount_minor) : '–'} sub={data.biggest?.label ?? 'Nothing yet'} />
-        <StatTile label="No-spend days" value={String(Math.max(0, (elapsed ?? daysInMonth(month)) - data.spendDays))} sub={`Of ${elapsed ?? daysInMonth(month)} days, bills aside`} />
-      </View>
-
-      <Text style={[styles.section, { color: colors.ink }]}>Cash flow</Text>
-      <CashFlowChart monthly={data.monthly} selected={month} onSelect={onSelectMonth} width={contentWidth} />
-
       <Text style={[styles.foot, { color: colors.ink3 }]}>
         Moving money between your own accounts isn't counted as expense or income.
       </Text>
     </>
+  );
+}
+
+function StatRow({ label, value, color }: { label: string; value: string; color?: string }) {
+  const colors = useColors();
+  return (
+    <View style={[styles.statRow, { borderBottomColor: colors.line }]}>
+      <Text style={{ color: colors.ink2, fontSize: 16 }}>{label}</Text>
+      <Text style={[styles.rowTitle, { color: color ?? colors.ink }]}>{value}</Text>
+    </View>
   );
 }
 
@@ -261,12 +251,9 @@ const styles = StyleSheet.create({
   title: { fontSize: fontSize.screen, fontWeight: '800', marginTop: spacing.md },
   chipText: { fontSize: 14, fontWeight: '600' },
   big: { fontSize: fontSize.big, fontWeight: '800', letterSpacing: -1.5 },
-  duo: { flexDirection: 'row', marginTop: 22 },
-  duoCell: { flex: 1, alignItems: 'center', paddingHorizontal: 8 },
-  duoValue: { fontSize: 22, fontWeight: '700', marginTop: 2 },
   kept: { borderWidth: 1.5, borderStyle: 'dashed', borderRadius: 22, paddingVertical: 10, paddingHorizontal: 14, alignItems: 'center', marginTop: spacing.lg },
   section: { fontSize: 20, fontWeight: '700', marginTop: 30, marginBottom: 6 },
-  notes: { marginHorizontal: -spacing.xl, marginTop: spacing.sm },
+  notes: { marginHorizontal: -spacing.xl, marginTop: spacing.lg },
   notesContent: { paddingHorizontal: spacing.xl, gap: 12 },
   note: { borderRadius: 20, padding: 16, gap: 12 },
   noteTitle: { fontSize: 17, fontWeight: '700' },
@@ -275,8 +262,9 @@ const styles = StyleSheet.create({
   main: { flex: 1 },
   end: { alignItems: 'flex-end', maxWidth: '45%' },
   rowTitle: { fontSize: 16.5, fontWeight: '600' },
-  groupIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
+  more: { alignSelf: 'center', minHeight: 44, paddingHorizontal: 20, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginVertical: spacing.sm },
   stack: { flexDirection: 'row', height: 20, borderRadius: 5, overflow: 'hidden', gap: 2, marginTop: 8, marginBottom: 6 },
-  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 30 },
+  stats: { marginTop: spacing.lg },
+  statRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 52, borderBottomWidth: StyleSheet.hairlineWidth },
   foot: { fontSize: 12.5, lineHeight: 19, marginTop: 26 },
 });

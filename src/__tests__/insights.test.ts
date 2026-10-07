@@ -1,6 +1,6 @@
 import { setAppCurrency } from '../money';
 import { budgetStatus, buildNotes, creditStatus, delta, dueText, keptPercent, runningTotal, spendComparison } from '../insights';
-import type { CategorySpend } from '../types';
+import type { CategorySpend, MonthTotals } from '../types';
 
 beforeEach(() => setAppCurrency('USD'));
 
@@ -70,6 +70,7 @@ describe('buildNotes', () => {
   const base = {
     month: '2026-09', prevMonth: '2026-08', isCurrent: false, elapsedDays: 30, spent: 100000,
     prevFullSpent: 90000, recurringOut: 0, spending: [] as CategorySpend[], prevSpending: [] as CategorySpend[],
+    monthly: [] as MonthTotals[],
   };
   const text = (notes: ReturnType<typeof buildNotes>) => notes.map((n) => `${n.title}. ${n.detail}`);
 
@@ -111,6 +112,22 @@ describe('buildNotes', () => {
     expect(text(one)).toEqual(['Dining out is over budget. By $100.00 this month.']);
     const two = buildNotes({ ...base, spending: [cat(1, 'Dining out', 30000, 20000), cat(2, 'Fuel', 9000, 5000)] });
     expect(text(two)).toEqual(['2 categories over budget. Each is past its monthly budget.']);
+  });
+
+  it('warns when a category has used 80% of its budget this month', () => {
+    const notes = buildNotes({ ...base, isCurrent: true, elapsedDays: 20, spent: 0, spending: [cat(1, 'Dining out', 9000, 10000), cat(2, 'Fuel', 5000, 10000)] });
+    expect(text(notes)).toEqual(['Dining out is at 90% of its budget. $10.00 left, with 10 days to go.']);
+  });
+
+  it('does not warn about a close budget in a finished month', () => {
+    expect(buildNotes({ ...base, spending: [cat(1, 'Dining out', 9000, 10000)] })).toEqual([]);
+  });
+
+  it('counts months of saving in a row up to the chosen month', () => {
+    const m = (month: string, in_minor: number, out_minor: number): MonthTotals => ({ month, in_minor, out_minor });
+    const monthly = [m('2026-06', 100, 200), m('2026-07', 300, 100), m('2026-08', 300, 100), m('2026-09', 300, 100), m('2026-10', 100, 200)];
+    expect(text(buildNotes({ ...base, monthly }))).toEqual(['3 months of saving in a row. You spent less than you earned in each of them.']);
+    expect(buildNotes({ ...base, month: '2026-10', monthly })).toEqual([]);
   });
 });
 
