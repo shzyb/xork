@@ -1,8 +1,9 @@
-import { Gauge, Repeat, TrendingDown, TrendingUp, TriangleAlert } from 'lucide-react-native';
+import { ChevronDown, ChevronUp, Gauge, Repeat, TrendingDown, TrendingUp, TriangleAlert } from 'lucide-react-native';
 import { FadeScrollView } from '../../src/components/FadeScrollView';
 import type { LucideIcon } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useCallback, useState } from 'react';
+import type { ReactNode } from 'react';
 import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { PressableScale } from '../../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -29,6 +30,13 @@ const NOTE_ICONS: Record<Note['icon'], LucideIcon> = {
 };
 
 // The colour of the notes that are neither good nor bad news.
+const TOP_COUNT = 5;
+
+function percent(part: number, total: number) {
+  const p = (part / total) * 100;
+  return p > 0 && p < 1 ? '<1%' : `${Math.round(p)}%`;
+}
+
 const NEUTRAL_COLORS: Partial<Record<Note['icon'], string>> = { gauge: '#3B82F6', repeat: '#8B5CF6' };
 
 export default function Insights() {
@@ -36,6 +44,10 @@ export default function Insights() {
   const { width } = useWindowDimensions();
   const [month, setMonth] = useState(currentMonth());
   const data = useData(() => getInsights(month), [month]);
+  const [expanded, setExpanded] = useState(false);
+
+  // The group of smaller categories folds back up when you leave the tab or change month.
+  useFocusEffect(useCallback(() => () => setExpanded(false), []));
 
   const isCurrent = month === currentMonth();
   const prevMonth = shiftMonth(month, -1);
@@ -55,7 +67,9 @@ export default function Insights() {
             isCurrent={isCurrent}
             elapsed={elapsed}
             contentWidth={contentWidth}
-            onSelectMonth={setMonth}
+            onSelectMonth={(m) => { setExpanded(false); setMonth(m); }}
+            expanded={expanded}
+            onToggleExpanded={() => setExpanded((e) => !e)}
           />
         )}
       </FadeScrollView>
@@ -63,7 +77,7 @@ export default function Insights() {
   );
 }
 
-function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, onSelectMonth }: {
+function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, onSelectMonth, expanded, onToggleExpanded }: {
   data: InsightsData;
   month: string;
   prevMonth: string;
@@ -71,6 +85,8 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, onSele
   elapsed: number | undefined;
   contentWidth: number;
   onSelectMonth: (month: string) => void;
+  expanded: boolean;
+  onToggleExpanded: () => void;
 }) {
   const colors = useColors();
   const router = useRouter();
@@ -84,7 +100,25 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, onSele
     recurringOut, spending, prevSpending,
   });
   const noteWidth = Math.round(contentWidth * 0.72);
+  const grouped = spending.length > TOP_COUNT;
+  const top = grouped ? spending.slice(0, TOP_COUNT) : spending;
+  const rest = grouped ? spending.slice(TOP_COUNT) : [];
+  const restTotal = rest.reduce((sum, c) => sum + c.total_minor, 0);
   const open = (id: number) => router.push({ pathname: '/category-activity', params: { id: String(id), month } });
+
+  const spendingRow = (c: InsightsData['spending'][number]): ReactNode => (
+    <PressableScale key={c.id} accessibilityRole="button" accessibilityLabel={`${c.name} transactions`} onPress={() => open(c.id)} style={styles.row}>
+      <CategoryIcon name={c.icon} color={c.color} size={36} />
+      <View style={styles.main}>
+        <Text style={[styles.rowTitle, { color: colors.ink }]} numberOfLines={1}>{c.name}</Text>
+        <Text style={{ color: colors.ink2, fontSize: 14 }}>{c.count} {c.count === 1 ? 'transaction' : 'transactions'}</Text>
+      </View>
+      <View style={styles.end}>
+        <Text style={[styles.rowTitle, { color: colors.ink }]}>{formatMoney(c.total_minor)}</Text>
+        <Text style={{ color: colors.ink2, fontSize: 14, marginTop: 2 }}>{percent(c.total_minor, out)}</Text>
+      </View>
+    </PressableScale>
+  );
 
   return (
     <>
@@ -157,27 +191,38 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, onSele
       <Text style={[styles.section, { color: colors.ink }]}>Top categories</Text>
       {spending.length > 0 && (
         <View style={styles.stack}>
-          {spending.map((c) => (
+          {top.map((c) => (
             <View key={c.id} style={{ flex: c.total_minor, backgroundColor: c.color, minWidth: 3 }} />
           ))}
+          {grouped && <View style={{ flex: restTotal, backgroundColor: colors.ink3, minWidth: 3 }} />}
         </View>
       )}
       {spending.length === 0 && income.length === 0 && (
         <Text style={{ color: colors.ink2, paddingVertical: spacing.md }}>Nothing logged in {monthName(month)}.</Text>
       )}
-      {spending.map((c) => (
-        <PressableScale key={c.id} accessibilityRole="button" accessibilityLabel={`${c.name} transactions`} onPress={() => open(c.id)} style={styles.row}>
-          <CategoryIcon name={c.icon} color={c.color} size={36} />
+      {top.map((c) => spendingRow(c))}
+      {grouped && (
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel={`${rest.length} other categories`}
+          accessibilityState={{ expanded }}
+          onPress={onToggleExpanded}
+          style={styles.row}
+        >
+          <View style={[styles.groupIcon, { backgroundColor: colors.ink3 }]}>
+            {expanded ? <ChevronUp size={18} color="#fff" /> : <ChevronDown size={18} color="#fff" />}
+          </View>
           <View style={styles.main}>
-            <Text style={[styles.rowTitle, { color: colors.ink }]} numberOfLines={1}>{c.name}</Text>
-            <Text style={{ color: colors.ink2, fontSize: 14 }}>{c.count} {c.count === 1 ? 'transaction' : 'transactions'}</Text>
+            <Text style={[styles.rowTitle, { color: colors.ink }]} numberOfLines={1}>{rest.length} other categories</Text>
+            <Text style={{ color: colors.ink2, fontSize: 14 }}>{expanded ? 'Tap to hide' : 'Tap to show'}</Text>
           </View>
           <View style={styles.end}>
-            <Text style={[styles.rowTitle, { color: colors.ink }]}>{formatMoney(c.total_minor)}</Text>
-            <Text style={{ color: colors.ink2, fontSize: 14, marginTop: 2 }}>{Math.round((c.total_minor / out) * 100)}%</Text>
+            <Text style={[styles.rowTitle, { color: colors.ink }]}>{formatMoney(restTotal)}</Text>
+            <Text style={{ color: colors.ink2, fontSize: 14, marginTop: 2 }}>{percent(restTotal, out)}</Text>
           </View>
         </PressableScale>
-      ))}
+      )}
+      {expanded && rest.map((c) => spendingRow(c))}
       {income.map((c) => (
         <PressableScale key={c.id} accessibilityRole="button" accessibilityLabel={`${c.name} transactions`} onPress={() => open(c.id)} style={styles.row}>
           <CategoryIcon name={c.icon} color={c.color} size={36} />
@@ -187,7 +232,7 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, onSele
           </View>
           <View style={styles.end}>
             <Text style={[styles.rowTitle, { color: colors.pos }]}>+ {formatMoney(c.total_minor)}</Text>
-            <Text style={{ color: colors.ink2, fontSize: 14, marginTop: 2 }}>{Math.round((c.total_minor / summary.in_minor) * 100)}%</Text>
+            <Text style={{ color: colors.ink2, fontSize: 14, marginTop: 2 }}>{percent(c.total_minor, summary.in_minor)}</Text>
           </View>
         </PressableScale>
       ))}
@@ -230,6 +275,7 @@ const styles = StyleSheet.create({
   main: { flex: 1 },
   end: { alignItems: 'flex-end', maxWidth: '45%' },
   rowTitle: { fontSize: 16.5, fontWeight: '600' },
+  groupIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   stack: { flexDirection: 'row', height: 20, borderRadius: 5, overflow: 'hidden', gap: 2, marginTop: 8, marginBottom: 6 },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 30 },
   foot: { fontSize: 12.5, lineHeight: 19, marginTop: 26 },
