@@ -1,4 +1,4 @@
-import { ArrowRight } from 'lucide-react-native';
+import { ArrowLeftRight } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
 import { PickerSheet } from './PickerSheet';
 import type { PickerOption } from './PickerSheet';
@@ -47,7 +47,8 @@ export function AccountButton({ account, label, onPress }: { account: Account; l
   );
 }
 
-// "Cash → Savings" for Move money: one pill as wide as its content (names are cut with an ellipsis if they do not fit). Each account opens its own picker; the arrow swaps them.
+// "Cash ⇄ Savings" for Move money: one pill as wide as its content (names are cut with an ellipsis if they do not fit).
+// Each account opens its own picker; the move icon between them swaps the two.
 export function RouteButton({ from, to, onPickFrom, onPickTo, onSwap }: {
   from: Account;
   to: Account;
@@ -65,8 +66,10 @@ export function RouteButton({ from, to, onPickFrom, onPickTo, onSwap }: {
   return (
     <View style={styles.route}>
       {half(from, 'From', onPickFrom)}
-      <PressableScale accessibilityRole="button" accessibilityLabel="Swap accounts" hitSlop={7} onPress={onSwap} style={styles.arrow}>
-        <ArrowRight color={sheet.ink2} size={16} />
+      <PressableScale accessibilityRole="button" accessibilityLabel="Swap accounts" hitSlop={4} onPress={onSwap} style={styles.swap}>
+        <View style={styles.swapCircle}>
+          <ArrowLeftRight color={sheet.ink} size={15} strokeWidth={2.2} />
+        </View>
       </PressableScale>
       {half(to, 'To', onPickTo)}
     </View>
@@ -76,7 +79,8 @@ export function RouteButton({ from, to, onPickFrom, onPickTo, onSwap }: {
 const styles = StyleSheet.create({
   route: { alignSelf: 'flex-start', maxWidth: '100%', flexDirection: 'row', alignItems: 'center', height: BUTTON_HEIGHT, paddingLeft: 6, paddingRight: 16, borderRadius: BUTTON_HEIGHT / 2, backgroundColor: sheet.card, marginBottom: 10 },
   half: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 10, height: BUTTON_HEIGHT },
-  arrow: { width: 30, height: BUTTON_HEIGHT, alignItems: 'center', justifyContent: 'center' },
+  swap: { width: 40, height: BUTTON_HEIGHT, alignItems: 'center', justifyContent: 'center' },
+  swapCircle: { width: 28, height: 28, borderRadius: 14, backgroundColor: sheet.card2, alignItems: 'center', justifyContent: 'center' },
   button: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 10, height: BUTTON_HEIGHT, paddingLeft: 6, paddingRight: 16, borderRadius: BUTTON_HEIGHT / 2, backgroundColor: sheet.card },
   name: { flexShrink: 1, color: sheet.ink, fontSize: 15, fontWeight: '600' },
   dot: { alignItems: 'center', justifyContent: 'center' },
