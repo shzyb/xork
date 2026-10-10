@@ -21,8 +21,11 @@ const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
 //
 // Nothing else on the page moves while it opens: the keyboard slides over the keypad, and only if it would
 // cover this row does the row lift (a transform, on the native thread) to sit just above it.
-export function NoteRow({ left, value, onChange, placeholder, open, onOpen, onClose }: {
-  left: ReactNode;
+// `left` can be a function of the morph (see RouteButton). Then give `leftOpenWidth`, the width it ends at,
+// so the note field knows how far it may grow without measuring something that is itself animating.
+export function NoteRow({ left, leftOpenWidth, value, onChange, placeholder, open, onOpen, onClose }: {
+  left: ReactNode | ((t: Animated.Value) => ReactNode);
+  leftOpenWidth?: number;
   value: string;
   onChange: (note: string) => void;
   placeholder: string;
@@ -35,7 +38,8 @@ export function NoteRow({ left, value, onChange, placeholder, open, onOpen, onCl
   const liftTo = useRef(0);
   const row = useRef<View>(null);
   const [rowWidth, setRowWidth] = useState(0);
-  const [leftWidth, setLeftWidth] = useState(0);
+  const [measuredLeft, setMeasuredLeft] = useState(0);
+  const leftWidth = leftOpenWidth ?? measuredLeft;
   const [pillWidth, setPillWidth] = useState(0);
 
   function run(anim: Animated.Value, to: number, duration: number, native: boolean) {
@@ -84,7 +88,9 @@ export function NoteRow({ left, value, onChange, placeholder, open, onOpen, onCl
       style={[styles.row, { transform: [{ translateY: lift }] }]}
       onLayout={(e) => setRowWidth(e.nativeEvent.layout.width)}
     >
-      <View style={styles.left} onLayout={(e) => setLeftWidth(e.nativeEvent.layout.width)}>{left}</View>
+      <View style={styles.left} onLayout={(e) => leftOpenWidth === undefined && setMeasuredLeft(e.nativeEvent.layout.width)}>
+        {typeof left === 'function' ? left(t) : left}
+      </View>
 
       {/* Reserves the pill's space in the row; the visible pill below is drawn over it and can grow past it. */}
       <View style={styles.slot} onLayout={(e) => setPillWidth(e.nativeEvent.layout.width)}>{pillContent}</View>

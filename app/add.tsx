@@ -1,11 +1,11 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { ArrowDown, ChevronLeft, X } from 'lucide-react-native';
+import { ChevronLeft, X } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import { isReduceMotion, PressableScale } from '../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AccountButton, AccountPicker } from '../src/components/AccountButton';
+import { AccountButton, AccountPicker, ROUTE_COMPACT_WIDTH, RouteButton } from '../src/components/AccountButton';
 import { Button } from '../src/components/Button';
 import { CategoryGrid } from '../src/components/CategoryGrid';
 import { DateButton } from '../src/components/DateButton';
@@ -75,6 +75,12 @@ function AddForm({ accounts, categories, editing, startType }: {
   function switchType(next: TransactionType) {
     setType(next);
     setCategoryId(null);
+    setError('');
+  }
+
+  function swapAccounts() {
+    setFromSel(toId);
+    setToSel(fromId);
     setError('');
   }
 
@@ -177,7 +183,10 @@ function AddForm({ accounts, categories, editing, startType }: {
 
       <View style={styles.footer}>
         <NoteRow
-          left={<AccountButton account={from} label={fromLabel} onPress={() => setPicker('from')} />}
+          left={type === 'transfer'
+            ? (t) => <RouteButton from={from} to={to} t={t} onPickFrom={() => setPicker('from')} onPickTo={() => setPicker('to')} onSwap={swapAccounts} />
+            : <AccountButton account={from} label={fromLabel} onPress={() => setPicker('from')} />}
+          leftOpenWidth={type === 'transfer' ? ROUTE_COMPACT_WIDTH : undefined}
           value={note}
           onChange={setNote}
           placeholder={NOTE_PLACEHOLDERS[type]}
@@ -185,12 +194,6 @@ function AddForm({ accounts, categories, editing, startType }: {
           onOpen={() => setNoteOpen(true)}
           onClose={() => setNoteOpen(false)}
         />
-        {type === 'transfer' && (
-          <View style={styles.toRow}>
-            <ArrowDown color={sheet.ink3} size={18} />
-            <AccountButton account={to} label="To" onPress={() => setPicker('to')} />
-          </View>
-        )}
         {type !== 'transfer' && (
           <CategoryGrid categories={kindCategories} selectedId={categoryId} onSelect={(id) => { setCategoryId(id); setError(''); }} />
         )}
@@ -231,7 +234,6 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md },
   headerTitle: { color: sheet.ink, fontSize: 17, fontWeight: '600' },
   round: { width: 44, height: 44, borderRadius: 22, backgroundColor: sheet.card, alignItems: 'center', justifyContent: 'center' },
-  toRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10, paddingLeft: 14 },
   amountBox: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 14 },
   amount: { color: sheet.ink, fontSize: 68, fontWeight: '800', letterSpacing: -2, maxWidth: '100%' },
   symbol: { color: sheet.ink2, fontSize: 32, fontWeight: '700', letterSpacing: 0 },
