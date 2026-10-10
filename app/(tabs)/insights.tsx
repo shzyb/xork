@@ -167,7 +167,7 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, onSele
                     <Icon color="#FFFFFF" size={17} strokeWidth={2.2} />
                   </View>
                   <View>
-                    <Text style={[styles.noteTitle, { color: colors.ink }]}>{note.title}</Text>
+                    <Text style={[styles.noteValue, { color: tone }]}>{note.value}</Text>
                     <Text style={{ color: colors.ink2, fontSize: 14, lineHeight: 20, marginTop: 2 }}>{note.detail}</Text>
                   </View>
                 </PressableScale>
@@ -256,7 +256,7 @@ const styles = StyleSheet.create({
   notes: { marginHorizontal: -spacing.xl, marginTop: spacing.lg },
   notesContent: { paddingHorizontal: spacing.xl, gap: 12 },
   note: { borderRadius: 20, padding: 16, gap: 12 },
-  noteTitle: { fontSize: 17, fontWeight: '700' },
+  noteValue: { fontSize: 28, fontWeight: '700' },
   noteIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 60 },
   main: { flex: 1 },

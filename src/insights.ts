@@ -76,10 +76,17 @@ export function spendComparison(spent: number, prevSamePoint: number, isCurrent:
 export type Note = {
   icon: 'trending-up' | 'trending-down' | 'gauge' | 'repeat' | 'triangle-alert' | 'piggy-bank';
   tone: 'good' | 'bad' | 'warn' | 'neutral';
-  title: string;
-  detail: string;
+  value: string; // the big number or percentage at the top of the card
+  detail: string; // one sentence saying what it means
   categoryId?: number; // set when the note is about one category, so the card can open it
 };
+
+// "Dining out", "Dining out and Fuel", "Dining out, Fuel and Rent", "Dining out, Fuel and 2 more".
+function nameList(names: string[]): string {
+  if (names.length === 1) return names[0];
+  if (names.length <= 3) return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  return `${names[0]}, ${names[1]} and ${names.length - 2} more`;
+}
 
 // The short "What stood out" notes. `prevSpending` is compared at the same point in the month.
 export function buildNotes(input: {
@@ -109,8 +116,8 @@ export function buildNotes(input: {
     notes.push({
       icon: 'trending-up',
       tone: 'bad',
-      title: `${rise.c.name} is up ${Math.round((rise.diff / rise.previous) * 100)}%`,
-      detail: `${formatMoney(rise.diff)} more than ${prevName}.`,
+      value: `${Math.round((rise.diff / rise.previous) * 100)}%`,
+      detail: `More spent on ${rise.c.name} than in ${prevName}, ${formatMoney(rise.diff)} more.`,
       categoryId: rise.c.id,
     });
   }
@@ -118,8 +125,8 @@ export function buildNotes(input: {
     notes.push({
       icon: 'trending-down',
       tone: 'good',
-      title: `${cut.c.name} is down ${Math.round((-cut.diff / cut.previous) * 100)}%`,
-      detail: `${formatMoney(-cut.diff)} less than ${prevName}.`,
+      value: `${Math.round((-cut.diff / cut.previous) * 100)}%`,
+      detail: `Less spent on ${cut.c.name} than in ${prevName}, ${formatMoney(-cut.diff)} less.`,
       categoryId: cut.c.id,
     });
   }
@@ -127,11 +134,12 @@ export function buildNotes(input: {
   if (isCurrent && spent > 0) {
     const days = daysInMonth(input.month);
     const projected = Math.round(((spent / elapsedDays) * days) / 100) * 100;
+    const vsPrev = projected - prevFullSpent;
     notes.push({
       icon: 'gauge',
       tone: 'neutral',
-      title: `On pace for ${formatMoney(projected)}`,
-      detail: `By the end of the month${prevFullSpent > 0 ? `, against ${formatMoney(prevFullSpent)} in ${prevName}` : ''}.`,
+      value: formatMoney(projected),
+      detail: `You're on track to spend this by the end of the month${prevFullSpent > 0 && vsPrev !== 0 ? `, ${formatMoney(Math.abs(vsPrev))} ${vsPrev > 0 ? 'more' : 'less'} than ${prevName}` : ''}.`,
     });
   }
 
@@ -139,8 +147,8 @@ export function buildNotes(input: {
     notes.push({
       icon: 'repeat',
       tone: 'neutral',
-      title: `${Math.round((recurringOut / spent) * 100)}% was recurring`,
-      detail: `The other ${formatMoney(spent - recurringOut)} was day-to-day.`,
+      value: `${Math.round((recurringOut / spent) * 100)}%`,
+      detail: `Of your spending was recurring. The other ${formatMoney(spent - recurringOut)} was day-to-day.`,
     });
   }
 
@@ -149,16 +157,16 @@ export function buildNotes(input: {
     notes.push({
       icon: 'triangle-alert',
       tone: 'warn',
-      title: `${over[0].name} is over budget`,
-      detail: `By ${formatMoney(over[0].total_minor - (over[0].budget_minor ?? 0))} this month.`,
+      value: formatMoney(over[0].total_minor - (over[0].budget_minor ?? 0)),
+      detail: `Over your ${over[0].name} budget in ${monthName(input.month)}.`,
       categoryId: over[0].id,
     });
   } else if (over.length > 1) {
     notes.push({
       icon: 'triangle-alert',
       tone: 'warn',
-      title: `${over.length} categories over budget`,
-      detail: 'Each is past its monthly budget.',
+      value: String(over.length),
+      detail: `Categories are over budget: ${nameList(over.map((c) => c.name))}.`,
     });
   }
 
@@ -173,27 +181,31 @@ export function buildNotes(input: {
     notes.push({
       icon: 'gauge',
       tone: 'warn',
-      title: `${nearly[0].name} is at ${Math.round((nearly[0].total_minor / budget) * 100)}% of its budget`,
-      detail: `${formatMoney(budget - nearly[0].total_minor)} left${daysLeft > 0 ? `, with ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'} to go` : ''}.`,
+      value: `${Math.round((nearly[0].total_minor / budget) * 100)}%`,
+      detail: `Of your ${nearly[0].name} budget is used. ${formatMoney(budget - nearly[0].total_minor)} left${daysLeft > 0 ? ` for ${daysLeft} ${daysLeft === 1 ? 'day' : 'days'}` : ''}.`,
       categoryId: nearly[0].id,
     });
   } else if (nearly.length > 1) {
     notes.push({
       icon: 'gauge',
       tone: 'warn',
-      title: `${nearly.length} categories are close to their budget`,
-      detail: 'Each has used at least 80% of its monthly budget.',
+      value: String(nearly.length),
+      detail: `Categories have used at least 80% of their budget: ${nameList(nearly.map((c) => c.name))}.`,
     });
   }
 
   let streak = 0;
-  for (let i = monthly.findIndex((m) => m.month === input.month); i >= 0 && monthly[i].in_minor > monthly[i].out_minor; i--) streak++;
+  let saved = 0;
+  for (let i = monthly.findIndex((m) => m.month === input.month); i >= 0 && monthly[i].in_minor > monthly[i].out_minor; i--) {
+    streak++;
+    saved += monthly[i].in_minor - monthly[i].out_minor;
+  }
   if (streak >= 2) {
     notes.push({
       icon: 'piggy-bank',
       tone: 'good',
-      title: `${streak} months of saving in a row`,
-      detail: 'You spent less than you earned in each of them.',
+      value: formatMoney(saved),
+      detail: `You've saved this amount over ${streak} months running.`,
     });
   }
   return notes;
