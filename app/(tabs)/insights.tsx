@@ -199,8 +199,8 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, onSele
           {grouped && !expanded && <View style={{ flex: restTotal, backgroundColor: colors.ink3, minWidth: 3 }} />}
         </View>
       )}
-      {spending.length === 0 && income.length === 0 && (
-        <Text style={{ color: colors.ink2, paddingVertical: spacing.md }}>Nothing logged in {monthName(month)}.</Text>
+      {spending.length === 0 && (
+        <Text style={{ color: colors.ink2, paddingVertical: spacing.md }}>No expenses in {monthName(month)}.</Text>
       )}
       {top.map((c) => spendingRow(c))}
       {expanded && rest.map((c) => spendingRow(c))}
@@ -214,19 +214,6 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, onSele
           <Text style={{ color: colors.ink, fontSize: 14, fontWeight: '600' }}>{expanded ? 'Show less' : 'Show more'}</Text>
         </PressableScale>
       )}
-      {income.map((c) => (
-        <PressableScale key={c.id} accessibilityRole="button" accessibilityLabel={`${c.name} transactions`} onPress={() => open(c.id)} style={styles.row}>
-          <CategoryIcon name={c.icon} color={c.color} size={36} />
-          <View style={styles.main}>
-            <Text style={[styles.rowTitle, { color: colors.ink }]} numberOfLines={1}>{c.name}</Text>
-            <Text style={{ color: colors.ink2, fontSize: 14 }}>{c.count} {c.count === 1 ? 'transaction' : 'transactions'}</Text>
-          </View>
-          <View style={styles.end}>
-            <Text style={[styles.rowTitle, { color: colors.pos }]}>+ {formatMoney(c.total_minor)}</Text>
-            <Text style={{ color: colors.ink2, fontSize: 14, marginTop: 2 }}>{percent(c.total_minor, summary.in_minor)}</Text>
-          </View>
-        </PressableScale>
-      ))}
 
       <Text style={[styles.foot, { color: colors.ink3 }]}>
         Moving money between your own accounts isn't counted as expense or income.
