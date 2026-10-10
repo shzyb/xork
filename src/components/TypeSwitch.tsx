@@ -1,19 +1,21 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AccessibilityInfo, Animated, Easing, StyleSheet, View } from 'react-native';
 import { ArrowDown, ArrowLeftRight, ArrowUp } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { PressableScale } from './PressableScale';
 import { Text } from './Text';
-import { actionColors, sheet } from '../theme';
+import { sheet } from '../theme';
 import type { TransactionType } from '../types';
 
-// `width` is the open size: icon, gap and label, so the label fits without measuring.
-const OPTIONS: { type: TransactionType; label: string; Icon: LucideIcon; width: number }[] = [
-  { type: 'expense', label: 'Expense', Icon: ArrowUp, width: 110 },
-  { type: 'income', label: 'Income', Icon: ArrowDown, width: 104 },
-  { type: 'transfer', label: 'Move', Icon: ArrowLeftRight, width: 90 },
+const OPTIONS: { type: TransactionType; label: string; Icon: LucideIcon }[] = [
+  { type: 'expense', label: 'Expense', Icon: ArrowUp },
+  { type: 'income', label: 'Income', Icon: ArrowDown },
+  { type: 'transfer', label: 'Move', Icon: ArrowLeftRight },
 ];
-const CLOSED_WIDTH = 44;
+const SIZE = 40; // a closed segment is a square with the icon centred
+const ICON = 18;
+const INSET = (SIZE - ICON) / 2; // space left of the icon, so it sits centred when closed
+const GAP = 7;
 const MS = 200;
 
 let reduceMotion = false;
@@ -36,9 +38,9 @@ export function TypeSwitch({ value, onChange }: { value: TransactionType; onChan
 }
 
 function Segment({ option, active, onPress }: { option: (typeof OPTIONS)[number]; active: boolean; onPress: () => void }) {
-  const { type, label, Icon, width } = option;
-  const color = actionColors[type];
+  const { label, Icon } = option;
   const open = useRef(new Animated.Value(active ? 1 : 0)).current;
+  const [labelWidth, setLabelWidth] = useState(0);
 
   useEffect(() => {
     if (reduceMotion) {
@@ -48,13 +50,15 @@ function Segment({ option, active, onPress }: { option: (typeof OPTIONS)[number]
     Animated.timing(open, { toValue: active ? 1 : 0, duration: MS, easing: Easing.bezier(0.23, 1, 0.32, 1), useNativeDriver: false }).start();
   }, [active, open]);
 
+  const openWidth = INSET + ICON + GAP + labelWidth + INSET + 2;
+
   return (
     <Animated.View
       style={[
         styles.segment,
         {
-          width: open.interpolate({ inputRange: [0, 1], outputRange: [CLOSED_WIDTH, width] }),
-          backgroundColor: open.interpolate({ inputRange: [0, 1], outputRange: [`${color}00`, `${color}38`] }),
+          width: open.interpolate({ inputRange: [0, 1], outputRange: [SIZE, openWidth] }),
+          backgroundColor: open.interpolate({ inputRange: [0, 1], outputRange: [`${sheet.card2}00`, sheet.card2] }),
         },
       ]}
     >
@@ -62,12 +66,17 @@ function Segment({ option, active, onPress }: { option: (typeof OPTIONS)[number]
         accessibilityRole="tab"
         accessibilityLabel={label === 'Move' ? 'Move money' : label}
         accessibilityState={{ selected: active }}
+        hitSlop={2}
         onPress={onPress}
         style={styles.press}
       >
-        <Icon color={color} size={18} strokeWidth={2.4} />
-        <Animated.View style={{ opacity: open }}>
-          <Text numberOfLines={1} style={[styles.label, { color }]}>{label}</Text>
+        <View style={styles.icon}>
+          <Icon color={active ? sheet.ink : sheet.ink2} size={ICON} strokeWidth={2.4} />
+        </View>
+        <Animated.View style={[styles.labelBox, { opacity: open }]}>
+          <Text numberOfLines={1} onLayout={(e) => setLabelWidth(Math.ceil(e.nativeEvent.layout.width))} style={styles.label}>
+            {label}
+          </Text>
         </Animated.View>
       </PressableScale>
     </Animated.View>
@@ -75,8 +84,11 @@ function Segment({ option, active, onPress }: { option: (typeof OPTIONS)[number]
 }
 
 const styles = StyleSheet.create({
-  pill: { flexDirection: 'row', alignItems: 'center', height: 52, padding: 4, borderRadius: 26, backgroundColor: sheet.card },
-  segment: { height: 44, borderRadius: 22, overflow: 'hidden' },
-  press: { height: 44, flexDirection: 'row', alignItems: 'center', gap: 7, paddingLeft: 13 },
-  label: { fontSize: 15, fontWeight: '700' },
+  pill: { flexDirection: 'row', alignItems: 'center', height: 44, padding: 2, borderRadius: 22, backgroundColor: sheet.card },
+  segment: { height: SIZE, borderRadius: SIZE / 2, overflow: 'hidden' },
+  press: { width: '100%', height: SIZE },
+  icon: { position: 'absolute', left: INSET, top: INSET, width: ICON, height: ICON },
+  // Wide on purpose: the label measures its own natural width, and the segment's overflow hides the part that is not open yet.
+  labelBox: { position: 'absolute', left: INSET + ICON + GAP, top: 0, bottom: 0, width: 200, justifyContent: 'center' },
+  label: { alignSelf: 'flex-start', color: sheet.ink, fontSize: 15, fontWeight: '700' },
 });
