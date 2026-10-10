@@ -93,7 +93,7 @@ export function NoteRow({ left, value, onChange, placeholder, open, onOpen, onCl
         <Animated.View
           style={[
             styles.morph,
-            { width: to(pillWidth, rowWidth - leftWidth - GAP), backgroundColor: to(0, 1).interpolate({ inputRange: [0, 1], outputRange: [value ? sheet.card2 : sheet.card, sheet.card] }) },
+            { width: to(pillWidth, rowWidth - leftWidth - GAP) },
           ]}
         >
           <Animated.View pointerEvents={open ? 'none' : 'auto'} style={[styles.fill, { opacity: pillOpacity }]}>
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: GAP, marginBottom: 10 },
   left: { flexShrink: 1 },
   slot: { flexDirection: 'row', alignItems: 'center', gap: 8, height: BUTTON_HEIGHT, maxWidth: PILL_MAX, paddingHorizontal: 14, opacity: 0 },
-  morph: { position: 'absolute', right: 0, top: 0, height: BUTTON_HEIGHT, borderRadius: BUTTON_HEIGHT / 2, overflow: 'hidden' },
+  morph: { position: 'absolute', right: 0, top: 0, height: BUTTON_HEIGHT, borderRadius: BUTTON_HEIGHT / 2, backgroundColor: sheet.card, overflow: 'hidden' },
   fill: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 },
   pill: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14 },
   label: { flexShrink: 1, color: sheet.ink, fontSize: 15, fontWeight: '600' },
