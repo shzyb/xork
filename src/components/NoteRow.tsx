@@ -73,7 +73,7 @@ export function NoteRow({ left, value, onChange, placeholder, open, onOpen, onCl
   const fieldOpacity = t.interpolate({ inputRange: [0.5, 1], outputRange: [0, 1], extrapolate: 'clamp' });
   const pillContent = (
     <>
-      <StickyNote color={value ? sheet.ink : sheet.ink2} size={18} />
+      <StickyNote color={sheet.ink2} size={18} />
       <Text style={[styles.label, !value && { color: sheet.ink2 }]} numberOfLines={1}>{value || 'Note'}</Text>
     </>
   );
