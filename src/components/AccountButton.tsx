@@ -1,0 +1,38 @@
+import { StyleSheet, View } from 'react-native';
+import { PressableScale } from './PressableScale';
+import { formatMoney } from '../money';
+import { sheet } from '../theme';
+import { Text } from './Text';
+
+type Account = { name: string; color: string; balance_minor: number };
+
+// The account's coloured initial, used in the button and in the picker rows.
+export function AccountDot({ account, size }: { account: Account; size: number }) {
+  return (
+    <View style={[styles.dot, { width: size, height: size, borderRadius: size / 2, backgroundColor: account.color }]}>
+      <Text style={[styles.initial, { fontSize: size * 0.42 }]}>{account.name.trim().charAt(0).toUpperCase() || '?'}</Text>
+    </View>
+  );
+}
+
+// A pill showing an account's name and balance. Tapping it opens the account picker.
+export function AccountButton({ account, label, onPress }: { account: Account; label: string; onPress: () => void }) {
+  return (
+    <PressableScale accessibilityRole="button" accessibilityLabel={`${label}: ${account.name}. Tap to change`} onPress={onPress} style={styles.button}>
+      <AccountDot account={account} size={34} />
+      <View style={styles.text}>
+        <Text style={styles.name} numberOfLines={1}>{account.name}</Text>
+        <Text style={styles.balance} numberOfLines={1}>{formatMoney(account.balance_minor)}</Text>
+      </View>
+    </PressableScale>
+  );
+}
+
+const styles = StyleSheet.create({
+  button: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 10, height: 52, paddingLeft: 9, paddingRight: 16, borderRadius: 26, backgroundColor: sheet.card },
+  text: { flexShrink: 1 },
+  name: { color: sheet.ink, fontSize: 15, fontWeight: '600' },
+  balance: { color: sheet.ink2, fontSize: 12.5 },
+  dot: { alignItems: 'center', justifyContent: 'center' },
+  initial: { color: '#FFFFFF', fontWeight: '700' },
+});

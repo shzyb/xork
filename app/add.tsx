@@ -1,19 +1,21 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FadeScrollView } from '../src/components/FadeScrollView';
 import { StatusBar } from 'expo-status-bar';
-import { ChevronLeft, X } from 'lucide-react-native';
+import { ArrowDown, ChevronLeft, X } from 'lucide-react-native';
 import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
 import { PressableScale } from '../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AccountChips } from '../src/components/AccountChips';
+import { AccountButton, AccountDot } from '../src/components/AccountButton';
 import { Button } from '../src/components/Button';
 import { CategoryGrid } from '../src/components/CategoryGrid';
-import { DateChips } from '../src/components/DateChips';
+import { DateButton } from '../src/components/DateButton';
 import { Keypad } from '../src/components/Keypad';
+import { PickerSheet } from '../src/components/PickerSheet';
+import type { PickerOption } from '../src/components/PickerSheet';
 import { TypeSwitch } from '../src/components/TypeSwitch';
 import { addTransaction, checkCreditLimit, getAccountsWithBalance, getCategories, getTransaction, isOverLimit, updateTransaction } from '../src/db';
-import { today, yesterday } from '../src/dates';
+import { today } from '../src/dates';
 import { creditStatus } from '../src/insights';
 import { currentDecimals, currentSymbol, formatMoney, formatTyped, minorToTyped, parseAmount } from '../src/money';
 import { sheet, spacing } from '../src/theme';
@@ -53,6 +55,7 @@ function AddForm({ accounts, categories, editing, startType }: {
   const [note, setNote] = useState(editing?.note ?? '');
   const [date, setDate] = useState(editing?.date ?? today());
   const [error, setError] = useState('');
+  const [picker, setPicker] = useState<'from' | 'to' | null>(null);
   const scroll = useRef<ScrollView>(null);
 
   const fromId = fromSel ?? accounts[0].id;
@@ -126,7 +129,7 @@ function AddForm({ accounts, categories, editing, startType }: {
   const oldOutflow = card && editing && editing.account_id === card.id ? (editing.type === 'income' ? -editing.amount_minor : editing.amount_minor) : 0;
   const cardOwed = card ? -card.balance_minor - oldOutflow + (type === 'income' ? -minor : minor) : 0;
   const cardStatus = card?.limit_minor ? creditStatus(cardOwed, card.limit_minor) : null;
-  let underText = `${from.name} has ${formatMoney(from.balance_minor)}`;
+  let underText = '';
   let underColor: string | undefined;
   if (card?.limit_minor && cardStatus) {
     const verb = minor > 0 ? 'would be' : 'is';
@@ -145,6 +148,27 @@ function AddForm({ accounts, categories, editing, startType }: {
   }
 
   const kindCategories = categories.filter((c) => c.kind === type);
+  const fromLabel = type === 'income' ? 'Into' : 'From';
+
+  function accountPicker() {
+    if (picker === null) return null;
+    const options: PickerOption<number>[] = accounts.map((a) => ({
+      value: a.id,
+      label: a.name,
+      sub: formatMoney(a.balance_minor),
+      lead: <AccountDot account={a} size={40} />,
+    }));
+    const isFrom = picker === 'from';
+    return (
+      <PickerSheet
+        title={isFrom ? fromLabel : 'To'}
+        options={options}
+        current={isFrom ? fromId : toId}
+        onPick={(id) => { (isFrom ? setFromSel : setToSel)(id); setError(''); setPicker(null); }}
+        onClose={() => setPicker(null)}
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -178,14 +202,15 @@ function AddForm({ accounts, categories, editing, startType }: {
       {step === 1 ? (
         <>
           <View style={styles.body}>
-            <AccountChips
-              label={type === 'income' ? 'Into' : 'From'}
-              accounts={accounts}
-              selectedId={fromId}
-              onSelect={setFromSel}
-            />
+            <View style={styles.topRow}>
+              <AccountButton account={from} label={fromLabel} onPress={() => setPicker('from')} />
+              <DateButton value={date} onChange={setDate} />
+            </View>
             {type === 'transfer' && (
-              <AccountChips label="To" accounts={accounts} selectedId={toId} onSelect={setToSel} />
+              <View style={styles.toRow}>
+                <ArrowDown color={sheet.ink3} size={18} />
+                <AccountButton account={to} label="To" onPress={() => setPicker('to')} />
+              </View>
             )}
 
             <View style={styles.amountBox}>
@@ -197,7 +222,7 @@ function AddForm({ accounts, categories, editing, startType }: {
                 <Text style={styles.symbol}>{currentSymbol()} </Text>
                 {amount ? formatTyped(amount) : '0'}
               </Text>
-              <Text style={[styles.under, underColor !== undefined && { color: underColor, fontWeight: '600' }]}>{underText}</Text>
+              {underText !== '' && <Text style={[styles.under, underColor !== undefined && { color: underColor, fontWeight: '600' }]}>{underText}</Text>}
               {error !== '' && <Text style={styles.error}>{error}</Text>}
             </View>
           </View>
@@ -249,13 +274,6 @@ function AddForm({ accounts, categories, editing, startType }: {
               style={styles.input}
             />
 
-            <Text style={styles.label}>Date</Text>
-            <DateChips
-              value={date}
-              onChange={setDate}
-              presets={[{ label: 'Today', date: today() }, { label: 'Yesterday', date: yesterday() }]}
-            />
-
             {error !== '' && <Text style={styles.error}>{error}</Text>}
           </FadeScrollView>
           <View style={styles.footer}>
@@ -263,6 +281,7 @@ function AddForm({ accounts, categories, editing, startType }: {
           </View>
         </KeyboardAvoidingView>
       )}
+      {accountPicker()}
     </SafeAreaView>
   );
 }
@@ -283,6 +302,8 @@ const styles = StyleSheet.create({
   round: { width: 44, height: 44, borderRadius: 22, backgroundColor: sheet.card, alignItems: 'center', justifyContent: 'center' },
   roundSpacer: { width: 44 },
   body: { flex: 1 },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 4 },
+  toRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8, paddingLeft: 14 },
   amountBox: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 14 },
   amount: { color: sheet.ink, fontSize: 68, fontWeight: '800', letterSpacing: -2, maxWidth: '100%' },
   symbol: { color: sheet.ink2, fontSize: 32, fontWeight: '700', letterSpacing: 0 },
