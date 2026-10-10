@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Keyboard, Pressable, StyleSheet, View } from 'react-native';
 import { isReduceMotion, PressableScale } from '../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AccountButton, AccountPicker, ROUTE_COMPACT_WIDTH, RouteButton } from '../src/components/AccountButton';
+import { AccountButton, AccountPicker, RouteButton } from '../src/components/AccountButton';
 import { Button } from '../src/components/Button';
 import { CategoryGrid } from '../src/components/CategoryGrid';
 import { DateButton } from '../src/components/DateButton';
@@ -23,7 +23,7 @@ import { Text } from '../src/components/Text';
 
 const EDIT_TITLES = { expense: 'Edit expense', income: 'Edit income', transfer: 'Edit transfer' };
 const SAVE_LABELS = { expense: 'Add expense', income: 'Add income', transfer: 'Move money' };
-const NOTE_PLACEHOLDERS = { expense: 'Place or note', income: 'From who?', transfer: 'Note' };
+const NOTE_PLACEHOLDERS = { expense: 'Place or note', income: 'From who?' };
 
 // With ?id=5 the form edits that transaction; without it, it adds a new one, starting as ?type= (default expense).
 export default function Add() {
@@ -105,7 +105,7 @@ function AddForm({ accounts, categories, editing, startType }: {
     account_id: fromId,
     to_account_id: type === 'transfer' ? toId : null,
     category_id: type === 'transfer' ? null : categoryId,
-    note: note.trim(),
+    note: type === 'transfer' ? (editing?.type === 'transfer' ? editing.note : '') : note.trim(), // a move has no note; an old one is kept
     date,
   });
 
@@ -182,18 +182,19 @@ function AddForm({ accounts, categories, editing, startType }: {
       </Pressable>
 
       <View style={styles.footer}>
-        <NoteRow
-          left={type === 'transfer'
-            ? (t) => <RouteButton from={from} to={to} t={t} onPickFrom={() => setPicker('from')} onPickTo={() => setPicker('to')} onSwap={swapAccounts} />
-            : <AccountButton account={from} label={fromLabel} onPress={() => setPicker('from')} />}
-          leftOpenWidth={type === 'transfer' ? ROUTE_COMPACT_WIDTH : undefined}
-          value={note}
-          onChange={setNote}
-          placeholder={NOTE_PLACEHOLDERS[type]}
-          open={noteOpen}
-          onOpen={() => setNoteOpen(true)}
-          onClose={() => setNoteOpen(false)}
-        />
+        {type === 'transfer' ? (
+          <RouteButton from={from} to={to} onPickFrom={() => setPicker('from')} onPickTo={() => setPicker('to')} onSwap={swapAccounts} />
+        ) : (
+          <NoteRow
+            left={<AccountButton account={from} label={fromLabel} onPress={() => setPicker('from')} />}
+            value={note}
+            onChange={setNote}
+            placeholder={NOTE_PLACEHOLDERS[type]}
+            open={noteOpen}
+            onOpen={() => setNoteOpen(true)}
+            onClose={() => setNoteOpen(false)}
+          />
+        )}
         {type !== 'transfer' && (
           <CategoryGrid categories={kindCategories} selectedId={categoryId} onSelect={(id) => { setCategoryId(id); setError(''); }} />
         )}
