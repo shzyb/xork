@@ -2,15 +2,15 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ArrowDown, ChevronLeft, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, LayoutAnimation, Pressable, StyleSheet, View } from 'react-native';
-import { isReduceMotion, PressableScale } from '../src/components/PressableScale';
+import { Keyboard, KeyboardAvoidingView, Pressable, StyleSheet, View } from 'react-native';
+import { PressableScale } from '../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AccountButton, AccountPicker } from '../src/components/AccountButton';
 import { Button } from '../src/components/Button';
 import { CategoryGrid } from '../src/components/CategoryGrid';
 import { DateButton } from '../src/components/DateButton';
 import { Keypad } from '../src/components/Keypad';
-import { NoteButton } from '../src/components/NoteButton';
+import { NoteRow } from '../src/components/NoteRow';
 import { TypeSwitch } from '../src/components/TypeSwitch';
 import { addTransaction, checkCreditLimit, getAccountsWithBalance, getCategories, getTransaction, isOverLimit, updateTransaction } from '../src/db';
 import { today } from '../src/dates';
@@ -68,12 +68,6 @@ function AddForm({ accounts, categories, editing, startType }: {
     setType(next);
     setCategoryId(null);
     setError('');
-  }
-
-  // The note grows left over the account button while it is open, and the system keyboard takes the keypad's place.
-  function showNote(open: boolean) {
-    if (!isReduceMotion()) LayoutAnimation.configureNext(LayoutAnimation.create(200, 'easeInEaseOut', 'opacity'));
-    setNoteOpen(open);
   }
 
   function pressKey(key: string) {
@@ -183,17 +177,15 @@ function AddForm({ accounts, categories, editing, startType }: {
               onNew={() => router.push({ pathname: '/category/[id]', params: { id: 'new', kind: type } })}
             />
           )}
-          <View style={styles.topRow}>
-            {!noteOpen && <AccountButton account={from} label={fromLabel} onPress={() => setPicker('from')} />}
-            <NoteButton
-              value={note}
-              onChange={setNote}
-              placeholder={NOTE_PLACEHOLDERS[type]}
-              open={noteOpen}
-              onOpen={() => showNote(true)}
-              onClose={() => showNote(false)}
-            />
-          </View>
+          <NoteRow
+            left={<AccountButton account={from} label={fromLabel} onPress={() => setPicker('from')} />}
+            value={note}
+            onChange={setNote}
+            placeholder={NOTE_PLACEHOLDERS[type]}
+            open={noteOpen}
+            onOpen={() => setNoteOpen(true)}
+            onClose={() => setNoteOpen(false)}
+          />
           {type === 'transfer' && (
             <View style={styles.toRow}>
               <ArrowDown color={sheet.ink3} size={18} />
@@ -237,7 +229,6 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md },
   headerTitle: { color: sheet.ink, fontSize: 17, fontWeight: '600' },
   round: { width: 44, height: 44, borderRadius: 22, backgroundColor: sheet.card, alignItems: 'center', justifyContent: 'center' },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
   toRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10, paddingLeft: 14 },
   amountBox: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 14 },
   amount: { color: sheet.ink, fontSize: 68, fontWeight: '800', letterSpacing: -2, maxWidth: '100%' },
