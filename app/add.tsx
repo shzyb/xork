@@ -6,13 +6,11 @@ import { useRef, useState } from 'react';
 import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
 import { PressableScale } from '../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AccountButton, AccountDot } from '../src/components/AccountButton';
+import { AccountButton, AccountPicker } from '../src/components/AccountButton';
 import { Button } from '../src/components/Button';
 import { CategoryGrid } from '../src/components/CategoryGrid';
 import { DateButton } from '../src/components/DateButton';
 import { Keypad } from '../src/components/Keypad';
-import { PickerSheet } from '../src/components/PickerSheet';
-import type { PickerOption } from '../src/components/PickerSheet';
 import { TypeSwitch } from '../src/components/TypeSwitch';
 import { addTransaction, checkCreditLimit, getAccountsWithBalance, getCategories, getTransaction, isOverLimit, updateTransaction } from '../src/db';
 import { today } from '../src/dates';
@@ -150,26 +148,6 @@ function AddForm({ accounts, categories, editing, startType }: {
   const kindCategories = categories.filter((c) => c.kind === type);
   const fromLabel = type === 'income' ? 'Into' : 'From';
 
-  function accountPicker() {
-    if (picker === null) return null;
-    const options: PickerOption<number>[] = accounts.map((a) => ({
-      value: a.id,
-      label: a.name,
-      sub: formatMoney(a.balance_minor),
-      lead: <AccountDot account={a} size={40} />,
-    }));
-    const isFrom = picker === 'from';
-    return (
-      <PickerSheet
-        title={isFrom ? fromLabel : 'To'}
-        options={options}
-        current={isFrom ? fromId : toId}
-        onPick={(id) => { (isFrom ? setFromSel : setToSel)(id); setError(''); setPicker(null); }}
-        onClose={() => setPicker(null)}
-      />
-    );
-  }
-
   return (
     <SafeAreaView style={styles.screen}>
       <StatusBar style="light" />
@@ -202,17 +180,6 @@ function AddForm({ accounts, categories, editing, startType }: {
       {step === 1 ? (
         <>
           <View style={styles.body}>
-            <View style={styles.topRow}>
-              <AccountButton account={from} label={fromLabel} onPress={() => setPicker('from')} />
-              <DateButton value={date} onChange={setDate} />
-            </View>
-            {type === 'transfer' && (
-              <View style={styles.toRow}>
-                <ArrowDown color={sheet.ink3} size={18} />
-                <AccountButton account={to} label="To" onPress={() => setPicker('to')} />
-              </View>
-            )}
-
             <View style={styles.amountBox}>
               <Text
                 style={[styles.amount, !amount && { color: sheet.ink3 }]}
@@ -228,6 +195,16 @@ function AddForm({ accounts, categories, editing, startType }: {
           </View>
 
           <View style={styles.footer}>
+            <View style={styles.topRow}>
+              <AccountButton account={from} label={fromLabel} onPress={() => setPicker('from')} />
+              <DateButton value={date} onChange={setDate} />
+            </View>
+            {type === 'transfer' && (
+              <View style={styles.toRow}>
+                <ArrowDown color={sheet.ink3} size={18} />
+                <AccountButton account={to} label="To" onPress={() => setPicker('to')} />
+              </View>
+            )}
             <Keypad onKey={pressKey} decimals={decimals} />
             <Button
               title="Continue"
@@ -281,7 +258,15 @@ function AddForm({ accounts, categories, editing, startType }: {
           </View>
         </KeyboardAvoidingView>
       )}
-      {accountPicker()}
+      {picker !== null && (
+        <AccountPicker
+          title={picker === 'from' ? fromLabel : 'To'}
+          accounts={accounts}
+          current={picker === 'from' ? fromId : toId}
+          onPick={(id) => { (picker === 'from' ? setFromSel : setToSel)(id); setError(''); setPicker(null); }}
+          onClose={() => setPicker(null)}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -302,8 +287,8 @@ const styles = StyleSheet.create({
   round: { width: 44, height: 44, borderRadius: 22, backgroundColor: sheet.card, alignItems: 'center', justifyContent: 'center' },
   roundSpacer: { width: 44 },
   body: { flex: 1 },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 4 },
-  toRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8, paddingLeft: 14 },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
+  toRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10, paddingLeft: 14 },
   amountBox: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 14 },
   amount: { color: sheet.ink, fontSize: 68, fontWeight: '800', letterSpacing: -2, maxWidth: '100%' },
   symbol: { color: sheet.ink2, fontSize: 32, fontWeight: '700', letterSpacing: 0 },

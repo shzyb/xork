@@ -2,6 +2,7 @@ import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/d
 import { Calendar } from 'lucide-react-native';
 import { useState } from 'react';
 import { Modal, Platform, StyleSheet, View } from 'react-native';
+import { BUTTON_HEIGHT } from './AccountButton';
 import { PickerSheet } from './PickerSheet';
 import type { PickerOption } from './PickerSheet';
 import { PressableScale } from './PressableScale';
@@ -67,7 +68,7 @@ export function DateButton({ value, onChange }: { value: string; onChange: (date
 }
 
 const styles = StyleSheet.create({
-  button: { flexDirection: 'row', alignItems: 'center', gap: 8, height: 44, paddingHorizontal: 14, borderRadius: 22, backgroundColor: sheet.card },
+  button: { flexDirection: 'row', alignItems: 'center', gap: 8, height: BUTTON_HEIGHT, paddingHorizontal: 14, borderRadius: BUTTON_HEIGHT / 2, backgroundColor: sheet.card },
   label: { color: sheet.ink, fontSize: 14.5, fontWeight: '600' },
   dim: { flex: 1 },
 });
