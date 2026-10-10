@@ -8,13 +8,13 @@ import type { Category } from '../types';
 import { CategoryIcon } from './CategoryIcon';
 import { Text } from './Text';
 
-// Round category icons in one row that scrolls sideways. "New" stays pinned on the left.
+// Round category icons in one row that scrolls sideways. With `onNew`, a "New" button stays pinned on the left.
 // Cells are 1/4.5 of the width so the next one peeks in and shows that the list scrolls.
 export function CategoryGrid({ categories, selectedId, onSelect, onNew }: {
   categories: Category[];
   selectedId: number | null;
   onSelect: (id: number) => void;
-  onNew: () => void;
+  onNew?: () => void;
 }) {
   const cellWidth = (useWindowDimensions().width - spacing.xl * 2) / 4.5;
   const scroll = useRef<ScrollView>(null);
@@ -30,12 +30,14 @@ export function CategoryGrid({ categories, selectedId, onSelect, onNew }: {
 
   return (
     <View style={styles.row}>
-      <PressableScale accessibilityRole="button" accessibilityLabel="New category" onPress={onNew} style={[styles.cell, { width: cellWidth }]}>
-        <View style={styles.newIcon}>
-          <Plus color={sheet.ink2} size={22} />
-        </View>
-        <Text style={styles.text}>New</Text>
-      </PressableScale>
+      {onNew && (
+        <PressableScale accessibilityRole="button" accessibilityLabel="New category" onPress={onNew} style={[styles.cell, { width: cellWidth }]}>
+          <View style={styles.newIcon}>
+            <Plus color={sheet.ink2} size={22} />
+          </View>
+          <Text style={styles.text}>New</Text>
+        </PressableScale>
+      )}
       <FadeScrollView ref={scroll} horizontal showsHorizontalScrollIndicator={false} onContentSizeChange={jumpToSelected} keyboardShouldPersistTaps="handled">
         {categories.map((c) => (
           <PressableScale

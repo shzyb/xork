@@ -176,14 +176,6 @@ function AddForm({ accounts, categories, editing, startType }: {
       </Pressable>
 
       <View style={styles.footer}>
-        {type !== 'transfer' && (
-          <CategoryGrid
-            categories={kindCategories}
-            selectedId={categoryId}
-            onSelect={(id) => { setCategoryId(id); setError(''); }}
-            onNew={() => router.push({ pathname: '/category/[id]', params: { id: 'new', kind: type } })}
-          />
-        )}
         <NoteRow
           left={<AccountButton account={from} label={fromLabel} onPress={() => setPicker('from')} />}
           value={note}
@@ -198,6 +190,9 @@ function AddForm({ accounts, categories, editing, startType }: {
             <ArrowDown color={sheet.ink3} size={18} />
             <AccountButton account={to} label="To" onPress={() => setPicker('to')} />
           </View>
+        )}
+        {type !== 'transfer' && (
+          <CategoryGrid categories={kindCategories} selectedId={categoryId} onSelect={(id) => { setCategoryId(id); setError(''); }} />
         )}
         <Animated.View pointerEvents={noteOpen ? 'none' : 'auto'} style={{ opacity: keypadOpacity }}>
           <Keypad onKey={pressKey} decimals={decimals} />
