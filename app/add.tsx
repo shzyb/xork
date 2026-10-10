@@ -11,6 +11,7 @@ import { Button } from '../src/components/Button';
 import { CategoryGrid } from '../src/components/CategoryGrid';
 import { DateChips } from '../src/components/DateChips';
 import { Keypad } from '../src/components/Keypad';
+import { TypeSwitch } from '../src/components/TypeSwitch';
 import { addTransaction, checkCreditLimit, getAccountsWithBalance, getCategories, getTransaction, isOverLimit, updateTransaction } from '../src/db';
 import { today, yesterday } from '../src/dates';
 import { creditStatus } from '../src/insights';
@@ -20,7 +21,6 @@ import type { Account, Category, TransactionRow, TransactionType } from '../src/
 import { useData } from '../src/useData';
 import { Text, TextInput } from '../src/components/Text';
 
-const TITLES = { expense: 'Expense', income: 'Income', transfer: 'Move money' };
 const EDIT_TITLES = { expense: 'Edit expense', income: 'Edit income', transfer: 'Edit transfer' };
 const SAVE_LABELS = { expense: 'Add expense', income: 'Add income', transfer: 'Move money' };
 
@@ -45,7 +45,7 @@ function AddForm({ accounts, categories, editing, startType }: {
   const router = useRouter();
 
   const [step, setStep] = useState<1 | 2>(1);
-  const type = editing?.type ?? startType;
+  const [type, setType] = useState(editing?.type ?? startType);
   const [amount, setAmount] = useState(editing ? minorToTyped(editing.amount_minor) : '');
   const [fromSel, setFromSel] = useState<number | null>(editing?.account_id ?? null);
   const [toSel, setToSel] = useState<number | null>(editing?.to_account_id ?? null);
@@ -61,6 +61,13 @@ function AddForm({ accounts, categories, editing, startType }: {
   const to = accounts.find((a) => a.id === toId) ?? from;
   const minor = parseAmount(amount);
   const decimals = currentDecimals();
+
+  // The amount, account, note and date carry over. Expense and income have separate categories, so that is cleared.
+  function switchType(next: TransactionType) {
+    setType(next);
+    setCategoryId(null);
+    setError('');
+  }
 
   function pressKey(key: string) {
     setError('');
@@ -156,7 +163,11 @@ function AddForm({ accounts, categories, editing, startType }: {
             <ChevronLeft color={sheet.ink} size={20} />
           </RoundButton>
         )}
-        <Text style={styles.headerTitle}>{step === 1 ? (editing ? EDIT_TITLES[type] : TITLES[type]) : type === 'transfer' ? 'Details' : type === 'income' ? 'Where from?' : 'What for?'}</Text>
+        {step === 1 && !editing ? (
+          <TypeSwitch value={type} onChange={switchType} />
+        ) : (
+          <Text style={styles.headerTitle}>{step === 1 ? EDIT_TITLES[type] : type === 'transfer' ? 'Details' : type === 'income' ? 'Where from?' : 'What for?'}</Text>
+        )}
         {step === 2 ? (
           <RoundButton label="Close" onPress={() => router.back()}><X color={sheet.ink} size={18} /></RoundButton>
         ) : (
