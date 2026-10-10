@@ -8,7 +8,7 @@ import { Text } from './Text';
 
 type Account = { name: string; color: string; balance_minor: number };
 
-export const BUTTON_HEIGHT = 48; // the date button next to it uses the same height
+export const BUTTON_HEIGHT = 44; // the date and note buttons use the same height
 
 // The account's coloured initial, used in the button and in the picker rows.
 export function AccountDot({ account, size }: { account: Account; size: number }) {
@@ -47,7 +47,7 @@ export function AccountButton({ account, label, onPress }: { account: Account; l
 }
 
 const styles = StyleSheet.create({
-  button: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 10, height: BUTTON_HEIGHT, paddingLeft: 8, paddingRight: 16, borderRadius: BUTTON_HEIGHT / 2, backgroundColor: sheet.card },
+  button: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 10, height: BUTTON_HEIGHT, paddingLeft: 6, paddingRight: 16, borderRadius: BUTTON_HEIGHT / 2, backgroundColor: sheet.card },
   name: { flexShrink: 1, color: sheet.ink, fontSize: 15, fontWeight: '600' },
   dot: { alignItems: 'center', justifyContent: 'center' },
   initial: { color: '#FFFFFF', fontWeight: '700' },

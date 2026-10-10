@@ -14,6 +14,8 @@ AccessibilityInfo.addEventListener('reduceMotionChanged', (on) => {
   reduceMotion = on;
 });
 
+export const isReduceMotion = () => reduceMotion;
+
 // A Pressable that dips to 97% while pressed. With "reduce motion" on, it dims to 70% instead of moving.
 export function PressableScale({ style, onPressIn, onPressOut, ...rest }: Omit<PressableProps, 'style'> & { style?: StyleProp<ViewStyle> }) {
   const scale = useRef(new Animated.Value(1)).current;

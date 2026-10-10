@@ -10,11 +10,10 @@ import { Sheet } from './Sheet';
 import { SheetHeader } from './SheetHeader';
 import { fromDay, prettyDate, toDay, today, yesterday } from '../dates';
 import { sheet } from '../theme';
-import { Text } from './Text';
 
 type Choice = 'today' | 'yesterday' | 'pick';
 
-// A pill with the date ("Today", "Yesterday", "Fri, 3 Oct"). Tapping it opens Today, Yesterday and Pick a date.
+// A round calendar button. It lights up when the date is not today. Tapping it opens Today, Yesterday and Pick a date.
 export function DateButton({ value, onChange }: { value: string; onChange: (date: string) => void }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [iosPickerOpen, setIosPickerOpen] = useState(false);
@@ -39,9 +38,13 @@ export function DateButton({ value, onChange }: { value: string; onChange: (date
 
   return (
     <>
-      <PressableScale accessibilityRole="button" accessibilityLabel={`Date: ${prettyDate(value)}. Tap to change`} onPress={() => setSheetOpen(true)} style={styles.button}>
-        <Calendar color={sheet.ink2} size={17} />
-        <Text style={styles.label} numberOfLines={1}>{prettyDate(value)}</Text>
+      <PressableScale
+        accessibilityRole="button"
+        accessibilityLabel={`Date: ${prettyDate(value)}. Tap to change`}
+        onPress={() => setSheetOpen(true)}
+        style={[styles.button, { backgroundColor: current === 'today' ? sheet.card : sheet.card2 }]}
+      >
+        <Calendar color={current === 'today' ? sheet.ink2 : sheet.ink} size={19} />
       </PressableScale>
 
       {sheetOpen && <PickerSheet title="Date" options={options} current={current} onPick={choose} onClose={() => setSheetOpen(false)} color={sheet.card2} />}
@@ -68,7 +71,6 @@ export function DateButton({ value, onChange }: { value: string; onChange: (date
 }
 
 const styles = StyleSheet.create({
-  button: { flexDirection: 'row', alignItems: 'center', gap: 8, height: BUTTON_HEIGHT, paddingHorizontal: 14, borderRadius: BUTTON_HEIGHT / 2, backgroundColor: sheet.card },
-  label: { color: sheet.ink, fontSize: 14.5, fontWeight: '600' },
+  button: { width: BUTTON_HEIGHT, height: BUTTON_HEIGHT, borderRadius: BUTTON_HEIGHT / 2, alignItems: 'center', justifyContent: 'center' },
   dim: { flex: 1 },
 });

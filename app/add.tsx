@@ -2,8 +2,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ArrowDown, ChevronLeft, X } from 'lucide-react-native';
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
-import { PressableScale } from '../src/components/PressableScale';
+import { Keyboard, KeyboardAvoidingView, LayoutAnimation, Pressable, StyleSheet, View } from 'react-native';
+import { isReduceMotion, PressableScale } from '../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AccountButton, AccountPicker } from '../src/components/AccountButton';
 import { Button } from '../src/components/Button';
@@ -54,6 +54,7 @@ function AddForm({ accounts, categories, editing, startType }: {
   const [date, setDate] = useState(editing?.date ?? today());
   const [error, setError] = useState('');
   const [picker, setPicker] = useState<'from' | 'to' | null>(null);
+  const [noteOpen, setNoteOpen] = useState(false);
 
   const fromId = fromSel ?? accounts[0].id;
   const toId = toSel ?? accounts.find((a) => a.id !== fromId)?.id ?? fromId;
@@ -67,6 +68,12 @@ function AddForm({ accounts, categories, editing, startType }: {
     setType(next);
     setCategoryId(null);
     setError('');
+  }
+
+  // The note field takes over the footer while it is open. One layout animation moves everything together.
+  function showNote(open: boolean) {
+    if (!isReduceMotion()) LayoutAnimation.configureNext(LayoutAnimation.create(200, 'easeInEaseOut', 'opacity'));
+    setNoteOpen(open);
   }
 
   function pressKey(key: string) {
@@ -150,52 +157,58 @@ function AddForm({ accounts, categories, editing, startType }: {
           </RoundButton>
         )}
         {editing ? <Text style={styles.headerTitle}>{EDIT_TITLES[type]}</Text> : <TypeSwitch value={type} onChange={switchType} />}
-        <View style={styles.roundSpacer} />
+        <DateButton value={date} onChange={setDate} />
       </View>
 
-      <View style={styles.amountBox}>
-        <Text
-          style={[styles.amount, !amount && { color: sheet.ink3 }]}
-          numberOfLines={1}
-          adjustsFontSizeToFit
-        >
-          <Text style={styles.symbol}>{currentSymbol()} </Text>
-          {amount ? formatTyped(amount) : '0'}
-        </Text>
-        {underText !== '' && <Text style={[styles.under, underColor !== undefined && { color: underColor, fontWeight: '600' }]}>{underText}</Text>}
-        {error !== '' && <Text style={styles.error}>{error}</Text>}
-      </View>
+      <KeyboardAvoidingView style={styles.flex} behavior="padding">
+        <Pressable accessible={false} onPress={Keyboard.dismiss} disabled={!noteOpen} style={styles.amountBox}>
+          <Text
+            style={[styles.amount, !amount && { color: sheet.ink3 }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
+            <Text style={styles.symbol}>{currentSymbol()} </Text>
+            {amount ? formatTyped(amount) : '0'}
+          </Text>
+          {underText !== '' && <Text style={[styles.under, underColor !== undefined && { color: underColor, fontWeight: '600' }]}>{underText}</Text>}
+          {error !== '' && <Text style={styles.error}>{error}</Text>}
+        </Pressable>
 
-      <View style={styles.footer}>
-        {type !== 'transfer' && (
-          <CategoryGrid
-            categories={kindCategories}
-            selectedId={categoryId}
-            onSelect={(id) => { setCategoryId(id); setError(''); }}
-            onNew={() => router.push({ pathname: '/category/[id]', params: { id: 'new', kind: type } })}
+        <View style={styles.footer}>
+          {type !== 'transfer' && !noteOpen && (
+            <CategoryGrid
+              categories={kindCategories}
+              selectedId={categoryId}
+              onSelect={(id) => { setCategoryId(id); setError(''); }}
+              onNew={() => router.push({ pathname: '/category/[id]', params: { id: 'new', kind: type } })}
+            />
+          )}
+          <View style={styles.topRow}>
+            {!noteOpen && <AccountButton account={from} label={fromLabel} onPress={() => setPicker('from')} />}
+            <NoteButton
+              value={note}
+              onChange={setNote}
+              placeholder={NOTE_PLACEHOLDERS[type]}
+              open={noteOpen}
+              onOpen={() => showNote(true)}
+              onClose={() => showNote(false)}
+            />
+          </View>
+          {type === 'transfer' && !noteOpen && (
+            <View style={styles.toRow}>
+              <ArrowDown color={sheet.ink3} size={18} />
+              <AccountButton account={to} label="To" onPress={() => setPicker('to')} />
+            </View>
+          )}
+          {!noteOpen && <Keypad onKey={pressKey} decimals={decimals} />}
+          <Button
+            title={editing ? 'Save changes' : SAVE_LABELS[type]}
+            onPress={save}
+            background={minor > 0 ? sheet.btnBg : sheet.card2}
+            color={minor > 0 ? sheet.btnFg : sheet.ink3}
           />
-        )}
-        <View style={styles.topRow}>
-          <AccountButton account={from} label={fromLabel} onPress={() => setPicker('from')} />
-          <View style={styles.right}>
-            <DateButton value={date} onChange={setDate} />
-            <NoteButton value={note} onChange={setNote} placeholder={NOTE_PLACEHOLDERS[type]} />
-          </View>
         </View>
-        {type === 'transfer' && (
-          <View style={styles.toRow}>
-            <ArrowDown color={sheet.ink3} size={18} />
-            <AccountButton account={to} label="To" onPress={() => setPicker('to')} />
-          </View>
-        )}
-        <Keypad onKey={pressKey} decimals={decimals} />
-        <Button
-          title={editing ? 'Save changes' : SAVE_LABELS[type]}
-          onPress={save}
-          background={minor > 0 ? sheet.btnBg : sheet.card2}
-          color={minor > 0 ? sheet.btnFg : sheet.ink3}
-        />
-      </View>
+      </KeyboardAvoidingView>
 
       {picker !== null && (
         <AccountPicker
@@ -219,13 +232,12 @@ function RoundButton({ label, onPress, children }: { label: string; onPress: () 
 }
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
   screen: { flex: 1, backgroundColor: sheet.bg, paddingHorizontal: spacing.xl },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md },
   headerTitle: { color: sheet.ink, fontSize: 17, fontWeight: '600' },
   round: { width: 44, height: 44, borderRadius: 22, backgroundColor: sheet.card, alignItems: 'center', justifyContent: 'center' },
-  roundSpacer: { width: 44 },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
-  right: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   toRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10, paddingLeft: 14 },
   amountBox: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 14 },
   amount: { color: sheet.ink, fontSize: 68, fontWeight: '800', letterSpacing: -2, maxWidth: '100%' },
