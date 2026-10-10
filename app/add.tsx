@@ -1,9 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { FadeScrollView } from '../src/components/FadeScrollView';
 import { StatusBar } from 'expo-status-bar';
 import { ArrowDown, ChevronLeft, X } from 'lucide-react-native';
-import { useRef, useState } from 'react';
-import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 import { PressableScale } from '../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AccountButton, AccountPicker } from '../src/components/AccountButton';
@@ -11,6 +10,7 @@ import { Button } from '../src/components/Button';
 import { CategoryGrid } from '../src/components/CategoryGrid';
 import { DateButton } from '../src/components/DateButton';
 import { Keypad } from '../src/components/Keypad';
+import { NoteButton } from '../src/components/NoteButton';
 import { TypeSwitch } from '../src/components/TypeSwitch';
 import { addTransaction, checkCreditLimit, getAccountsWithBalance, getCategories, getTransaction, isOverLimit, updateTransaction } from '../src/db';
 import { today } from '../src/dates';
@@ -19,10 +19,11 @@ import { currentDecimals, currentSymbol, formatMoney, formatTyped, minorToTyped,
 import { sheet, spacing } from '../src/theme';
 import type { Account, Category, TransactionRow, TransactionType } from '../src/types';
 import { useData } from '../src/useData';
-import { Text, TextInput } from '../src/components/Text';
+import { Text } from '../src/components/Text';
 
 const EDIT_TITLES = { expense: 'Edit expense', income: 'Edit income', transfer: 'Edit transfer' };
 const SAVE_LABELS = { expense: 'Add expense', income: 'Add income', transfer: 'Move money' };
+const NOTE_PLACEHOLDERS = { expense: 'Place or note, e.g. Imtiaz Supermarket', income: 'From who or what, e.g. September salary', transfer: 'Note, e.g. Monthly saving' };
 
 // With ?id=5 the form edits that transaction; without it, it adds a new one, starting as ?type= (default expense).
 export default function Add() {
@@ -44,7 +45,6 @@ function AddForm({ accounts, categories, editing, startType }: {
 }) {
   const router = useRouter();
 
-  const [step, setStep] = useState<1 | 2>(1);
   const [type, setType] = useState(editing?.type ?? startType);
   const [amount, setAmount] = useState(editing ? minorToTyped(editing.amount_minor) : '');
   const [fromSel, setFromSel] = useState<number | null>(editing?.account_id ?? null);
@@ -54,7 +54,6 @@ function AddForm({ accounts, categories, editing, startType }: {
   const [date, setDate] = useState(editing?.date ?? today());
   const [error, setError] = useState('');
   const [picker, setPicker] = useState<'from' | 'to' | null>(null);
-  const scroll = useRef<ScrollView>(null);
 
   const fromId = fromSel ?? accounts[0].id;
   const toId = toSel ?? accounts.find((a) => a.id !== fromId)?.id ?? fromId;
@@ -95,25 +94,16 @@ function AddForm({ accounts, categories, editing, startType }: {
     date,
   });
 
-  // A credit card at its limit refuses new spending. Checked on Continue so nobody fills in details first.
-  async function goToDetails() {
+  async function save() {
     if (minor <= 0) return setError('Enter an amount above zero.');
     if (type === 'transfer') {
       if (accounts.length < 2) return setError('Add a second account to move money.');
       if (fromId === toId) return setError('Choose two different accounts.');
+    } else if (categoryId === null) {
+      return setError('Pick a category.');
     }
     try {
       await checkCreditLimit(draft(), editing?.id);
-    } catch (e) {
-      return setError(isOverLimit(e) ? e.message : 'Something went wrong. Try again.');
-    }
-    setError('');
-    setStep(2);
-  }
-
-  async function save() {
-    if (type !== 'transfer' && categoryId === null) return setError('Pick a category.');
-    try {
       if (editing) await updateTransaction(editing.id, draft());
       else await addTransaction(draft());
       router.back();
@@ -152,112 +142,61 @@ function AddForm({ accounts, categories, editing, startType }: {
     <SafeAreaView style={styles.screen}>
       <StatusBar style="light" />
       <View style={styles.header}>
-        {step === 1 ? (
-          editing ? (
-            <RoundButton label="Close" onPress={() => router.back()}><X color={sheet.ink} size={18} /></RoundButton>
-          ) : (
-            <RoundButton label="Back to menu" onPress={() => router.replace('/add-menu')}>
-              <ChevronLeft color={sheet.ink} size={20} />
-            </RoundButton>
-          )
+        {editing ? (
+          <RoundButton label="Close" onPress={() => router.back()}><X color={sheet.ink} size={18} /></RoundButton>
         ) : (
-          <RoundButton label="Back" onPress={() => { setError(''); setStep(1); }}>
+          <RoundButton label="Back to menu" onPress={() => router.replace('/add-menu')}>
             <ChevronLeft color={sheet.ink} size={20} />
           </RoundButton>
         )}
-        {step === 1 && !editing ? (
-          <TypeSwitch value={type} onChange={switchType} />
-        ) : (
-          <Text style={styles.headerTitle}>{step === 1 ? EDIT_TITLES[type] : type === 'transfer' ? 'Details' : type === 'income' ? 'Where from?' : 'What for?'}</Text>
-        )}
-        {step === 2 ? (
-          <RoundButton label="Close" onPress={() => router.back()}><X color={sheet.ink} size={18} /></RoundButton>
-        ) : (
-          <View style={styles.roundSpacer} />
-        )}
+        {editing ? <Text style={styles.headerTitle}>{EDIT_TITLES[type]}</Text> : <TypeSwitch value={type} onChange={switchType} />}
+        <View style={styles.roundSpacer} />
       </View>
 
-      {step === 1 ? (
-        <>
-          <View style={styles.body}>
-            <View style={styles.amountBox}>
-              <Text
-                style={[styles.amount, !amount && { color: sheet.ink3 }]}
-                numberOfLines={1}
-                adjustsFontSizeToFit
-              >
-                <Text style={styles.symbol}>{currentSymbol()} </Text>
-                {amount ? formatTyped(amount) : '0'}
-              </Text>
-              {underText !== '' && <Text style={[styles.under, underColor !== undefined && { color: underColor, fontWeight: '600' }]}>{underText}</Text>}
-              {error !== '' && <Text style={styles.error}>{error}</Text>}
-            </View>
+      <View style={styles.amountBox}>
+        <Text
+          style={[styles.amount, !amount && { color: sheet.ink3 }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+        >
+          <Text style={styles.symbol}>{currentSymbol()} </Text>
+          {amount ? formatTyped(amount) : '0'}
+        </Text>
+        {underText !== '' && <Text style={[styles.under, underColor !== undefined && { color: underColor, fontWeight: '600' }]}>{underText}</Text>}
+        {error !== '' && <Text style={styles.error}>{error}</Text>}
+      </View>
+
+      <View style={styles.footer}>
+        {type !== 'transfer' && (
+          <CategoryGrid
+            categories={kindCategories}
+            selectedId={categoryId}
+            onSelect={(id) => { setCategoryId(id); setError(''); }}
+            onNew={() => router.push({ pathname: '/category/[id]', params: { id: 'new', kind: type } })}
+          />
+        )}
+        <View style={styles.topRow}>
+          <AccountButton account={from} label={fromLabel} onPress={() => setPicker('from')} />
+          <View style={styles.right}>
+            <DateButton value={date} onChange={setDate} />
+            <NoteButton value={note} onChange={setNote} placeholder={NOTE_PLACEHOLDERS[type]} />
           </View>
-
-          <View style={styles.footer}>
-            <View style={styles.topRow}>
-              <AccountButton account={from} label={fromLabel} onPress={() => setPicker('from')} />
-              <DateButton value={date} onChange={setDate} />
-            </View>
-            {type === 'transfer' && (
-              <View style={styles.toRow}>
-                <ArrowDown color={sheet.ink3} size={18} />
-                <AccountButton account={to} label="To" onPress={() => setPicker('to')} />
-              </View>
-            )}
-            <Keypad onKey={pressKey} decimals={decimals} />
-            <Button
-              title="Continue"
-              onPress={goToDetails}
-              background={minor > 0 ? sheet.btnBg : sheet.card2}
-              color={minor > 0 ? sheet.btnFg : sheet.ink3}
-            />
+        </View>
+        {type === 'transfer' && (
+          <View style={styles.toRow}>
+            <ArrowDown color={sheet.ink3} size={18} />
+            <AccountButton account={to} label="To" onPress={() => setPicker('to')} />
           </View>
-        </>
-      ) : (
-        <KeyboardAvoidingView style={styles.flex} behavior="padding">
-          <FadeScrollView ref={scroll} style={styles.flex} contentContainerStyle={styles.details} keyboardShouldPersistTaps="handled">
-            <PressableScale accessibilityRole="button" accessibilityLabel="Change amount" onPress={() => setStep(1)} style={styles.hero}>
-              <Text style={styles.heroAmount}>
-                {type === 'income' ? '+ ' : ''}{formatMoney(minor)}
-              </Text>
-              <Text style={styles.under}>
-                {from.name}{type === 'transfer' ? ` → ${to.name}` : ''} · tap to change
-              </Text>
-            </PressableScale>
+        )}
+        <Keypad onKey={pressKey} decimals={decimals} />
+        <Button
+          title={editing ? 'Save changes' : SAVE_LABELS[type]}
+          onPress={save}
+          background={minor > 0 ? sheet.btnBg : sheet.card2}
+          color={minor > 0 ? sheet.btnFg : sheet.ink3}
+        />
+      </View>
 
-            {type !== 'transfer' && (
-              <>
-                <Text style={styles.label}>Category</Text>
-                <CategoryGrid
-                  categories={kindCategories}
-                  selectedId={categoryId}
-                  onSelect={(id) => { setCategoryId(id); setError(''); }}
-                  onNew={() => router.push({ pathname: '/category/[id]', params: { id: 'new', kind: type } })}
-                />
-              </>
-            )}
-
-            <Text style={styles.label}>
-              {type === 'expense' ? 'Place or note' : type === 'income' ? 'From who or what' : 'Note'}
-            </Text>
-            <TextInput
-              value={note}
-              onChangeText={setNote}
-              onFocus={() => setTimeout(() => scroll.current?.scrollToEnd(), 250)}
-              maxLength={60}
-              placeholder={type === 'expense' ? 'e.g. Imtiaz Supermarket' : type === 'income' ? 'e.g. September salary' : 'e.g. Monthly saving'}
-              placeholderTextColor={sheet.ink3}
-              style={styles.input}
-            />
-
-            {error !== '' && <Text style={styles.error}>{error}</Text>}
-          </FadeScrollView>
-          <View style={styles.footer}>
-            <Button title={editing ? 'Save changes' : SAVE_LABELS[type]} onPress={save} background={sheet.btnBg} color={sheet.btnFg} />
-          </View>
-        </KeyboardAvoidingView>
-      )}
       {picker !== null && (
         <AccountPicker
           title={picker === 'from' ? fromLabel : 'To'}
@@ -281,13 +220,12 @@ function RoundButton({ label, onPress, children }: { label: string; onPress: () 
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: sheet.bg, paddingHorizontal: spacing.xl },
-  flex: { flex: 1 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md },
   headerTitle: { color: sheet.ink, fontSize: 17, fontWeight: '600' },
   round: { width: 44, height: 44, borderRadius: 22, backgroundColor: sheet.card, alignItems: 'center', justifyContent: 'center' },
   roundSpacer: { width: 44 },
-  body: { flex: 1 },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
+  right: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   toRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 10, paddingLeft: 14 },
   amountBox: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 14 },
   amount: { color: sheet.ink, fontSize: 68, fontWeight: '800', letterSpacing: -2, maxWidth: '100%' },
@@ -295,9 +233,4 @@ const styles = StyleSheet.create({
   under: { color: sheet.ink2, fontSize: 15, marginTop: 10, textAlign: 'center' },
   error: { color: sheet.neg, fontSize: 14.5, fontWeight: '600', marginTop: 10, textAlign: 'center' },
   footer: { paddingTop: 6, paddingBottom: spacing.lg },
-  details: { paddingBottom: spacing.lg },
-  hero: { alignItems: 'center', paddingVertical: 4 },
-  heroAmount: { color: sheet.ink, fontSize: 40, fontWeight: '800', letterSpacing: -1 },
-  label: { color: sheet.ink2, fontSize: 14, fontWeight: '600', marginTop: 20, marginBottom: 8 },
-  input: { height: 50, borderRadius: 16, backgroundColor: sheet.card, paddingHorizontal: 14, color: sheet.ink, fontSize: 16 },
 });

@@ -36,24 +36,19 @@ export function AccountPicker({ title, accounts, current, onPick, onClose }: {
   return <PickerSheet title={title} options={options} current={current} onPick={onPick} onClose={onClose} color={sheet.card2} />;
 }
 
-// A pill showing an account's name and balance. Tapping it opens the account picker.
+// A pill showing an account's name. Tapping it opens the account picker.
 export function AccountButton({ account, label, onPress }: { account: Account; label: string; onPress: () => void }) {
   return (
     <PressableScale accessibilityRole="button" accessibilityLabel={`${label}: ${account.name}. Tap to change`} onPress={onPress} style={styles.button}>
       <AccountDot account={account} size={32} />
-      <View style={styles.text}>
-        <Text style={styles.name} numberOfLines={1}>{account.name}</Text>
-        <Text style={styles.balance} numberOfLines={1}>{formatMoney(account.balance_minor)}</Text>
-      </View>
+      <Text style={styles.name} numberOfLines={1}>{account.name}</Text>
     </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
   button: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 10, height: BUTTON_HEIGHT, paddingLeft: 8, paddingRight: 16, borderRadius: BUTTON_HEIGHT / 2, backgroundColor: sheet.card },
-  text: { flexShrink: 1 },
-  name: { color: sheet.ink, fontSize: 15, fontWeight: '600' },
-  balance: { color: sheet.ink2, fontSize: 12.5 },
+  name: { flexShrink: 1, color: sheet.ink, fontSize: 15, fontWeight: '600' },
   dot: { alignItems: 'center', justifyContent: 'center' },
   initial: { color: '#FFFFFF', fontWeight: '700' },
 });
