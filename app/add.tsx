@@ -23,7 +23,7 @@ import { Text } from '../src/components/Text';
 
 const EDIT_TITLES = { expense: 'Edit expense', income: 'Edit income', transfer: 'Edit transfer' };
 const SAVE_LABELS = { expense: 'Add expense', income: 'Add income', transfer: 'Move money' };
-const NOTE_PLACEHOLDERS = { expense: 'Place or note, e.g. Imtiaz Supermarket', income: 'From who or what, e.g. September salary', transfer: 'Note, e.g. Monthly saving' };
+const NOTE_PLACEHOLDERS = { expense: 'Place or note', income: 'From who?', transfer: 'Note' };
 
 // With ?id=5 the form edits that transaction; without it, it adds a new one, starting as ?type= (default expense).
 export default function Add() {
@@ -70,7 +70,7 @@ function AddForm({ accounts, categories, editing, startType }: {
     setError('');
   }
 
-  // The note field takes over the footer while it is open. One layout animation moves everything together.
+  // The note grows left over the account button while it is open, and the system keyboard takes the keypad's place.
   function showNote(open: boolean) {
     if (!isReduceMotion()) LayoutAnimation.configureNext(LayoutAnimation.create(200, 'easeInEaseOut', 'opacity'));
     setNoteOpen(open);
@@ -175,7 +175,7 @@ function AddForm({ accounts, categories, editing, startType }: {
         </Pressable>
 
         <View style={styles.footer}>
-          {type !== 'transfer' && !noteOpen && (
+          {type !== 'transfer' && (
             <CategoryGrid
               categories={kindCategories}
               selectedId={categoryId}
@@ -194,7 +194,7 @@ function AddForm({ accounts, categories, editing, startType }: {
               onClose={() => showNote(false)}
             />
           </View>
-          {type === 'transfer' && !noteOpen && (
+          {type === 'transfer' && (
             <View style={styles.toRow}>
               <ArrowDown color={sheet.ink3} size={18} />
               <AccountButton account={to} label="To" onPress={() => setPicker('to')} />

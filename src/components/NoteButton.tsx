@@ -6,7 +6,9 @@ import { PressableScale } from './PressableScale';
 import { Text, TextInput } from './Text';
 import { sheet } from '../theme';
 
-// A "Note" pill that shows the note once there is one. While `open` it fills the row as a text field;
+const NOTE_MAX = 20; // a word or two, like "Imtiaz" or "Rent", not a sentence
+
+// A "Note" pill that shows the note once there is one. While `open` it grows to the left into a text field in place;
 // the screen decides when to open it (and animates the change), and it asks to close on Done, blur or the keyboard going away.
 export function NoteButton({ value, onChange, placeholder, open, onOpen, onClose }: {
   value: string;
@@ -31,7 +33,7 @@ export function NoteButton({ value, onChange, placeholder, open, onOpen, onClose
           onChangeText={onChange}
           onBlur={onClose}
           returnKeyType="done"
-          maxLength={60}
+          maxLength={NOTE_MAX}
           placeholder={placeholder}
           placeholderTextColor={sheet.ink3}
           style={styles.input}
