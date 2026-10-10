@@ -47,7 +47,7 @@ export function AccountButton({ account, label, onPress }: { account: Account; l
   );
 }
 
-// "Cash → Savings" for Move money: one full-width pill. Each account opens its own picker; the arrow swaps them.
+// "Cash → Savings" for Move money: one pill as wide as its content (names are cut with an ellipsis if they do not fit). Each account opens its own picker; the arrow swaps them.
 export function RouteButton({ from, to, onPickFrom, onPickTo, onSwap }: {
   from: Account;
   to: Account;
@@ -74,8 +74,8 @@ export function RouteButton({ from, to, onPickFrom, onPickTo, onSwap }: {
 }
 
 const styles = StyleSheet.create({
-  route: { flexDirection: 'row', alignItems: 'center', height: BUTTON_HEIGHT, paddingHorizontal: 6, borderRadius: BUTTON_HEIGHT / 2, backgroundColor: sheet.card, marginBottom: 10 },
-  half: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, height: BUTTON_HEIGHT },
+  route: { alignSelf: 'flex-start', maxWidth: '100%', flexDirection: 'row', alignItems: 'center', height: BUTTON_HEIGHT, paddingLeft: 6, paddingRight: 16, borderRadius: BUTTON_HEIGHT / 2, backgroundColor: sheet.card, marginBottom: 10 },
+  half: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 10, height: BUTTON_HEIGHT },
   arrow: { width: 30, height: BUTTON_HEIGHT, alignItems: 'center', justifyContent: 'center' },
   button: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 10, height: BUTTON_HEIGHT, paddingLeft: 6, paddingRight: 16, borderRadius: BUTTON_HEIGHT / 2, backgroundColor: sheet.card },
   name: { flexShrink: 1, color: sheet.ink, fontSize: 15, fontWeight: '600' },
