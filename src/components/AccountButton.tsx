@@ -33,7 +33,7 @@ export function AccountPicker({ title, accounts, current, onPick, onClose }: {
     sub: formatMoney(a.balance_minor),
     lead: <AccountDot account={a} size={40} />,
   }));
-  return <PickerSheet title={title} options={options} current={current} onPick={onPick} onClose={onClose} />;
+  return <PickerSheet title={title} options={options} current={current} onPick={onPick} onClose={onClose} color={sheet.card2} />;
 }
 
 // A pill showing an account's name and balance. Tapping it opens the account picker.

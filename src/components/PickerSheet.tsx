@@ -11,17 +11,18 @@ import { Text } from './Text';
 export type PickerOption<T> = { value: T; label: string; sub?: string; lead?: ReactNode };
 
 // A small "choose one" sheet over the current screen (for filters). Mount it to open it, unmount it to close it.
-export function PickerSheet<T extends string | number | null>({ title, options, current, onPick, onClose }: {
+export function PickerSheet<T extends string | number | null>({ title, options, current, onPick, onClose, color }: {
   title: string;
   options: PickerOption<T>[];
   current: T;
   onPick: (value: T) => void;
   onClose: () => void;
+  color?: string; // tray colour, when it opens over the black add page
 }) {
   return (
     <Modal transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
       <View style={styles.dim}>
-        <Sheet onClose={onClose}>
+        <Sheet onClose={onClose} color={color}>
           <SheetHeader title={title} onClose={onClose} />
           <FadeScrollView style={styles.list}>
             {options.map((o) => (

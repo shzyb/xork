@@ -11,7 +11,8 @@ const EXIT_MS = 200;
 // A floating black tray over a dimmed screen. It is only as tall as its content (scroll inside it if it is long).
 // The tray slides up and the dim fades in; going back (close button, backdrop, Android back) plays that in reverse.
 // A route that uses it is a transparent modal with no router animation, so this component owns all the motion.
-export function Sheet({ onClose, children }: { onClose: () => void; children: React.ReactNode }) {
+// `color` replaces the usual tray colour, for a tray that opens over the black add page.
+export function Sheet({ onClose, color, children }: { onClose: () => void; color?: string; children: React.ReactNode }) {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const navigation = useNavigation();
@@ -66,7 +67,7 @@ export function Sheet({ onClose, children }: { onClose: () => void; children: Re
         }}
         style={[
           styles.tray,
-          { backgroundColor: trayColor },
+          { backgroundColor: color ?? trayColor },
           { maxHeight: height - insets.top - 24, marginBottom: 8 + insets.bottom, transform: [{ translateY: slide }] },
         ]}
       >

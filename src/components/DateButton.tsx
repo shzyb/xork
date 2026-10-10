@@ -44,12 +44,12 @@ export function DateButton({ value, onChange }: { value: string; onChange: (date
         <Text style={styles.label} numberOfLines={1}>{prettyDate(value)}</Text>
       </PressableScale>
 
-      {sheetOpen && <PickerSheet title="Date" options={options} current={current} onPick={choose} onClose={() => setSheetOpen(false)} />}
+      {sheetOpen && <PickerSheet title="Date" options={options} current={current} onPick={choose} onClose={() => setSheetOpen(false)} color={sheet.card2} />}
 
       {iosPickerOpen && (
         <Modal transparent animationType="fade" statusBarTranslucent onRequestClose={() => setIosPickerOpen(false)}>
           <View style={styles.dim}>
-            <Sheet onClose={() => setIosPickerOpen(false)}>
+            <Sheet onClose={() => setIosPickerOpen(false)} color={sheet.card2}>
               <SheetHeader title="Pick a date" onClose={() => setIosPickerOpen(false)} />
               <DateTimePicker
                 value={fromDay(value)}
