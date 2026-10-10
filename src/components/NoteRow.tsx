@@ -9,12 +9,13 @@ import { sheet } from '../theme';
 
 const NOTE_MAX = 20; // a word or two, like "Imtiaz" or "Rent", not a sentence
 const PILL_MAX = 190;
+const GAP = 10;
 const MS = 240;
 
 // The row above the keypad: the account button on the left and the Note pill on the right.
-// Tapping the pill morphs it: it grows to the left over the whole row (the account button fades out) and
-// becomes a text field, then shrinks back into the pill. The screen owns `open`; the row asks to close
-// on Done, blur or the keyboard going away.
+// Tapping the pill morphs it: it grows to the left, up to the edge of the account button, and becomes a
+// text field, then shrinks back into the pill. The screen owns `open`; the row asks to close on Done,
+// blur or the keyboard going away.
 export function NoteRow({ left, value, onChange, placeholder, open, onOpen, onClose }: {
   left: ReactNode;
   value: string;
@@ -26,6 +27,7 @@ export function NoteRow({ left, value, onChange, placeholder, open, onOpen, onCl
 }) {
   const t = useRef(new Animated.Value(0)).current;
   const [rowWidth, setRowWidth] = useState(0);
+  const [leftWidth, setLeftWidth] = useState(0);
   const [pillWidth, setPillWidth] = useState(0);
 
   useEffect(() => {
@@ -49,16 +51,16 @@ export function NoteRow({ left, value, onChange, placeholder, open, onOpen, onCl
 
   return (
     <View style={styles.row} onLayout={(e) => setRowWidth(e.nativeEvent.layout.width)}>
-      <Animated.View pointerEvents={open ? 'none' : 'auto'} style={[styles.left, { opacity: fade(1, 0) }]}>{left}</Animated.View>
+      <View style={styles.left} onLayout={(e) => setLeftWidth(e.nativeEvent.layout.width)}>{left}</View>
 
       {/* Reserves the pill's space in the row; the visible pill below is drawn over it and can grow past it. */}
       <View style={styles.slot} onLayout={(e) => setPillWidth(e.nativeEvent.layout.width)}>{pillContent}</View>
 
-      {rowWidth > 0 && pillWidth > 0 && (
+      {rowWidth > 0 && leftWidth > 0 && pillWidth > 0 && (
         <Animated.View
           style={[
             styles.morph,
-            { width: fade(pillWidth, rowWidth), backgroundColor: fade(0, 1).interpolate({ inputRange: [0, 1], outputRange: [value ? sheet.card2 : sheet.card, sheet.card] }) },
+            { width: fade(pillWidth, rowWidth - leftWidth - GAP), backgroundColor: fade(0, 1).interpolate({ inputRange: [0, 1], outputRange: [value ? sheet.card2 : sheet.card, sheet.card] }) },
           ]}
         >
           <Animated.View pointerEvents={open ? 'none' : 'auto'} style={[styles.fill, { opacity: fade(1, 0) }]}>
@@ -93,7 +95,7 @@ export function NoteRow({ left, value, onChange, placeholder, open, onOpen, onCl
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10 },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: GAP, marginBottom: 10 },
   left: { flexShrink: 1 },
   slot: { flexDirection: 'row', alignItems: 'center', gap: 8, height: BUTTON_HEIGHT, maxWidth: PILL_MAX, paddingHorizontal: 14, opacity: 0 },
   morph: { position: 'absolute', right: 0, top: 0, height: BUTTON_HEIGHT, borderRadius: BUTTON_HEIGHT / 2, overflow: 'hidden' },
