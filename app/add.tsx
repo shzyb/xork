@@ -1,9 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { ArrowDown, ChevronLeft, X } from 'lucide-react-native';
-import { useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, Pressable, StyleSheet, View } from 'react-native';
-import { PressableScale } from '../src/components/PressableScale';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Keyboard, Pressable, StyleSheet, View } from 'react-native';
+import { isReduceMotion, PressableScale } from '../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AccountButton, AccountPicker } from '../src/components/AccountButton';
 import { Button } from '../src/components/Button';
@@ -55,6 +55,14 @@ function AddForm({ accounts, categories, editing, startType }: {
   const [error, setError] = useState('');
   const [picker, setPicker] = useState<'from' | 'to' | null>(null);
   const [noteOpen, setNoteOpen] = useState(false);
+  const keypadOpacity = useRef(new Animated.Value(1)).current;
+
+  // The keyboard slides over the keypad while the note is open, so the keypad just fades; nothing moves.
+  useEffect(() => {
+    const to = noteOpen ? 0 : 1;
+    if (isReduceMotion()) keypadOpacity.setValue(to);
+    else Animated.timing(keypadOpacity, { toValue: to, duration: noteOpen ? 150 : 200, easing: Easing.bezier(0.23, 1, 0.32, 1), useNativeDriver: true }).start();
+  }, [noteOpen, keypadOpacity]);
 
   const fromId = fromSel ?? accounts[0].id;
   const toId = toSel ?? accounts.find((a) => a.id !== fromId)?.id ?? fromId;
@@ -154,53 +162,53 @@ function AddForm({ accounts, categories, editing, startType }: {
         <DateButton value={date} onChange={setDate} />
       </View>
 
-      <KeyboardAvoidingView style={styles.flex} behavior="padding">
-        <Pressable accessible={false} onPress={Keyboard.dismiss} disabled={!noteOpen} style={styles.amountBox}>
-          <Text
-            style={[styles.amount, !amount && { color: sheet.ink3 }]}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-          >
-            <Text style={styles.symbol}>{currentSymbol()} </Text>
-            {amount ? formatTyped(amount) : '0'}
-          </Text>
-          {underText !== '' && <Text style={[styles.under, underColor !== undefined && { color: underColor, fontWeight: '600' }]}>{underText}</Text>}
-          {error !== '' && <Text style={styles.error}>{error}</Text>}
-        </Pressable>
+      <Pressable accessible={false} onPress={Keyboard.dismiss} disabled={!noteOpen} style={styles.amountBox}>
+        <Text
+          style={[styles.amount, !amount && { color: sheet.ink3 }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+        >
+          <Text style={styles.symbol}>{currentSymbol()} </Text>
+          {amount ? formatTyped(amount) : '0'}
+        </Text>
+        {underText !== '' && <Text style={[styles.under, underColor !== undefined && { color: underColor, fontWeight: '600' }]}>{underText}</Text>}
+        {error !== '' && <Text style={styles.error}>{error}</Text>}
+      </Pressable>
 
-        <View style={styles.footer}>
-          {type !== 'transfer' && (
-            <CategoryGrid
-              categories={kindCategories}
-              selectedId={categoryId}
-              onSelect={(id) => { setCategoryId(id); setError(''); }}
-              onNew={() => router.push({ pathname: '/category/[id]', params: { id: 'new', kind: type } })}
-            />
-          )}
-          <NoteRow
-            left={<AccountButton account={from} label={fromLabel} onPress={() => setPicker('from')} />}
-            value={note}
-            onChange={setNote}
-            placeholder={NOTE_PLACEHOLDERS[type]}
-            open={noteOpen}
-            onOpen={() => setNoteOpen(true)}
-            onClose={() => setNoteOpen(false)}
+      <View style={styles.footer}>
+        {type !== 'transfer' && (
+          <CategoryGrid
+            categories={kindCategories}
+            selectedId={categoryId}
+            onSelect={(id) => { setCategoryId(id); setError(''); }}
+            onNew={() => router.push({ pathname: '/category/[id]', params: { id: 'new', kind: type } })}
           />
-          {type === 'transfer' && (
-            <View style={styles.toRow}>
-              <ArrowDown color={sheet.ink3} size={18} />
-              <AccountButton account={to} label="To" onPress={() => setPicker('to')} />
-            </View>
-          )}
-          {!noteOpen && <Keypad onKey={pressKey} decimals={decimals} />}
-          <Button
-            title={editing ? 'Save changes' : SAVE_LABELS[type]}
-            onPress={save}
-            background={minor > 0 ? sheet.btnBg : sheet.card2}
-            color={minor > 0 ? sheet.btnFg : sheet.ink3}
-          />
-        </View>
-      </KeyboardAvoidingView>
+        )}
+        <NoteRow
+          left={<AccountButton account={from} label={fromLabel} onPress={() => setPicker('from')} />}
+          value={note}
+          onChange={setNote}
+          placeholder={NOTE_PLACEHOLDERS[type]}
+          open={noteOpen}
+          onOpen={() => setNoteOpen(true)}
+          onClose={() => setNoteOpen(false)}
+        />
+        {type === 'transfer' && (
+          <View style={styles.toRow}>
+            <ArrowDown color={sheet.ink3} size={18} />
+            <AccountButton account={to} label="To" onPress={() => setPicker('to')} />
+          </View>
+        )}
+        <Animated.View pointerEvents={noteOpen ? 'none' : 'auto'} style={{ opacity: keypadOpacity }}>
+          <Keypad onKey={pressKey} decimals={decimals} />
+        </Animated.View>
+        <Button
+          title={editing ? 'Save changes' : SAVE_LABELS[type]}
+          onPress={save}
+          background={minor > 0 ? sheet.btnBg : sheet.card2}
+          color={minor > 0 ? sheet.btnFg : sheet.ink3}
+        />
+      </View>
 
       {picker !== null && (
         <AccountPicker
@@ -224,7 +232,6 @@ function RoundButton({ label, onPress, children }: { label: string; onPress: () 
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
   screen: { flex: 1, backgroundColor: sheet.bg, paddingHorizontal: spacing.xl },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md },
   headerTitle: { color: sheet.ink, fontSize: 17, fontWeight: '600' },

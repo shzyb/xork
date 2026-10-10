@@ -10,12 +10,17 @@ import { sheet } from '../theme';
 const NOTE_MAX = 20; // a word or two, like "Imtiaz" or "Rent", not a sentence
 const PILL_MAX = 190;
 const GAP = 10;
-const MS = 240;
+const OPEN_MS = 200;
+const CLOSE_MS = 150; // the system answering is quicker than the person asking
+const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
 
 // The row above the keypad: the account button on the left and the Note pill on the right.
 // Tapping the pill morphs it: it grows to the left, up to the edge of the account button, and becomes a
 // text field, then shrinks back into the pill. The screen owns `open`; the row asks to close on Done,
 // blur or the keyboard going away.
+//
+// Nothing else on the page moves while it opens: the keyboard slides over the keypad, and only if it would
+// cover this row does the row lift (a transform, on the native thread) to sit just above it.
 export function NoteRow({ left, value, onChange, placeholder, open, onOpen, onClose }: {
   left: ReactNode;
   value: string;
@@ -25,23 +30,47 @@ export function NoteRow({ left, value, onChange, placeholder, open, onOpen, onCl
   onOpen: () => void;
   onClose: () => void;
 }) {
-  const t = useRef(new Animated.Value(0)).current;
+  const t = useRef(new Animated.Value(0)).current; // 0 = pill, 1 = field. Drives the width and the two fades.
+  const lift = useRef(new Animated.Value(0)).current; // native: moves the row above the keyboard
+  const liftTo = useRef(0);
+  const row = useRef<View>(null);
   const [rowWidth, setRowWidth] = useState(0);
   const [leftWidth, setLeftWidth] = useState(0);
   const [pillWidth, setPillWidth] = useState(0);
 
+  function run(anim: Animated.Value, to: number, duration: number, native: boolean) {
+    if (isReduceMotion()) return anim.setValue(to);
+    Animated.timing(anim, { toValue: to, duration, easing: EASE_OUT, useNativeDriver: native }).start();
+  }
+
   useEffect(() => {
-    if (isReduceMotion()) t.setValue(open ? 1 : 0);
-    else Animated.timing(t, { toValue: open ? 1 : 0, duration: MS, easing: Easing.bezier(0.23, 1, 0.32, 1), useNativeDriver: false }).start();
-  }, [open, t]);
+    run(t, open ? 1 : 0, open ? OPEN_MS : CLOSE_MS, false);
+    if (!open) {
+      liftTo.current = 0;
+      run(lift, 0, CLOSE_MS, true);
+    }
+  }, [open, t, lift]);
 
   useEffect(() => {
     if (!open) return;
-    const sub = Keyboard.addListener('keyboardDidHide', onClose);
-    return () => sub.remove();
-  }, [open, onClose]);
+    const show = Keyboard.addListener('keyboardDidShow', (e) => {
+      row.current?.measureInWindow((_x, y, _w, h) => {
+        const resting = y + h - liftTo.current; // where the row's bottom edge sits with no lift
+        liftTo.current = -Math.max(0, resting - (e.endCoordinates.screenY - 8));
+        run(lift, liftTo.current, OPEN_MS, true);
+      });
+    });
+    const hide = Keyboard.addListener('keyboardDidHide', onClose);
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, [open, onClose, lift]);
 
-  const fade = (from: number, to: number) => t.interpolate({ inputRange: [0, 1], outputRange: [from, to] });
+  const to = (from: number, end: number) => t.interpolate({ inputRange: [0, 1], outputRange: [from, end] });
+  // The pill's contents leave before the field's arrive, so the two never show on top of each other.
+  const pillOpacity = t.interpolate({ inputRange: [0, 0.4], outputRange: [1, 0], extrapolate: 'clamp' });
+  const fieldOpacity = t.interpolate({ inputRange: [0.5, 1], outputRange: [0, 1], extrapolate: 'clamp' });
   const pillContent = (
     <>
       <StickyNote color={value ? sheet.ink : sheet.ink2} size={18} />
@@ -50,7 +79,11 @@ export function NoteRow({ left, value, onChange, placeholder, open, onOpen, onCl
   );
 
   return (
-    <View style={styles.row} onLayout={(e) => setRowWidth(e.nativeEvent.layout.width)}>
+    <Animated.View
+      ref={row}
+      style={[styles.row, { transform: [{ translateY: lift }] }]}
+      onLayout={(e) => setRowWidth(e.nativeEvent.layout.width)}
+    >
       <View style={styles.left} onLayout={(e) => setLeftWidth(e.nativeEvent.layout.width)}>{left}</View>
 
       {/* Reserves the pill's space in the row; the visible pill below is drawn over it and can grow past it. */}
@@ -60,10 +93,10 @@ export function NoteRow({ left, value, onChange, placeholder, open, onOpen, onCl
         <Animated.View
           style={[
             styles.morph,
-            { width: fade(pillWidth, rowWidth - leftWidth - GAP), backgroundColor: fade(0, 1).interpolate({ inputRange: [0, 1], outputRange: [value ? sheet.card2 : sheet.card, sheet.card] }) },
+            { width: to(pillWidth, rowWidth - leftWidth - GAP), backgroundColor: to(0, 1).interpolate({ inputRange: [0, 1], outputRange: [value ? sheet.card2 : sheet.card, sheet.card] }) },
           ]}
         >
-          <Animated.View pointerEvents={open ? 'none' : 'auto'} style={[styles.fill, { opacity: fade(1, 0) }]}>
+          <Animated.View pointerEvents={open ? 'none' : 'auto'} style={[styles.fill, { opacity: pillOpacity }]}>
             <PressableScale
               accessibilityRole="button"
               accessibilityLabel={value ? `Note: ${value}. Tap to edit` : 'Add a note'}
@@ -73,7 +106,7 @@ export function NoteRow({ left, value, onChange, placeholder, open, onOpen, onCl
               {pillContent}
             </PressableScale>
           </Animated.View>
-          <Animated.View pointerEvents={open ? 'auto' : 'none'} style={[styles.fill, { opacity: fade(0, 1) }]}>
+          <Animated.View pointerEvents={open ? 'auto' : 'none'} style={[styles.fill, { opacity: fieldOpacity }]}>
             {open && (
               <TextInput
                 autoFocus
@@ -90,7 +123,7 @@ export function NoteRow({ left, value, onChange, placeholder, open, onOpen, onCl
           </Animated.View>
         </Animated.View>
       )}
-    </View>
+    </Animated.View>
   );
 }
 
