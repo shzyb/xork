@@ -74,7 +74,7 @@ export function NoteRow({ left, value, onChange, placeholder, open, onOpen, onCl
   const pillContent = (
     <>
       <StickyNote color={sheet.ink2} size={18} />
-      <Text style={[styles.label, !value && { color: sheet.ink2 }]} numberOfLines={1}>{value || 'Note'}</Text>
+      <Text style={[styles.label, !value && { color: sheet.ink2 }]} numberOfLines={1}>{value || 'Add note'}</Text>
     </>
   );
 
