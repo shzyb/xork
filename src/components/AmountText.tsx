@@ -18,6 +18,7 @@ export function AmountText({ minor, style, plus }: { minor: number; style: Style
       value={value}
       prefix={prefix}
       locales="en-US"
+      mask={false} // the fade zone lets rolling digits spill into the text above and below
       format={{ minimumFractionDigits: decimals, maximumFractionDigits: decimals }}
       style={{ ...flat, fontFamily: familyFor(flat.fontWeight), fontWeight: 'normal' }}
     />
