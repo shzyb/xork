@@ -9,7 +9,6 @@ import { currentMonth, monthName, today } from '../../../src/dates';
 import { creditStatus, dueText } from '../../../src/insights';
 import { formatMoney } from '../../../src/money';
 import { sheet, spacing } from '../../../src/theme';
-import { ACCOUNT_TYPES } from '../../../src/types';
 import { useData } from '../../../src/useData';
 import { Text } from '../../../src/components/Text';
 
@@ -29,10 +28,8 @@ export default function AccountDetail() {
   const tint = status?.state === 'warn' ? sheet.warn : status && status.state !== 'ok' ? sheet.neg : sheet.ink2;
   const month = monthName(currentMonth());
 
-  const details: [string, string][] = [
-    ['Type', ACCOUNT_TYPES.find((t) => t.value === account.type)?.label ?? ''],
-    [credit ? 'Owed when you start tracking' : 'Starting balance', formatMoney(Math.abs(account.opening_minor))],
-  ];
+  const details: [string, string][] = [];
+  if (!credit) details.push(['Starting balance', formatMoney(account.opening_minor)]);
   if (credit && account.limit_minor) {
     details.push(['Credit limit', formatMoney(account.limit_minor)]);
     if (status) details.push(['Available', formatMoney(status.left)]);
@@ -41,8 +38,8 @@ export default function AccountDetail() {
     const due = dueText(account.due_day, today());
     details.push(['Payment', due.charAt(0).toUpperCase() + due.slice(1)]);
   }
-  details.push([`Expense in ${month}`, formatMoney(stats.spent_minor)]);
-  details.push([`Income in ${month}`, formatMoney(stats.in_minor)]);
+  details.push([credit ? `Spent in ${month}` : `Expense in ${month}`, formatMoney(stats.spent_minor)]);
+  if (!credit) details.push([`Income in ${month}`, formatMoney(stats.in_minor)]);
   details.push(['Transactions', String(stats.count)]);
 
   return (
