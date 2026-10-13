@@ -72,7 +72,7 @@ export default function Home() {
           <View ref={titleRef} collapsable={false}>
             <PressableScale accessibilityRole="button" accessibilityLabel={`Showing ${METRIC_LABELS[metric]}. Change`} onPress={openMenu} style={styles.metricButton}>
               <Text style={[styles.brand, { color: colors.ink }]}>{METRIC_LABELS[metric]}</Text>
-              <ChevronDown color={colors.ink} size={24} strokeWidth={2.4} />
+              <View style={styles.chevron}><ChevronDown color={colors.ink} size={24} strokeWidth={2.4} /></View>
             </PressableScale>
           </View>
           <View style={styles.actions}>
@@ -198,6 +198,7 @@ const styles = StyleSheet.create({
   },
   menuRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, minHeight: 44, paddingHorizontal: 16 },
   menuLabel: { fontSize: 17, fontWeight: '600' },
+  chevron: { marginTop: 4 }, // the big title's line box sits a little high, so centring alone leaves the icon looking too high
   metricButton: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44 },
   brand: { fontSize: fontSize.screen, fontWeight: '800' },
   actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
