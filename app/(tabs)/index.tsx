@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { CalendarClock, Check, ChevronDown, Eye, EyeOff, Plus, Receipt, Settings } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { PressableScale } from '../../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '../../src/components/EmptyState';
@@ -30,6 +30,7 @@ export default function Home() {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('recent');
   const [metric, setMetric] = useState<HomeMetric>('balance');
+  const screenRef = useRef<View>(null);
   const titleRef = useRef<View>(null);
   const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
   const openingSettings = useRef(false);
@@ -45,8 +46,11 @@ export default function Home() {
     setTimeout(() => { openingSettings.current = false; }, 700);
     router.push('/settings');
   }
-  // The dropdown opens just under the title, wherever it is on the screen.
-  const openMenu = () => titleRef.current?.measureInWindow((x, y, _w, h) => setMenuAt({ x, y: y + h }));
+  // The dropdown opens just under the title, wherever it is on the screen. Both are measured the same way, so the
+  // difference is right whatever the status bar does.
+  const openMenu = () => screenRef.current?.measureInWindow((screenX, screenY) => {
+    titleRef.current?.measureInWindow((x, y, _w, h) => setMenuAt({ x: x - screenX, y: y + h - screenY }));
+  });
   const mask = (minor: number) => (hidden ? '••••••' : formatMoney(minor));
   const accounts = useData(getAccountsWithBalance);
   const recent = useData(() => getTransactions(NO_FILTER, 8));
@@ -62,7 +66,7 @@ export default function Home() {
   const total = accounts?.reduce((sum, a) => sum + a.balance_minor, 0);
 
   return (
-    <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
+    <SafeAreaView ref={screenRef} style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
       <FadeScrollView contentContainerStyle={styles.content}>
         <View style={styles.topbar}>
           <View ref={titleRef} collapsable={false}>
@@ -162,9 +166,9 @@ export default function Home() {
         />
       </FadeScrollView>
       {menuAt && (
-        <Modal transparent animationType="fade" statusBarTranslucent onRequestClose={() => setMenuAt(null)}>
+        <>
           <Pressable accessibilityLabel="Close menu" style={StyleSheet.absoluteFill} onPress={() => setMenuAt(null)} />
-          <View style={[styles.menu, { left: menuAt.x, top: menuAt.y + 4, backgroundColor: colors.fill }]}>
+          <View style={[styles.menu, { left: menuAt.x, top: menuAt.y + 8, backgroundColor: colors.bg, borderColor: colors.line }]}>
             {METRICS.map((value) => (
               <PressableScale
                 key={value}
@@ -178,7 +182,7 @@ export default function Home() {
               </PressableScale>
             ))}
           </View>
-        </Modal>
+        </>
       )}
     </SafeAreaView>
   );
@@ -188,7 +192,10 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingHorizontal: spacing.xl, paddingBottom: fabClearance },
   topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md },
-  menu: { position: 'absolute', minWidth: 180, borderRadius: 16, paddingVertical: 4 },
+  menu: {
+    position: 'absolute', minWidth: 180, borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, paddingVertical: 4,
+    shadowColor: '#000', shadowOpacity: 0.16, shadowRadius: 18, shadowOffset: { width: 0, height: 8 }, elevation: 10,
+  },
   menuRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, minHeight: 44, paddingHorizontal: 16 },
   menuLabel: { fontSize: 17, fontWeight: '600' },
   metricButton: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44 },
