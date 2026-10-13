@@ -106,6 +106,9 @@ export type CategorySpend = {
 
 export type MonthTotals = { month: string; in_minor: number; out_minor: number };
 
+// What the top of Home shows.
+export type HomeMetric = 'balance' | 'expense' | 'income';
+
 export type DaySpend = { day: number; total_minor: number };
 
 // Home's net worth chart: the balance before this month, each day's income minus expenses, and the balance on this date last month.

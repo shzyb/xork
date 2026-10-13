@@ -1,12 +1,14 @@
 import { useRouter } from 'expo-router';
 import { FadeScrollView } from '../../src/components/FadeScrollView';
-import { CalendarClock, Eye, EyeOff, Plus, Receipt, Settings } from 'lucide-react-native';
+import { CalendarClock, ChevronDown, Eye, EyeOff, Plus, Receipt, Settings } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { PressableScale } from '../../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '../../src/components/EmptyState';
 import { HomeHero } from '../../src/components/HomeHero';
+import { PickerSheet } from '../../src/components/PickerSheet';
+import type { PickerOption } from '../../src/components/PickerSheet';
 import { RecurringRow } from '../../src/components/RecurringRow';
 import { SwipePages } from '../../src/components/SwipePages';
 import { TransactionList } from '../../src/components/TransactionList';
@@ -15,17 +17,22 @@ import { today, upcomingOccurrences } from '../../src/dates';
 import { formatMoney } from '../../src/money';
 import { fabClearance, fontSize, spacing, useColors } from '../../src/theme';
 import { ACCOUNT_TYPES } from '../../src/types';
+import type { HomeMetric } from '../../src/types';
 import { useData } from '../../src/useData';
 import { Text } from '../../src/components/Text';
 
 type Tab = 'recent' | 'accounts' | 'upcoming';
 const TABS: Tab[] = ['recent', 'accounts', 'upcoming'];
 const TAB_LABELS: Record<Tab, string> = { recent: 'Recent', accounts: 'Accounts', upcoming: 'Upcoming' };
+const METRIC_LABELS: Record<HomeMetric, string> = { balance: 'Balance', expense: 'Expense', income: 'Income' };
+const METRIC_OPTIONS: PickerOption<HomeMetric>[] = (Object.keys(METRIC_LABELS) as HomeMetric[]).map((value) => ({ value, label: METRIC_LABELS[value] }));
 
 export default function Home() {
   const colors = useColors();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('recent');
+  const [metric, setMetric] = useState<HomeMetric>('balance');
+  const [picking, setPicking] = useState(false);
   const openingSettings = useRef(false);
   const hideOnOpen = useData(() => getSetting('hide_balances'));
   const [shown, setShown] = useState<boolean | null>(null);
@@ -57,7 +64,10 @@ export default function Home() {
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
       <FadeScrollView contentContainerStyle={styles.content}>
         <View style={styles.topbar}>
-          <Text style={[styles.brand, { color: colors.ink }]}>Home</Text>
+          <PressableScale accessibilityRole="button" accessibilityLabel={`Showing ${METRIC_LABELS[metric]}. Change`} onPress={() => setPicking(true)} style={styles.metricButton}>
+            <Text style={[styles.brand, { color: colors.ink }]}>{METRIC_LABELS[metric]}</Text>
+            <ChevronDown color={colors.ink} size={24} strokeWidth={2.4} />
+          </PressableScale>
           <View style={styles.actions}>
             <PressableScale accessibilityRole="button" accessibilityLabel={hidden ? 'Show balances' : 'Hide balances'} onPress={() => setShown(hidden)} style={styles.iconButton}>
               {hidden ? <EyeOff color={colors.ink} size={22} /> : <Eye color={colors.ink} size={22} />}
@@ -68,7 +78,7 @@ export default function Home() {
           </View>
         </View>
 
-        {hideOnOpen !== undefined && <HomeHero total={total} hidden={hidden} />}
+        {hideOnOpen !== undefined && <HomeHero metric={metric} total={total} hidden={hidden} />}
 
         <View style={[styles.tabs, { borderBottomColor: colors.line }]}>
           {TABS.map((key) => (
@@ -148,6 +158,15 @@ export default function Home() {
           )}
         />
       </FadeScrollView>
+      {picking && (
+        <PickerSheet
+          title="Show"
+          options={METRIC_OPTIONS}
+          current={metric}
+          onPick={(value) => { setMetric(value); setPicking(false); }}
+          onClose={() => setPicking(false)}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -156,6 +175,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingHorizontal: spacing.xl, paddingBottom: fabClearance },
   topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md },
+  metricButton: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44 },
   brand: { fontSize: fontSize.screen, fontWeight: '800' },
   actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -10 },

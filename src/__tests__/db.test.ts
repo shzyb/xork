@@ -1,4 +1,4 @@
-import { getCategories, getNetWorthTrend, reorderCategories, getRecurringActivity, logRecurringNow, setRecurringActive, skipRecurring, deleteAllData, exportAll, NO_FILTER, replaceAllData, addAccount, addCategory, addRecurring, deleteRecurring, logDueRecurring, updateRecurring, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, setHideBalances, setTheme, updateAccount, updateCategory, updateTransaction } from '../db';
+import { getCategories, getIncomeTrend, getNetWorthTrend, reorderCategories, getRecurringActivity, logRecurringNow, setRecurringActive, skipRecurring, deleteAllData, exportAll, NO_FILTER, replaceAllData, addAccount, addCategory, addRecurring, deleteRecurring, logDueRecurring, updateRecurring, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, setHideBalances, setTheme, updateAccount, updateCategory, updateTransaction } from '../db';
 import { formatMoney } from '../money';
 
 function fakeDb(overrides: Partial<Db> = {}): Db {
@@ -770,5 +770,19 @@ describe('getNetWorthTrend', () => {
     const trend = await getNetWorthTrend();
 
     expect(trend).toEqual({ startMinor: 100000, daily, prevPointMinor: 90000 });
+  });
+});
+
+describe('getIncomeTrend', () => {
+  it('reads income for this month and last month', async () => {
+    const getAllAsync = jest.fn().mockResolvedValue([{ day: 1, total_minor: 500000 }]);
+    await openDb(fakeDb({ getAllAsync }));
+    getAllAsync.mockClear();
+
+    const trend = await getIncomeTrend();
+
+    expect(getAllAsync).toHaveBeenCalledTimes(2);
+    expect(getAllAsync.mock.calls.every((call) => call[1] === 'income')).toBe(true);
+    expect(trend.daily).toEqual([{ day: 1, total_minor: 500000 }]);
   });
 });
