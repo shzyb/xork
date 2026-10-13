@@ -130,7 +130,7 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, onSele
         {comparison ? comparison.text : 'Nothing to compare with last month yet'}
       </Text>
 
-      <RunningTotalChart daily={data.daily} prevDaily={data.prevDaily} height={170} hidden={false} month={month} prevMonth={prevMonth} elapsed={elapsed} width={contentWidth} />
+      <RunningTotalChart daily={data.daily} prevDaily={data.prevDaily} height={170} hidden={false} legend month={month} prevMonth={prevMonth} elapsed={elapsed} width={contentWidth} />
       <MonthChips selected={month} earliest={data.earliestMonth} onSelect={onSelectMonth} />
 
       {kept !== null && (

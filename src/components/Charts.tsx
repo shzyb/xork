@@ -18,7 +18,7 @@ const TIP = 130; // width of the touch tooltip
 
 // The whole month on the x-axis: last month dashed in full, this month solid up to today with a dot at the end.
 // Last month is the first line because the chart takes its day labels from it. Touch and drag to read a day.
-export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed, width, height, hidden }: {
+export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed, width, height, hidden, legend }: {
   daily: DaySpend[];
   prevDaily: DaySpend[];
   month: string;
@@ -27,6 +27,7 @@ export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed,
   width: number;
   height: number;
   hidden: boolean; // balances are hidden: no amounts on the axis or in the tooltip
+  legend: boolean; // names the two lines under the chart
 }) {
   const colors = useColors();
   const money = (minor: number) => (hidden ? '••••••' : formatMoney(minor));
@@ -112,10 +113,12 @@ export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed,
           </Text>
         ))}
       </View>
-      <View style={styles.legend}>
-        <LegendItem color={colors.ink} label={monthName(month)} />
-        <LegendItem color={colors.ink3} label={monthName(prevMonth)} dashed />
-      </View>
+      {legend && (
+        <View style={styles.legend}>
+          <LegendItem color={colors.ink} label={monthName(month)} />
+          <LegendItem color={colors.ink3} label={monthName(prevMonth)} dashed />
+        </View>
+      )}
     </View>
   );
 }

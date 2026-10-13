@@ -1,11 +1,11 @@
 import { StyleSheet, View } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
-import { daysInMonth, monthName } from '../dates';
+import { daysInMonth } from '../dates';
 import { netWorthSeries } from '../insights';
 import { compactMoney, formatMoney } from '../money';
 import { useColors } from '../theme';
 import type { NetWorthTrend } from '../types';
-import { LegendItem, niceTop } from './Charts';
+import { niceTop } from './Charts';
 import { Text } from './Text';
 
 const TIP = 110; // width of the touch tooltip
@@ -93,15 +93,11 @@ export function NetWorthChart({ trend, month, elapsed, width, height, hidden }: 
           </Text>
         ))}
       </View>
-      <View style={styles.legend}>
-        <LegendItem color={colors.ink} label={`Net worth in ${monthName(month)}`} />
-      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   chartBox: { marginTop: 16 },
-  legend: { flexDirection: 'row', alignItems: 'center', marginTop: 8 },
   tooltip: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, gap: 1 },
 });

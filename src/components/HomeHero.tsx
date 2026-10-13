@@ -63,6 +63,7 @@ export function HomeHero({ metric, total, hidden }: { metric: HomeMetric; total:
           width={chartWidth}
           height={96}
           hidden={hidden}
+          legend={false}
         />
       )}
     </View>
