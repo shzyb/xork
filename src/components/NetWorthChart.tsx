@@ -56,7 +56,8 @@ export function NetWorthChart({ trend, month, elapsed, width, height, hidden }: 
         noOfSections={3}
         maxValue={top}
         yAxisThickness={0}
-        xAxisThickness={0}
+        xAxisThickness={1}
+        xAxisColor={colors.line}
         rulesColor={colors.line}
         yAxisTextStyle={{ color: colors.ink3, fontSize: 11, fontFamily: 'OpenRunde-Regular' }}
         yAxisLabelWidth={44}
@@ -86,7 +87,7 @@ export function NetWorthChart({ trend, month, elapsed, width, height, hidden }: 
           },
         }}
       />
-      <View style={{ height: 18, marginLeft: 44, marginTop: 6 }}>
+      <View style={{ height: 18, marginLeft: 44, marginTop: 0 }}>
         {[1, 8, 15, 22, 29].map((day) => (
           <Text key={day} style={{ position: 'absolute', left: edge + (day - 1) * gap - 14, width: 28, textAlign: 'center', color: colors.ink3, fontSize: 11 }}>
             {day}
