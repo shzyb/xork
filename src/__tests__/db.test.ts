@@ -762,13 +762,16 @@ describe('credit card limit', () => {
 
 describe('getNetWorthTrend', () => {
   it('returns the balance before this month, each day of this month and the balance on this date last month', async () => {
-    const daily = [{ day: 3, total_minor: -2500 }];
-    const handle = fakeDb({ getAllAsync: jest.fn().mockResolvedValue(daily) });
+    const moved = [{ day: 3, total_minor: -2500 }];
+    const opened = [{ day: 10, total_minor: 50000 }];
+    const getAllAsync = jest.fn().mockResolvedValue([]);
+    const handle = fakeDb({ getAllAsync });
     await openDb(handle);
+    getAllAsync.mockReset().mockResolvedValueOnce(moved).mockResolvedValueOnce(opened);
     (handle.getFirstAsync as jest.Mock).mockReset().mockResolvedValueOnce({ total: 100000 }).mockResolvedValueOnce({ total: 90000 });
 
     const trend = await getNetWorthTrend();
 
-    expect(trend).toEqual({ startMinor: 100000, daily, prevPointMinor: 90000 });
+    expect(trend).toEqual({ startMinor: 100000, daily: [...moved, ...opened], prevPointMinor: 90000 });
   });
 });

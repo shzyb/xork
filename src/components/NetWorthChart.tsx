@@ -27,6 +27,8 @@ export function NetWorthChart({ trend, month, elapsed, width, height, hidden }: 
   const lastDay = Math.max(elapsed, ...trend.daily.map((d) => d.day));
   const series = netWorthSeries(trend.startMinor, trend.daily, lastDay);
 
+  if (series.every((v) => v === 0)) return null;
+
   // The axis always includes zero, so the labels start at 0 (or go below it when the balance does).
   const low = Math.min(0, ...series);
   const high = Math.max(0, ...series);

@@ -572,33 +572,43 @@ export async function getSpendTrend(): Promise<{ daily: DaySpend[]; prevDaily: D
   return { daily, prevDaily };
 }
 
-// Total balance at the end of `date`: opening balances plus income minus expenses. Transfers cancel out.
+// The local date an account was added (created_at is a UTC timestamp).
+const ADDED = "date(created_at, 'localtime')";
+
+// Total balance at the end of `date`: the opening balance of every account added by then, plus income minus expenses.
+// Transfers cancel out.
 async function getNetWorthOn(date: string): Promise<number> {
   const row = await db!.getFirstAsync<{ total: number }>(
-    `SELECT COALESCE((SELECT SUM(opening_minor) FROM accounts), 0)
+    `SELECT COALESCE((SELECT SUM(opening_minor) FROM accounts WHERE ${ADDED} <= ?), 0)
           + COALESCE((SELECT SUM(CASE WHEN type = 'income' THEN amount_minor WHEN type = 'expense' THEN -amount_minor ELSE 0 END)
                       FROM transactions WHERE date <= ?), 0) AS total`,
-    date,
+    date, date,
   );
   return row?.total ?? 0;
 }
 
-// For the net worth chart on Home: the balance before this month, each day's income minus expenses this month,
-// and the balance on the same date last month.
+// For the net worth chart on Home: the balance before this month, each day's change this month (income minus
+// expenses, and the opening balance of an account on the day it was added), and the balance on the same date last month.
+// So the line is zero until the first account or transaction, then steps up.
 export async function getNetWorthTrend(): Promise<NetWorthTrend> {
   const month = currentMonth();
   const prev = shiftMonth(month, -1);
   const { start, end } = monthRange(month);
   const dayOf = (m: string, day: number) => `${m}-${String(day).padStart(2, '0')}`;
   const startMinor = await getNetWorthOn(dayOf(prev, daysInMonth(prev)));
-  const daily = await db!.getAllAsync<DaySpend>(
+  const moved = await db!.getAllAsync<DaySpend>(
     `SELECT CAST(substr(date, 9, 2) AS INTEGER) AS day,
             SUM(CASE WHEN type = 'income' THEN amount_minor ELSE -amount_minor END) AS total_minor
      FROM transactions WHERE type != 'transfer' AND date BETWEEN ? AND ? GROUP BY date`,
     start, end,
   );
+  const opened = await db!.getAllAsync<DaySpend>(
+    `SELECT CAST(substr(${ADDED}, 9, 2) AS INTEGER) AS day, SUM(opening_minor) AS total_minor
+     FROM accounts WHERE ${ADDED} BETWEEN ? AND ? GROUP BY ${ADDED}`,
+    start, end,
+  );
   const prevPointMinor = await getNetWorthOn(dayOf(prev, Math.min(Number(today().slice(8)), daysInMonth(prev))));
-  return { startMinor, daily, prevPointMinor };
+  return { startMinor, daily: [...moved, ...opened], prevPointMinor };
 }
 
 // Money in and out for the six months ending at `endMonth`. Months with nothing are zero.
