@@ -38,7 +38,7 @@ export function HomeHero({ metric, total, hidden }: { metric: HomeMetric; total:
   }
 
   return (
-    <View style={{ marginTop: spacing.md }}>
+    <View style={{ marginTop: spacing.xl }}>
       <Text style={[styles.big, { color: colors.ink }]} numberOfLines={1} adjustsFontSizeToFit>{mask(amount)}</Text>
       <View style={styles.change}>
         {!!change && (
