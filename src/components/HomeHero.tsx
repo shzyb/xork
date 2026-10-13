@@ -37,7 +37,7 @@ function CountUp({ value, format, style }: { value: number; format: (minor: numb
       shownRef.current = Math.round(from + (value - from) * p);
       setShown(shownRef.current);
     });
-    Animated.timing(progress, { toValue: 1, duration: 300, easing: EASE_IN_OUT, useNativeDriver: false }).start();
+    Animated.timing(progress, { toValue: 1, duration: 650, easing: EASE_IN_OUT, useNativeDriver: false }).start();
     return () => {
       progress.removeListener(id);
       progress.stopAnimation();
@@ -66,8 +66,8 @@ export function HomeHero({ metric, total, hidden }: { metric: HomeMetric; total:
     if (isReduceMotion()) return;
     slide.setValue(0);
     reveal.setValue(0);
-    Animated.timing(slide, { toValue: 1, duration: 220, delay: 40, easing: EASE_OUT, useNativeDriver: true }).start();
-    Animated.timing(reveal, { toValue: 1, duration: 320, easing: EASE_IN_OUT, useNativeDriver: true }).start();
+    Animated.timing(slide, { toValue: 1, duration: 450, delay: 120, easing: EASE_OUT, useNativeDriver: true }).start();
+    Animated.timing(reveal, { toValue: 1, duration: 700, easing: EASE_IN_OUT, useNativeDriver: true }).start();
   }, [metric, slide, reveal]);
   if (total === undefined || !netWorth || !spend) return null;
 
