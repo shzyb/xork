@@ -12,7 +12,7 @@ import { CashFlowChart } from '../../src/components/Charts';
 import { MonthChips } from '../../src/components/MonthChips';
 import { getInsights } from '../../src/db';
 import { currentMonth, daysInMonth, monthName, shiftMonth, today } from '../../src/dates';
-import { buildNotes, keptPercent, spendComparison } from '../../src/insights';
+import { buildNotes, keptPercent } from '../../src/insights';
 import type { Note } from '../../src/insights';
 import { formatMoney } from '../../src/money';
 import { fabClearance, fontSize, spacing, useColors } from '../../src/theme';
@@ -92,8 +92,6 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, onSele
   const router = useRouter();
   const { summary, prevSummary, spending, prevSpending, income, recurringOut } = data;
   const out = summary.out_minor;
-  const prevSamePointOut = prevSpending.reduce((sum, c) => sum + c.total_minor, 0);
-  const comparison = spendComparison(out, prevSamePointOut, isCurrent, prevMonth);
   const kept = keptPercent(summary.in_minor, out);
   const notes = buildNotes({
     month, prevMonth, isCurrent, elapsedDays: elapsed ?? 1, spent: out, prevFullSpent: prevSummary.out_minor,
@@ -122,14 +120,6 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, onSele
 
   return (
     <>
-      <Text style={{ color: colors.ink2, fontSize: fontSize.body, marginTop: spacing.lg }}>
-        Expenses in {monthName(month)}{isCurrent ? ' so far' : ''}
-      </Text>
-      <Text style={[styles.big, { color: colors.ink }]}>{formatMoney(out)}</Text>
-      <Text style={{ color: colors.ink2, fontSize: 15, marginTop: 6 }}>
-        {comparison ? comparison.text : 'Nothing to compare with last month yet'}
-      </Text>
-
       <CashFlowChart monthly={data.monthly} selected={month} onSelect={onSelectMonth} width={contentWidth} />
       <MonthChips selected={month} earliest={data.earliestMonth} onSelect={onSelectMonth} />
 
@@ -234,7 +224,6 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.xl, paddingBottom: fabClearance },
   title: { fontSize: fontSize.screen, fontWeight: '800', marginTop: spacing.md },
   chipText: { fontSize: 14, fontWeight: '600' },
-  big: { fontSize: fontSize.big, fontWeight: '800', letterSpacing: -1.5 },
   kept: { borderWidth: 1.5, borderStyle: 'dashed', borderRadius: 22, paddingVertical: 10, paddingHorizontal: 14, alignItems: 'center', marginTop: spacing.lg },
   section: { fontSize: 20, fontWeight: '700', marginTop: 30, marginBottom: 6 },
   notes: { marginHorizontal: -spacing.xl, marginTop: spacing.lg },
