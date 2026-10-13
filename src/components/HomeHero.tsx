@@ -1,7 +1,7 @@
 import { ArrowDown, ArrowUp } from 'lucide-react-native';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { currentMonth, shiftMonth, today } from '../dates';
-import { getIncomeTrend, getNetWorthTrend, getSpendTrend } from '../db';
+import { getNetWorthTrend, getSpendTrend } from '../db';
 import { formatMoney } from '../money';
 import { fontSize, spacing, useColors } from '../theme';
 import type { DaySpend, HomeMetric } from '../types';
@@ -12,14 +12,13 @@ import { Text } from './Text';
 
 const sum = (rows: { total_minor: number }[]) => rows.reduce((n, r) => n + r.total_minor, 0);
 
-// The top of Home: this month's balance, expense or income, how it compares with last month, and its chart.
+// The top of Home: the balance or this month's expense, how it compares with last month, and its chart.
 export function HomeHero({ metric, total, hidden }: { metric: HomeMetric; total: number | undefined; hidden: boolean }) {
   const colors = useColors();
   const { width } = useWindowDimensions();
   const netWorth = useData(getNetWorthTrend);
   const spend = useData(getSpendTrend);
-  const income = useData(getIncomeTrend);
-  if (total === undefined || !netWorth || !spend || !income) return null;
+  if (total === undefined || !netWorth || !spend) return null;
 
   const chartWidth = width - spacing.xl * 2;
   const month = currentMonth();
@@ -27,19 +26,15 @@ export function HomeHero({ metric, total, hidden }: { metric: HomeMetric; total:
   const elapsed = Number(today().slice(8));
   const mask = (minor: number) => (hidden ? '••••••' : formatMoney(minor));
 
-  // This month so far against the same point last month. Null when there is nothing to compare with, except for
-  // income: it arrives in lumps, so "none by this point last month" is worth saying.
+  // This month so far against the same point last month. Null when there is nothing to compare with.
   let amount = total;
   let change: number | null = null;
-  let after = 'vs last month';
-  const flow = metric === 'expense' ? spend : income;
   if (metric === 'balance') {
     change = netWorth.startMinor + sum(netWorth.daily.filter((d) => d.day <= elapsed)) - netWorth.prevPointMinor;
   } else {
-    amount = sum(flow.daily);
-    const prevSamePoint = sum(flow.prevDaily.filter((d: DaySpend) => d.day <= elapsed));
-    if (prevSamePoint > 0 || metric === 'income') change = amount - prevSamePoint;
-    if (prevSamePoint <= 0) after = '· none by this point last month';
+    amount = sum(spend.daily);
+    const prevSamePoint = sum(spend.prevDaily.filter((d: DaySpend) => d.day <= elapsed));
+    if (prevSamePoint > 0) change = amount - prevSamePoint;
   }
 
   return (
@@ -49,7 +44,7 @@ export function HomeHero({ metric, total, hidden }: { metric: HomeMetric; total:
         {!!change && (
           <>
             {change > 0 ? <ArrowUp color={colors.ink2} size={16} strokeWidth={2.4} /> : <ArrowDown color={colors.ink2} size={16} strokeWidth={2.4} />}
-            <Text style={{ color: colors.ink2, fontSize: 15, fontWeight: '600', flexShrink: 1 }}>{mask(Math.abs(change))} {after}</Text>
+            <Text style={{ color: colors.ink2, fontSize: 15, fontWeight: '600', flexShrink: 1 }}>{mask(Math.abs(change))} vs last month</Text>
           </>
         )}
       </View>
@@ -57,8 +52,8 @@ export function HomeHero({ metric, total, hidden }: { metric: HomeMetric; total:
         <NetWorthChart trend={netWorth} month={month} elapsed={elapsed} width={chartWidth} height={96} hidden={hidden} />
       ) : (
         <RunningTotalChart
-          daily={flow.daily}
-          prevDaily={flow.prevDaily}
+          daily={spend.daily}
+          prevDaily={spend.prevDaily}
           month={month}
           prevMonth={prevMonth}
           elapsed={elapsed}

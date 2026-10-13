@@ -555,12 +555,12 @@ export async function getEarliestMonth(): Promise<string | null> {
   return row?.month ?? null;
 }
 
-async function getDailySpending(month: string, type: 'expense' | 'income' = 'expense'): Promise<DaySpend[]> {
+async function getDailySpending(month: string): Promise<DaySpend[]> {
   const { start, end } = monthRange(month);
   return db!.getAllAsync(
     `SELECT CAST(substr(date, 9, 2) AS INTEGER) AS day, SUM(amount_minor) AS total_minor
-     FROM transactions WHERE type = ? AND date BETWEEN ? AND ? GROUP BY date`,
-    type, start, end,
+     FROM transactions WHERE type = 'expense' AND date BETWEEN ? AND ? GROUP BY date`,
+    start, end,
   );
 }
 
@@ -599,14 +599,6 @@ export async function getNetWorthTrend(): Promise<NetWorthTrend> {
   );
   const prevPointMinor = await getNetWorthOn(dayOf(prev, Math.min(Number(today().slice(8)), daysInMonth(prev))));
   return { startMinor, daily, prevPointMinor };
-}
-
-// Daily income for this month and last, for the Income view on Home.
-export async function getIncomeTrend(): Promise<{ daily: DaySpend[]; prevDaily: DaySpend[] }> {
-  const month = currentMonth();
-  const daily = await getDailySpending(month, 'income');
-  const prevDaily = await getDailySpending(shiftMonth(month, -1), 'income');
-  return { daily, prevDaily };
 }
 
 // Money in and out for the six months ending at `endMonth`. Months with nothing are zero.

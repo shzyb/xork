@@ -107,7 +107,7 @@ export type CategorySpend = {
 export type MonthTotals = { month: string; in_minor: number; out_minor: number };
 
 // What the top of Home shows.
-export type HomeMetric = 'balance' | 'expense' | 'income';
+export type HomeMetric = 'balance' | 'expense';
 
 export type DaySpend = { day: number; total_minor: number };
 

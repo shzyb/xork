@@ -22,7 +22,7 @@ import { Text } from '../../src/components/Text';
 type Tab = 'recent' | 'accounts' | 'upcoming';
 const TABS: Tab[] = ['recent', 'accounts', 'upcoming'];
 const TAB_LABELS: Record<Tab, string> = { recent: 'Recent', accounts: 'Accounts', upcoming: 'Upcoming' };
-const METRIC_LABELS: Record<HomeMetric, string> = { balance: 'Balance', expense: 'Expense', income: 'Income' };
+const METRIC_LABELS: Record<HomeMetric, string> = { balance: 'Balance', expense: 'Expense' };
 const METRICS = Object.keys(METRIC_LABELS) as HomeMetric[];
 
 export default function Home() {
