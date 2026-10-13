@@ -10,9 +10,8 @@ import { Text } from './Text';
 
 const TIP = 110; // width of the touch tooltip
 
-// Total balance through this month, one line up to today. The y-axis starts near the lowest point, not at zero,
-// so a small change still shows. The library only draws from zero, so the line is shifted down by `base`
-// and the axis labels add it back. Touch and drag to read a day.
+// Total balance through this month, one line up to today. The library only draws from zero, so when the balance
+// goes below zero the line is shifted up by `base` and the axis labels take it off again. Touch and drag to read a day.
 export function NetWorthChart({ trend, month, elapsed, width, height, hidden }: {
   trend: NetWorthTrend;
   month: string;
@@ -28,8 +27,9 @@ export function NetWorthChart({ trend, month, elapsed, width, height, hidden }: 
   const lastDay = Math.max(elapsed, ...trend.daily.map((d) => d.day));
   const series = netWorthSeries(trend.startMinor, trend.daily, lastDay);
 
-  const low = Math.min(...series);
-  const high = Math.max(...series);
+  // The axis always includes zero, so the labels start at 0 (or go below it when the balance does).
+  const low = Math.min(0, ...series);
+  const high = Math.max(0, ...series);
   const stepMinor = (niceTop(Math.max(high - low, 10000)) / 3) * 100;
   const base = Math.floor(low / stepMinor) * stepMinor;
   const top = niceTop(Math.max(high - base, stepMinor));
