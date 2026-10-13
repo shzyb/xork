@@ -39,7 +39,7 @@ export function HomeHero({ metric, total, hidden }: { metric: HomeMetric; total:
 
   return (
     <View style={{ marginTop: spacing.md }}>
-      <Text style={[styles.big, { color: colors.ink }]}>{mask(amount)}</Text>
+      <Text style={[styles.big, { color: colors.ink }]} numberOfLines={1} adjustsFontSizeToFit>{mask(amount)}</Text>
       <View style={styles.change}>
         {!!change && (
           <>
@@ -48,26 +48,29 @@ export function HomeHero({ metric, total, hidden }: { metric: HomeMetric; total:
           </>
         )}
       </View>
-      {metric === 'balance' ? (
-        <NetWorthChart trend={netWorth} month={month} elapsed={elapsed} width={chartWidth} height={96} hidden={hidden} />
-      ) : (
-        <RunningTotalChart
-          daily={spend.daily}
-          prevDaily={spend.prevDaily}
-          month={month}
-          prevMonth={prevMonth}
-          elapsed={elapsed}
-          width={chartWidth}
-          height={96}
-          hidden={hidden}
-          legend={false}
-        />
-      )}
+      <View style={styles.chart}>
+        {metric === 'balance' ? (
+          <NetWorthChart trend={netWorth} month={month} elapsed={elapsed} width={chartWidth} height={96} hidden={hidden} />
+        ) : (
+          <RunningTotalChart
+            daily={spend.daily}
+            prevDaily={spend.prevDaily}
+            month={month}
+            prevMonth={prevMonth}
+            elapsed={elapsed}
+            width={chartWidth}
+            height={96}
+            hidden={hidden}
+            legend={false}
+          />
+        )}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  big: { fontSize: fontSize.big, fontWeight: '800', letterSpacing: -1.5 },
-  change: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 22 },
+  big: { fontSize: fontSize.big, fontWeight: '800', letterSpacing: -1.5, textAlign: 'center' },
+  change: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 22 },
+  chart: { marginTop: spacing.lg }, // on top of the chart's own margin, for some breathing room
 });
