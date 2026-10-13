@@ -58,8 +58,8 @@ export default function Home() {
   const upcoming = recurring ? upcomingOccurrences(recurring, today(), 7) : [];
 
   const seeAll = (label: string, to: '/activity' | '/recurring') => (
-    <PressableScale accessibilityRole="button" onPress={() => router.navigate(to)} style={styles.seeAll}>
-      <Text style={{ color: colors.ink2, fontSize: 15, fontWeight: '600' }}>{label}</Text>
+    <PressableScale accessibilityRole="button" onPress={() => router.navigate(to)} style={[styles.seeAll, { backgroundColor: colors.fill }]}>
+      <Text style={{ color: colors.ink, fontSize: 14, fontWeight: '600' }}>{label}</Text>
     </PressableScale>
   );
 
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   brand: { fontSize: fontSize.screen, fontWeight: '800' },
   actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -10 },
-  seeAll: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-start' },
+  seeAll: { alignSelf: 'center', minHeight: 44, paddingHorizontal: 20, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginVertical: spacing.sm },
   tabs: { flexDirection: 'row', gap: 14, marginTop: 26, paddingBottom: 10, borderBottomWidth: StyleSheet.hairlineWidth },
   tab: { fontSize: fontSize.body, fontWeight: '700' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64 },
