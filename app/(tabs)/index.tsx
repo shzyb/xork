@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { PressableScale } from '../../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AmountText } from '../../src/components/AmountText';
 import { EmptyState } from '../../src/components/EmptyState';
 import { HomeHero } from '../../src/components/HomeHero';
 import { RecurringRow } from '../../src/components/RecurringRow';
@@ -132,11 +131,9 @@ export default function Home() {
                       </Text>
                     </View>
                     <View style={styles.end}>
-                      {hidden ? (
-                        <Text style={[styles.amount, { color: colors.ink }]}>{mask(0)}</Text>
-                      ) : (
-                        <AmountText minor={a.type === 'credit' && a.limit_minor ? Math.max(0, a.limit_minor + a.balance_minor) : a.balance_minor} style={[styles.amount, { color: colors.ink }]} />
-                      )}
+                      <Text style={[styles.amount, { color: colors.ink }]}>
+                        {mask(a.type === 'credit' && a.limit_minor ? Math.max(0, a.limit_minor + a.balance_minor) : a.balance_minor)}
+                      </Text>
                       {a.type === 'credit' && a.limit_minor && (
                         <Text style={{ color: colors.ink3, fontSize: 13, marginTop: 1 }}>Owed {mask(-a.balance_minor)}</Text>
                       )}
