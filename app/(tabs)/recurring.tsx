@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { AmountText } from '../../src/components/AmountText';
 import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { ArrowDown, Plus, Repeat } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
@@ -41,7 +42,7 @@ export default function Recurring() {
         {items && items.length > 0 && (
           <>
             <Text style={{ color: colors.ink2, fontSize: fontSize.body, marginTop: spacing.md }}>Going out in the next 30 days</Text>
-            <Text style={[styles.big, { color: colors.ink }]}>{formatMoney(sumComing('expense'))}</Text>
+            <AmountText minor={sumComing('expense')} style={[styles.big, { color: colors.ink }]} />
             <View style={styles.chips}>
               <View style={[styles.chip, { backgroundColor: colors.fill }]}>
                 <ArrowDown color={colors.pos} size={15} />

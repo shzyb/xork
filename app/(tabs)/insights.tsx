@@ -1,4 +1,5 @@
 import { Gauge, PiggyBank, Repeat, TrendingDown, TrendingUp, TriangleAlert } from 'lucide-react-native';
+import { AmountText } from '../../src/components/AmountText';
 import { FadeScrollView } from '../../src/components/FadeScrollView';
 import type { LucideIcon } from 'lucide-react-native';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -125,7 +126,7 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, onSele
       <Text style={{ color: colors.ink2, fontSize: fontSize.body, marginTop: spacing.lg }}>
         Expenses in {monthName(month)}{isCurrent ? ' so far' : ''}
       </Text>
-      <Text style={[styles.big, { color: colors.ink }]}>{formatMoney(out)}</Text>
+      <AmountText minor={out} style={[styles.big, { color: colors.ink }]} />
       <Text style={{ color: colors.ink2, fontSize: 15, marginTop: 6 }}>
         {comparison ? comparison.text : 'Nothing to compare with last month yet'}
       </Text>
