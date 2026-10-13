@@ -43,8 +43,8 @@ export function HomeHero({ metric, total, hidden }: { metric: HomeMetric; total:
       <View style={styles.change}>
         {!!change && (
           <>
-            {change > 0 ? <ArrowUp color={colors.ink2} size={16} strokeWidth={2.4} /> : <ArrowDown color={colors.ink2} size={16} strokeWidth={2.4} />}
-            <Text style={{ color: colors.ink2, fontSize: 15, fontWeight: '600', flexShrink: 1 }}>{mask(Math.abs(change))} vs last month</Text>
+            {change > 0 ? <ArrowUp color={colors.pos} size={16} strokeWidth={2.4} /> : <ArrowDown color={colors.neg} size={16} strokeWidth={2.4} />}
+            <Text style={{ color: colors.ink2, opacity: 0.8, fontSize: 15, fontWeight: '600', flexShrink: 1 }}>{mask(Math.abs(change))} vs last month</Text>
           </>
         )}
       </View>
