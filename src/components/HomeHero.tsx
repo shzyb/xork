@@ -50,7 +50,7 @@ export function HomeHero({ metric, total, hidden }: { metric: HomeMetric; total:
       </View>
       <View style={styles.chart}>
         {metric === 'balance' ? (
-          <NetWorthChart trend={netWorth} month={month} elapsed={elapsed} width={chartWidth} height={96} hidden={hidden} />
+          <NetWorthChart trend={netWorth} month={month} elapsed={elapsed} width={chartWidth} height={120} hidden={hidden} />
         ) : (
           <RunningTotalChart
             daily={spend.daily}
@@ -59,7 +59,7 @@ export function HomeHero({ metric, total, hidden }: { metric: HomeMetric; total:
             prevMonth={prevMonth}
             elapsed={elapsed}
             width={chartWidth}
-            height={96}
+            height={120}
             hidden={hidden}
             legend={false}
           />
