@@ -1,7 +1,6 @@
 import { ArrowDown, ArrowUp } from 'lucide-react-native';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { currentMonth, shiftMonth, today } from '../dates';
-import { spendComparison } from '../insights';
 import { getIncomeTrend, getNetWorthTrend, getSpendTrend } from '../db';
 import { formatMoney } from '../money';
 import { fontSize, spacing, useColors } from '../theme';
@@ -28,16 +27,19 @@ export function HomeHero({ metric, total, hidden }: { metric: HomeMetric; total:
   const elapsed = Number(today().slice(8));
   const mask = (minor: number) => (hidden ? '••••••' : formatMoney(minor));
 
-  // This month so far against the same point last month. Null when there is nothing to compare with.
+  // This month so far against the same point last month. Null when there is nothing to compare with, except for
+  // income: it arrives in lumps, so "none by this point last month" is worth saying.
   let amount = total;
   let change: number | null = null;
+  let after = 'vs last month';
   const flow = metric === 'expense' ? spend : income;
   if (metric === 'balance') {
     change = netWorth.startMinor + sum(netWorth.daily.filter((d) => d.day <= elapsed)) - netWorth.prevPointMinor;
   } else {
     amount = sum(flow.daily);
     const prevSamePoint = sum(flow.prevDaily.filter((d: DaySpend) => d.day <= elapsed));
-    change = spendComparison(amount, prevSamePoint, true, prevMonth) && amount - prevSamePoint;
+    if (prevSamePoint > 0 || metric === 'income') change = amount - prevSamePoint;
+    if (prevSamePoint <= 0) after = '· none by this point last month';
   }
 
   return (
@@ -47,7 +49,7 @@ export function HomeHero({ metric, total, hidden }: { metric: HomeMetric; total:
         {!!change && (
           <>
             {change > 0 ? <ArrowUp color={colors.ink2} size={16} strokeWidth={2.4} /> : <ArrowDown color={colors.ink2} size={16} strokeWidth={2.4} />}
-            <Text style={{ color: colors.ink2, fontSize: 15, fontWeight: '600', flexShrink: 1 }}>{mask(Math.abs(change))} vs last month</Text>
+            <Text style={{ color: colors.ink2, fontSize: 15, fontWeight: '600', flexShrink: 1 }}>{mask(Math.abs(change))} {after}</Text>
           </>
         )}
       </View>
