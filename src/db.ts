@@ -1,11 +1,11 @@
 import { openDatabaseAsync } from 'expo-sqlite';
-import { currentMonth, firstOnOrAfter, lastMonths, monthRange, nextOccurrence, shiftMonth, today } from './dates';
+import { currentMonth, daysInMonth, firstOnOrAfter, lastMonths, monthRange, nextOccurrence, shiftMonth, today } from './dates';
 import { formatMoney, setAppCurrency } from './money';
 import { ICON_NAMES, toEmoji } from './emoji';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, SCHEMA } from './seed';
 import { BACKUP_VERSION } from './backup';
 import type { Backup } from './backup';
-import type { Account, CardInsight, Category, CategorySpend, DaySpend, InsightsData, MonthTotals, Recurring, RecurringRow, Transaction, ThemeSetting, TransactionFilter, TransactionRow } from './types';
+import type { Account, CardInsight, Category, CategorySpend, DaySpend, InsightsData, MonthTotals, NetWorthTrend, Recurring, RecurringRow, Transaction, ThemeSetting, TransactionFilter, TransactionRow } from './types';
 
 // The small part of expo-sqlite that we use, so tests can pass a fake.
 export type Db = {
@@ -570,6 +570,35 @@ export async function getSpendTrend(): Promise<{ daily: DaySpend[]; prevDaily: D
   const daily = await getDailySpending(month);
   const prevDaily = await getDailySpending(shiftMonth(month, -1));
   return { daily, prevDaily };
+}
+
+// Total balance at the end of `date`: opening balances plus income minus expenses. Transfers cancel out.
+async function getNetWorthOn(date: string): Promise<number> {
+  const row = await db!.getFirstAsync<{ total: number }>(
+    `SELECT COALESCE((SELECT SUM(opening_minor) FROM accounts), 0)
+          + COALESCE((SELECT SUM(CASE WHEN type = 'income' THEN amount_minor WHEN type = 'expense' THEN -amount_minor ELSE 0 END)
+                      FROM transactions WHERE date <= ?), 0) AS total`,
+    date,
+  );
+  return row?.total ?? 0;
+}
+
+// For the net worth chart on Home: the balance before this month, each day's income minus expenses this month,
+// and the balance on the same date last month.
+export async function getNetWorthTrend(): Promise<NetWorthTrend> {
+  const month = currentMonth();
+  const prev = shiftMonth(month, -1);
+  const { start, end } = monthRange(month);
+  const dayOf = (m: string, day: number) => `${m}-${String(day).padStart(2, '0')}`;
+  const startMinor = await getNetWorthOn(dayOf(prev, daysInMonth(prev)));
+  const daily = await db!.getAllAsync<DaySpend>(
+    `SELECT CAST(substr(date, 9, 2) AS INTEGER) AS day,
+            SUM(CASE WHEN type = 'income' THEN amount_minor ELSE -amount_minor END) AS total_minor
+     FROM transactions WHERE type != 'transfer' AND date BETWEEN ? AND ? GROUP BY date`,
+    start, end,
+  );
+  const prevPointMinor = await getNetWorthOn(dayOf(prev, Math.min(Number(today().slice(8)), daysInMonth(prev))));
+  return { startMinor, daily, prevPointMinor };
 }
 
 // Money in and out for the six months ending at `endMonth`. Months with nothing are zero.

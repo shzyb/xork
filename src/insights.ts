@@ -12,6 +12,11 @@ export function runningTotal(daily: DaySpend[], length: number): number[] {
   return perDay.map((v) => (sum += v));
 }
 
+// Total balance at the end of each day, from `start` (the balance before day 1). `daily` is each day's income minus expenses.
+export function netWorthSeries(start: number, daily: DaySpend[], length: number): number[] {
+  return runningTotal(daily, length).map((v) => start + v);
+}
+
 export type Delta = { kind: 'new' | 'same' | 'up' | 'down'; percent: number } | null;
 
 // Compares this month's amount with last month's, for the small badge next to a category.

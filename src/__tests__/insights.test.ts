@@ -1,5 +1,5 @@
 import { setAppCurrency } from '../money';
-import { budgetStatus, buildNotes, creditStatus, delta, dueText, keptPercent, runningTotal, spendComparison } from '../insights';
+import { budgetStatus, buildNotes, creditStatus, delta, dueText, keptPercent, netWorthSeries, runningTotal, spendComparison } from '../insights';
 import type { CategorySpend, MonthTotals } from '../types';
 
 beforeEach(() => setAppCurrency('USD'));
@@ -20,6 +20,17 @@ describe('runningTotal', () => {
 
   it('is flat zero with no spending', () => {
     expect(runningTotal([], 3)).toEqual([0, 0, 0]);
+  });
+});
+
+describe('netWorthSeries', () => {
+  it('starts from the balance before the month and carries it forward on quiet days', () => {
+    const daily = [{ day: 2, total_minor: -3000 }, { day: 4, total_minor: 10000 }];
+    expect(netWorthSeries(50000, daily, 5)).toEqual([50000, 47000, 47000, 57000, 57000]);
+  });
+
+  it('can go below zero', () => {
+    expect(netWorthSeries(-1000, [{ day: 1, total_minor: -500 }], 2)).toEqual([-1500, -1500]);
   });
 });
 

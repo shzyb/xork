@@ -108,6 +108,9 @@ export type MonthTotals = { month: string; in_minor: number; out_minor: number }
 
 export type DaySpend = { day: number; total_minor: number };
 
+// Home's net worth chart: the balance before this month, each day's income minus expenses, and the balance on this date last month.
+export type NetWorthTrend = { startMinor: number; daily: DaySpend[]; prevPointMinor: number };
+
 // One credit card on Insights. Owed, limit and due day are right now; spent and paid are for the chosen month.
 export type CardInsight = {
   id: number;

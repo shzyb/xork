@@ -8,7 +8,7 @@ import type { DaySpend, InsightsData } from '../types';
 import { Text } from './Text';
 
 // The top of the y-axis for a biggest value in minor units: rounded up so the three sections get round numbers.
-function niceTop(maxMinor: number): number {
+export function niceTop(maxMinor: number): number {
   const rawStep = maxMinor / 100 / 3;
   const unit = 10 ** Math.floor(Math.log10(rawStep));
   return Math.ceil(rawStep / unit) * unit * 3;
@@ -200,7 +200,7 @@ export function CashFlowChart({ monthly, selected, onSelect, width }: {
   );
 }
 
-function LegendItem({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
+export function LegendItem({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
   const colors = useColors();
   return (
     <View style={styles.legendItem}>

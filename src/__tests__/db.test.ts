@@ -1,4 +1,4 @@
-import { getCategories, reorderCategories, getRecurringActivity, logRecurringNow, setRecurringActive, skipRecurring, deleteAllData, exportAll, NO_FILTER, replaceAllData, addAccount, addCategory, addRecurring, deleteRecurring, logDueRecurring, updateRecurring, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, setHideBalances, setTheme, updateAccount, updateCategory, updateTransaction } from '../db';
+import { getCategories, getNetWorthTrend, reorderCategories, getRecurringActivity, logRecurringNow, setRecurringActive, skipRecurring, deleteAllData, exportAll, NO_FILTER, replaceAllData, addAccount, addCategory, addRecurring, deleteRecurring, logDueRecurring, updateRecurring, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, setHideBalances, setTheme, updateAccount, updateCategory, updateTransaction } from '../db';
 import { formatMoney } from '../money';
 
 function fakeDb(overrides: Partial<Db> = {}): Db {
@@ -757,5 +757,18 @@ describe('credit card limit', () => {
     const old = { type: 'expense', amount_minor: 200000, account_id: 1, to_account_id: null };
     await open([old, { ...card, balance_minor: -900000 }]);
     await expect(updateTransaction(5, spend(400000))).rejects.toThrow('left on Visa');
+  });
+});
+
+describe('getNetWorthTrend', () => {
+  it('returns the balance before this month, each day of this month and the balance on this date last month', async () => {
+    const daily = [{ day: 3, total_minor: -2500 }];
+    const handle = fakeDb({ getAllAsync: jest.fn().mockResolvedValue(daily) });
+    await openDb(handle);
+    (handle.getFirstAsync as jest.Mock).mockReset().mockResolvedValueOnce({ total: 100000 }).mockResolvedValueOnce({ total: 90000 });
+
+    const trend = await getNetWorthTrend();
+
+    expect(trend).toEqual({ startMinor: 100000, daily, prevPointMinor: 90000 });
   });
 });
