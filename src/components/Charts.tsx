@@ -70,6 +70,7 @@ export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed,
         yAxisThickness={0}
         xAxisThickness={1}
         xAxisColor={colors.line}
+        xAxisType="dashed"
         rulesColor={colors.line}
         yAxisTextStyle={{ color: colors.ink3, fontSize: 11, fontFamily: 'OpenRunde-Regular' }}
         yAxisLabelWidth={44}
