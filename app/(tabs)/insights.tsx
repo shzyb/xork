@@ -8,7 +8,7 @@ import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native'
 import { PressableScale } from '../../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
-import { CashFlowChart, RunningTotalChart } from '../../src/components/Charts';
+import { CashFlowChart } from '../../src/components/Charts';
 import { MonthChips } from '../../src/components/MonthChips';
 import { getInsights } from '../../src/db';
 import { currentMonth, daysInMonth, monthName, shiftMonth, today } from '../../src/dates';
@@ -130,7 +130,7 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, onSele
         {comparison ? comparison.text : 'Nothing to compare with last month yet'}
       </Text>
 
-      <RunningTotalChart daily={data.daily} prevDaily={data.prevDaily} height={170} hidden={false} legend month={month} prevMonth={prevMonth} elapsed={elapsed} width={contentWidth} />
+      <CashFlowChart monthly={data.monthly} selected={month} onSelect={onSelectMonth} width={contentWidth} />
       <MonthChips selected={month} earliest={data.earliestMonth} onSelect={onSelectMonth} />
 
       {kept !== null && (
@@ -176,9 +176,6 @@ function Body({ data, month, prevMonth, isCurrent, elapsed, contentWidth, onSele
           </ScrollView>
         </>
       )}
-
-      <Text style={[styles.section, { color: colors.ink }]}>Cash flow</Text>
-      <CashFlowChart monthly={data.monthly} selected={month} onSelect={onSelectMonth} width={contentWidth} />
 
       <View style={styles.stats}>
         <StatRow label="Income" value={formatMoney(summary.in_minor)} color={colors.pos} />
