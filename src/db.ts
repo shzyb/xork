@@ -16,7 +16,10 @@ export type Db = {
   withTransactionAsync(task: () => Promise<void>): Promise<void>;
 };
 
-let db: Db | null = null;
+// In development, Fast Refresh runs this file again after an edit, which would reset `db` to null while the screens
+// are still on screen and asking for data. The open handle is kept on globalThis so it survives that.
+const kept = globalThis as typeof globalThis & { hisaabDb?: Db };
+let db: Db | null = kept.hisaabDb ?? null;
 let version = 0;
 const listeners = new Set<() => void>();
 
@@ -123,6 +126,7 @@ export async function openDb(handle?: Db) {
   // (Expo Go, Fast Refresh) and closes it when the old session's object is released, which crashes the next query.
   // The file is still called hisaab.db so phones that already have data keep it.
   db = handle ?? (await openDatabaseAsync('hisaab.db', { useNewConnection: true }));
+  kept.hisaabDb = db;
   await migrate(db);
   setAppCurrency((await getSetting('currency')) ?? 'USD');
 }
