@@ -1,14 +1,12 @@
 import { useRouter } from 'expo-router';
 import { FadeScrollView } from '../../src/components/FadeScrollView';
-import { CalendarClock, ChevronDown, Eye, EyeOff, Plus, Receipt, Settings } from 'lucide-react-native';
+import { CalendarClock, Check, ChevronDown, Eye, EyeOff, Plus, Receipt, Settings } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { PressableScale } from '../../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '../../src/components/EmptyState';
 import { HomeHero } from '../../src/components/HomeHero';
-import { PickerSheet } from '../../src/components/PickerSheet';
-import type { PickerOption } from '../../src/components/PickerSheet';
 import { RecurringRow } from '../../src/components/RecurringRow';
 import { SwipePages } from '../../src/components/SwipePages';
 import { TransactionList } from '../../src/components/TransactionList';
@@ -25,14 +23,15 @@ type Tab = 'recent' | 'accounts' | 'upcoming';
 const TABS: Tab[] = ['recent', 'accounts', 'upcoming'];
 const TAB_LABELS: Record<Tab, string> = { recent: 'Recent', accounts: 'Accounts', upcoming: 'Upcoming' };
 const METRIC_LABELS: Record<HomeMetric, string> = { balance: 'Balance', expense: 'Expense', income: 'Income' };
-const METRIC_OPTIONS: PickerOption<HomeMetric>[] = (Object.keys(METRIC_LABELS) as HomeMetric[]).map((value) => ({ value, label: METRIC_LABELS[value] }));
+const METRICS = Object.keys(METRIC_LABELS) as HomeMetric[];
 
 export default function Home() {
   const colors = useColors();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('recent');
   const [metric, setMetric] = useState<HomeMetric>('balance');
-  const [picking, setPicking] = useState(false);
+  const titleRef = useRef<View>(null);
+  const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
   const openingSettings = useRef(false);
   const hideOnOpen = useData(() => getSetting('hide_balances'));
   const [shown, setShown] = useState<boolean | null>(null);
@@ -46,6 +45,8 @@ export default function Home() {
     setTimeout(() => { openingSettings.current = false; }, 700);
     router.push('/settings');
   }
+  // The dropdown opens just under the title, wherever it is on the screen.
+  const openMenu = () => titleRef.current?.measureInWindow((x, y, _w, h) => setMenuAt({ x, y: y + h }));
   const mask = (minor: number) => (hidden ? '••••••' : formatMoney(minor));
   const accounts = useData(getAccountsWithBalance);
   const recent = useData(() => getTransactions(NO_FILTER, 8));
@@ -64,10 +65,12 @@ export default function Home() {
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
       <FadeScrollView contentContainerStyle={styles.content}>
         <View style={styles.topbar}>
-          <PressableScale accessibilityRole="button" accessibilityLabel={`Showing ${METRIC_LABELS[metric]}. Change`} onPress={() => setPicking(true)} style={styles.metricButton}>
-            <Text style={[styles.brand, { color: colors.ink }]}>{METRIC_LABELS[metric]}</Text>
-            <ChevronDown color={colors.ink} size={24} strokeWidth={2.4} />
-          </PressableScale>
+          <View ref={titleRef} collapsable={false}>
+            <PressableScale accessibilityRole="button" accessibilityLabel={`Showing ${METRIC_LABELS[metric]}. Change`} onPress={openMenu} style={styles.metricButton}>
+              <Text style={[styles.brand, { color: colors.ink }]}>{METRIC_LABELS[metric]}</Text>
+              <ChevronDown color={colors.ink} size={24} strokeWidth={2.4} />
+            </PressableScale>
+          </View>
           <View style={styles.actions}>
             <PressableScale accessibilityRole="button" accessibilityLabel={hidden ? 'Show balances' : 'Hide balances'} onPress={() => setShown(hidden)} style={styles.iconButton}>
               {hidden ? <EyeOff color={colors.ink} size={22} /> : <Eye color={colors.ink} size={22} />}
@@ -158,14 +161,24 @@ export default function Home() {
           )}
         />
       </FadeScrollView>
-      {picking && (
-        <PickerSheet
-          title="Show"
-          options={METRIC_OPTIONS}
-          current={metric}
-          onPick={(value) => { setMetric(value); setPicking(false); }}
-          onClose={() => setPicking(false)}
-        />
+      {menuAt && (
+        <Modal transparent animationType="fade" statusBarTranslucent onRequestClose={() => setMenuAt(null)}>
+          <Pressable accessibilityLabel="Close menu" style={StyleSheet.absoluteFill} onPress={() => setMenuAt(null)} />
+          <View style={[styles.menu, { left: menuAt.x, top: menuAt.y + 4, backgroundColor: colors.fill }]}>
+            {METRICS.map((value) => (
+              <PressableScale
+                key={value}
+                accessibilityRole="button"
+                accessibilityState={{ selected: value === metric }}
+                onPress={() => { setMetric(value); setMenuAt(null); }}
+                style={styles.menuRow}
+              >
+                <Text style={[styles.menuLabel, { color: colors.ink }]}>{METRIC_LABELS[value]}</Text>
+                {value === metric && <Check color={colors.ink} size={18} strokeWidth={2.4} />}
+              </PressableScale>
+            ))}
+          </View>
+        </Modal>
       )}
     </SafeAreaView>
   );
@@ -175,6 +188,9 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingHorizontal: spacing.xl, paddingBottom: fabClearance },
   topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md },
+  menu: { position: 'absolute', minWidth: 180, borderRadius: 16, paddingVertical: 4 },
+  menuRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 16, minHeight: 44, paddingHorizontal: 16 },
+  menuLabel: { fontSize: 17, fontWeight: '600' },
   metricButton: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44 },
   brand: { fontSize: fontSize.screen, fontWeight: '800' },
   actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
