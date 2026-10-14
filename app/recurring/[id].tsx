@@ -153,12 +153,7 @@ function RecurringForm({ editing, accounts, categories }: {
             presets={[{ label: 'Today', date: today() }, { label: 'Tomorrow', date: tomorrow() }]}
           />
           <Text style={styles.label}>Category</Text>
-          <CategoryGrid
-            categories={categories.filter((c) => c.kind === type)}
-            selectedId={categoryId}
-            onSelect={setCategoryId}
-            onNew={() => router.push({ pathname: '/category/[id]', params: { id: 'new', kind: type } })}
-          />
+          <CategoryGrid categories={categories.filter((c) => c.kind === type)} selectedId={categoryId} onSelect={(id) => { setCategoryId(id); setError(''); }} />
           <View style={styles.activeRow}>
             <View style={styles.activeText}>
               <Text style={styles.activeTitle}>Active</Text>
