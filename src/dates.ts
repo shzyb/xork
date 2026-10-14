@@ -69,7 +69,15 @@ export function upcomingOccurrences<T extends { freq: Frequency; anchor_day: num
   from: string,
   days: number,
 ): { item: T; date: string }[] {
-  const end = format(addDays(parseISO(from), days), DAY);
+  return occurrencesBetween(items, from, format(addDays(parseISO(from), days), DAY));
+}
+
+// Every occurrence of the active items from `from` to `end`, both included, soonest first.
+export function occurrencesBetween<T extends { freq: Frequency; anchor_day: number; next_date: string; active: number }>(
+  items: T[],
+  from: string,
+  end: string,
+): { item: T; date: string }[] {
   const found: { item: T; date: string }[] = [];
   for (const item of items) {
     if (!item.active) continue;
@@ -95,6 +103,21 @@ export function monthShort(month: string): string {
 
 export function monthName(month: string): string {
   return format(parseISO(month + '-01'), 'MMMM');
+}
+
+// The date a card payment is due in `month`; a due day of 31 becomes the 28th in February.
+export function dueDateIn(month: string, dueDay: number): string {
+  return month + '-' + String(Math.min(dueDay, getDaysInMonth(parseISO(month + '-01')))).padStart(2, '0');
+}
+
+// The days of `month` for a calendar that starts on Monday, with null for the empty cells before the 1st.
+export function monthGrid(month: string): (string | null)[] {
+  const blanks = (parseISO(month + '-01').getDay() + 6) % 7;
+  const days = getDaysInMonth(parseISO(month + '-01'));
+  return [
+    ...Array<null>(blanks).fill(null),
+    ...Array.from({ length: days }, (_, i) => `${month}-${String(i + 1).padStart(2, '0')}`),
+  ];
 }
 
 export function daysInMonth(month: string): number {

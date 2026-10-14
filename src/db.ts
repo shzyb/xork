@@ -464,6 +464,15 @@ export async function getRecurring(): Promise<RecurringRow[]> {
   );
 }
 
+// What recurring items have already logged in a month, for the Recurring calendar.
+export async function getMonthRecurringActivity(month: string): Promise<TransactionRow[]> {
+  const { start, end } = monthRange(month);
+  return db!.getAllAsync(
+    `${TX_SELECT} ${TX_FROM} WHERE t.recurring_id IS NOT NULL AND t.date BETWEEN ? AND ? ORDER BY t.date, t.id`,
+    start, end,
+  );
+}
+
 export async function getRecurringItem(id: number): Promise<Recurring | null> {
   return db!.getFirstAsync('SELECT * FROM recurring WHERE id = ?', id);
 }

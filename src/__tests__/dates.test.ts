@@ -1,4 +1,4 @@
-import { currentMonth, daysInMonth, firstOnOrAfter, fullDate, lastMonths, monthName, monthShort, tomorrow, upcomingOccurrences, monthLabel, monthRange, nextOccurrence, prettyDate, shiftMonth, today, yesterday } from '../dates';
+import { currentMonth, daysInMonth, dueDateIn, monthGrid, occurrencesBetween, firstOnOrAfter, fullDate, lastMonths, monthName, monthShort, tomorrow, upcomingOccurrences, monthLabel, monthRange, nextOccurrence, prettyDate, shiftMonth, today, yesterday } from '../dates';
 
 describe('today', () => {
   it('is a local YYYY-MM-DD string', () => {
@@ -144,5 +144,27 @@ describe('firstOnOrAfter', () => {
     expect(firstOnOrAfter('monthly', 31, '2026-01-31', '2026-05-01')).toBe('2026-05-31');
     expect(firstOnOrAfter('weekly', 3, '2026-01-01', '2026-01-20')).toBe('2026-01-22');
     expect(firstOnOrAfter('yearly', 29, '2024-02-29', '2026-03-01')).toBe('2027-02-28');
+  });
+});
+
+describe('Recurring calendar helpers', () => {
+  it('clamps a card due day to the length of the month', () => {
+    expect(dueDateIn('2026-10', 31)).toBe('2026-10-31');
+    expect(dueDateIn('2026-02', 31)).toBe('2026-02-28');
+    expect(dueDateIn('2028-02', 30)).toBe('2028-02-29');
+    expect(dueDateIn('2026-10', 5)).toBe('2026-10-05');
+  });
+
+  it('lays a month out Monday first with blanks before the 1st', () => {
+    const grid = monthGrid('2026-10'); // 1 Oct 2026 is a Thursday
+    expect(grid.slice(0, 4)).toEqual([null, null, null, '2026-10-01']);
+    expect(grid).toHaveLength(3 + 31);
+    expect(monthGrid('2026-06')[0]).toBe('2026-06-01'); // a Monday
+  });
+
+  it('projects a month-end item through a short month', () => {
+    const item = { id: 1, freq: 'monthly' as const, anchor_day: 31, next_date: '2026-01-31', active: 1 };
+    const found = occurrencesBetween([item], '2026-02-01', '2026-02-28');
+    expect(found.map((f) => f.date)).toEqual(['2026-02-28']);
   });
 });
