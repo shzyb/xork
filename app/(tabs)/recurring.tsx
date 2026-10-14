@@ -162,7 +162,7 @@ export default function Recurring() {
             <PressableScale key={t} accessibilityRole="button" onPress={() => setTab(t)}
               style={[styles.tab, tab === t && { backgroundColor: colors.bg }]}>
               <Text style={{ fontSize: 14.5, fontWeight: '600', color: tab === t ? colors.ink : colors.ink2 }}>
-                {t === 'upcoming' ? 'Upcoming' : 'All'}
+                {t === 'upcoming' ? 'Upcoming' : 'All Recurring'}
               </Text>
             </PressableScale>
           ))}
@@ -211,7 +211,7 @@ const styles = StyleSheet.create({
   screenTitle: { fontSize: fontSize.screen, fontWeight: '800' },
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   tabs: { flexDirection: 'row', borderRadius: 22, padding: 3, gap: 3, marginTop: spacing.md },
-  tab: { flex: 1, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  tab: { flexGrow: 1, flexBasis: 0, minWidth: 0, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   monthBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.lg },
   monthName: { fontSize: 17, fontWeight: '700' },
   week: { flexDirection: 'row', flexWrap: 'wrap' },
