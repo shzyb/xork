@@ -7,18 +7,17 @@ import { formatMoney } from '../money';
 import { fontSize, useColors } from '../theme';
 import type { TransactionRow } from '../types';
 import { CategoryIcon } from './CategoryIcon';
+import { ListHeading } from './ListHeading';
 import { Text } from './Text';
 
 // Transactions grouped under a date heading. Tapping a row opens its detail sheet.
 export function TransactionList({ rows }: { rows: TransactionRow[] }) {
-  const colors = useColors();
-
   return (
     <View>
       {rows.map((t, i) => (
         <View key={t.id}>
           {(i === 0 || rows[i - 1].date !== t.date) && (
-            <Text style={[styles.dateHead, { color: colors.ink }]}>{prettyDate(t.date)}</Text>
+            <ListHeading>{prettyDate(t.date)}</ListHeading>
           )}
           <Line t={t} />
         </View>
@@ -67,7 +66,6 @@ function Line({ t }: { t: TransactionRow }) {
 }
 
 const styles = StyleSheet.create({
-  dateHead: { fontSize: 17, fontWeight: '700', paddingTop: 22, paddingBottom: 4 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64 },
   transferIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   main: { flex: 1 },

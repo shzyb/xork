@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
 import { EmptyState } from '../../src/components/EmptyState';
 import { FadeScrollView } from '../../src/components/FadeScrollView';
+import { ListHeading } from '../../src/components/ListHeading';
 import { PressableScale } from '../../src/components/PressableScale';
 import { RecurringRow } from '../../src/components/RecurringRow';
 import { Text } from '../../src/components/Text';
@@ -77,8 +78,6 @@ export default function Recurring() {
     return date >= today() ? date : dueDateIn(shiftMonth(currentMonth(), 1), day);
   };
 
-  const heading = (text: string) => <Text style={[styles.heading, { color: colors.ink2 }]}>{text}</Text>;
-
   const row = (e: Entry) => (
     <PressableScale
       key={e.key}
@@ -143,7 +142,7 @@ export default function Recurring() {
 
   const group = (label: string, rows: React.ReactNode[]) => rows.length > 0 && (
     <View>
-      {heading(label)}
+      <ListHeading>{label}</ListHeading>
       {rows}
     </View>
   );
@@ -172,7 +171,7 @@ export default function Recurring() {
         {tab === 'upcoming' && items && accounts && (
           <>
             {calendar}
-            {heading(selected ? prettyDate(selected) : monthLabel(month))}
+            <ListHeading>{selected ? prettyDate(selected) : monthLabel(month)}</ListHeading>
             {shown.length > 0 ? shown.map(row) : (
               <Text style={{ color: colors.ink2, fontSize: fontSize.body, marginTop: spacing.sm }}>
                 {selected ? 'Nothing on this day.' : 'Nothing this month.'}
@@ -221,7 +220,6 @@ const styles = StyleSheet.create({
   day: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   dots: { flexDirection: 'row', gap: 3, height: 6, marginTop: 2 },
   dot: { width: 5, height: 5, borderRadius: 2.5 },
-  heading: { fontSize: fontSize.small, fontWeight: '700', marginTop: 26, marginBottom: spacing.xs },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64 },
   main: { flex: 1 },
   end: { alignItems: 'flex-end', maxWidth: '45%' },
