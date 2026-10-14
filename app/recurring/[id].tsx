@@ -9,6 +9,7 @@ import { Toggle } from '../../src/components/Toggle';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AccountDot, AccountPicker } from '../../src/components/AccountButton';
 import { Button } from '../../src/components/Button';
+import { Chip } from '../../src/components/Chip';
 import { CategoryGrid } from '../../src/components/CategoryGrid';
 import { DateChips } from '../../src/components/DateChips';
 import { Field } from '../../src/components/Field';
@@ -142,15 +143,7 @@ function RecurringForm({ editing, accounts, categories }: {
           <Text style={styles.label}>Frequency</Text>
           <View style={styles.chips}>
             {(['weekly', 'monthly', 'yearly'] as const).map((key) => (
-              <PressableScale
-                key={key}
-                accessibilityRole="button"
-                accessibilityState={{ selected: freq === key }}
-                onPress={() => setFreq(key)}
-                style={[styles.chip, { backgroundColor: freq === key ? sheet.btnBg : sheet.card }]}
-              >
-                <Text style={[styles.chipText, { color: freq === key ? sheet.btnFg : sheet.ink }]}>{FREQUENCY_LABEL[key]}</Text>
-              </PressableScale>
+              <Chip key={key} label={FREQUENCY_LABEL[key]} on={freq === key} onPress={() => setFreq(key)} />
             ))}
           </View>
           <Text style={styles.label}>{editing ? 'Next date' : 'First date'}</Text>
@@ -207,8 +200,6 @@ const styles = StyleSheet.create({
   segmentText: { color: sheet.ink2, fontSize: 14.5, fontWeight: '600' },
   label: { color: sheet.ink2, fontSize: 14, fontWeight: '600', marginTop: 20, marginBottom: 8 },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  chip: { justifyContent: 'center', height: 40, paddingHorizontal: 14, borderRadius: 20 },
-  chipText: { fontSize: 14.5, fontWeight: '600' },
   dropdown: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 50, paddingHorizontal: 14, borderRadius: 16, backgroundColor: sheet.card },
   dropdownName: { flex: 1, color: sheet.ink, fontSize: 16, fontWeight: '600' },
   dropdownBalance: { color: sheet.ink2, fontSize: 14.5 },
