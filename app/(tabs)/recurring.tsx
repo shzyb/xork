@@ -32,6 +32,7 @@ export default function Recurring() {
   const router = useRouter();
   const [tab, setTab] = useState<'upcoming' | 'all'>('upcoming');
   const [month, setMonth] = useState(currentMonth());
+  const [tabsWidth, setTabsWidth] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
   const items = useData(getRecurring);
   const accounts = useData(getAccountsWithBalance);
@@ -157,10 +158,10 @@ export default function Recurring() {
           </PressableScale>
         </View>
 
-        <View style={[styles.tabs, { backgroundColor: colors.fill }]}>
+        <View style={[styles.tabs, { backgroundColor: colors.fill }]} onLayout={(e) => setTabsWidth(e.nativeEvent.layout.width)}>
           {(['upcoming', 'all'] as const).map((t) => (
             <PressableScale key={t} accessibilityRole="button" onPress={() => setTab(t)}
-              style={[styles.tab, tab === t && { backgroundColor: colors.bg }]}>
+              style={[styles.tab, { width: (tabsWidth - 9) / 2 }, tab === t && { backgroundColor: colors.bg }]}>
               <Text style={{ fontSize: 14.5, fontWeight: '600', color: tab === t ? colors.ink : colors.ink2 }}>
                 {t === 'upcoming' ? 'Upcoming' : 'All Recurring'}
               </Text>
@@ -211,7 +212,7 @@ const styles = StyleSheet.create({
   screenTitle: { fontSize: fontSize.screen, fontWeight: '800' },
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   tabs: { flexDirection: 'row', borderRadius: 22, padding: 3, gap: 3, marginTop: spacing.md },
-  tab: { flexGrow: 1, flexBasis: 0, minWidth: 0, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  tab: { height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   monthBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.lg },
   monthName: { fontSize: 17, fontWeight: '700' },
   week: { flexDirection: 'row', flexWrap: 'wrap' },
