@@ -1,13 +1,13 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { StatusBar } from 'expo-status-bar';
-import { Trash2 } from 'lucide-react-native';
+import { ChevronDown, Trash2 } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { PressableScale } from '../../src/components/PressableScale';
 import { Toggle } from '../../src/components/Toggle';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AccountChips } from '../../src/components/AccountChips';
+import { AccountDot, AccountPicker } from '../../src/components/AccountButton';
 import { Button } from '../../src/components/Button';
 import { CategoryGrid } from '../../src/components/CategoryGrid';
 import { DateChips } from '../../src/components/DateChips';
@@ -17,7 +17,7 @@ import {
   addRecurring, deleteRecurring, getAccountsWithBalance, getCategories, getRecurringItem, updateRecurring,
 } from '../../src/db';
 import { FREQUENCY_LABEL, today, tomorrow } from '../../src/dates';
-import { currentDecimals, minorToTyped, parseAmount } from '../../src/money';
+import { currentDecimals, formatMoney, minorToTyped, parseAmount } from '../../src/money';
 import { sheet, spacing } from '../../src/theme';
 import type { Account, Category, Frequency, Recurring } from '../../src/types';
 import { useData } from '../../src/useData';
@@ -38,7 +38,7 @@ export default function RecurringScreen() {
 
 function RecurringForm({ editing, accounts, categories }: {
   editing: Recurring | null;
-  accounts: Account[];
+  accounts: (Account & { balance_minor: number })[];
   categories: Category[];
 }) {
   const router = useRouter();
@@ -50,7 +50,11 @@ function RecurringForm({ editing, accounts, categories }: {
   const [date, setDate] = useState(editing?.next_date ?? tomorrow());
   const [categoryId, setCategoryId] = useState<number | null>(editing?.category_id ?? null);
   const [active, setActive] = useState(editing ? editing.active === 1 : true);
+  const [picking, setPicking] = useState(false);
   const [error, setError] = useState('');
+
+  const account = accounts.find((a) => a.id === accountId) ?? accounts[0];
+  const accountLabel = type === 'income' ? 'Into' : 'From';
 
   async function save() {
     if (name.trim() === '') return setError('Enter a name.');
@@ -123,7 +127,18 @@ function RecurringForm({ editing, accounts, categories }: {
             placeholder="0"
             keyboardType={currentDecimals() === 0 ? 'number-pad' : 'decimal-pad'}
           />
-          <AccountChips label={type === 'income' ? 'Into' : 'From'} accounts={accounts} selectedId={accountId} onSelect={setAccountId} />
+          <Text style={styles.label}>{accountLabel}</Text>
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel={`${accountLabel}: ${account.name}. Tap to change`}
+            onPress={() => setPicking(true)}
+            style={styles.dropdown}
+          >
+            <AccountDot account={account} size={32} />
+            <Text style={styles.dropdownName} numberOfLines={1}>{account.name}</Text>
+            <Text style={styles.dropdownBalance}>{formatMoney(account.balance_minor)}</Text>
+            <ChevronDown color={sheet.ink2} size={20} />
+          </PressableScale>
           <Text style={styles.label}>How often</Text>
           <View style={styles.segment}>
             {(['weekly', 'monthly', 'yearly'] as const).map((key) => (
@@ -170,6 +185,15 @@ function RecurringForm({ editing, accounts, categories }: {
           )}
         </View>
       </KeyboardAvoidingView>
+      {picking && (
+        <AccountPicker
+          title={accountLabel}
+          accounts={accounts}
+          current={accountId}
+          onPick={(id) => { setAccountId(id); setPicking(false); }}
+          onClose={() => setPicking(false)}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -182,6 +206,9 @@ const styles = StyleSheet.create({
   segmentItem: { flex: 1, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   segmentText: { color: sheet.ink2, fontSize: 14.5, fontWeight: '600' },
   label: { color: sheet.ink2, fontSize: 14, fontWeight: '600', marginTop: 20, marginBottom: 8 },
+  dropdown: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 52, paddingLeft: 10, paddingRight: 14, borderRadius: 26, backgroundColor: sheet.card },
+  dropdownName: { flex: 1, color: sheet.ink, fontSize: 16, fontWeight: '600' },
+  dropdownBalance: { color: sheet.ink2, fontSize: 14.5 },
   activeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: sheet.card, borderRadius: 18, padding: 16, marginTop: 20 },
   activeText: { flex: 1 },
   activeTitle: { color: sheet.ink, fontSize: 16, fontWeight: '600' },
