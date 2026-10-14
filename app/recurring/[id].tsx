@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
   segmentItem: { flex: 1, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   segmentText: { color: sheet.ink2, fontSize: 14.5, fontWeight: '600' },
   label: { color: sheet.ink2, fontSize: 14, fontWeight: '600', marginTop: 20, marginBottom: 8 },
-  dropdown: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 52, paddingLeft: 10, paddingRight: 14, borderRadius: 26, backgroundColor: sheet.card },
+  dropdown: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 50, paddingHorizontal: 14, borderRadius: 16, backgroundColor: sheet.card },
   dropdownName: { flex: 1, color: sheet.ink, fontSize: 16, fontWeight: '600' },
   dropdownBalance: { color: sheet.ink2, fontSize: 14.5 },
   activeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, backgroundColor: sheet.card, borderRadius: 18, padding: 16, marginTop: 20 },
