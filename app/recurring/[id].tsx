@@ -139,17 +139,17 @@ function RecurringForm({ editing, accounts, categories }: {
             <Text style={styles.dropdownBalance}>{formatMoney(account.balance_minor)}</Text>
             <ChevronDown color={sheet.ink2} size={20} />
           </PressableScale>
-          <Text style={styles.label}>How often</Text>
-          <View style={styles.segment}>
+          <Text style={styles.label}>Frequency</Text>
+          <View style={styles.chips}>
             {(['weekly', 'monthly', 'yearly'] as const).map((key) => (
               <PressableScale
                 key={key}
                 accessibilityRole="button"
                 accessibilityState={{ selected: freq === key }}
                 onPress={() => setFreq(key)}
-                style={[styles.segmentItem, freq === key && { backgroundColor: sheet.card2 }]}
+                style={[styles.chip, { backgroundColor: freq === key ? sheet.btnBg : sheet.card }]}
               >
-                <Text style={[styles.segmentText, freq === key && { color: sheet.ink }]}>{FREQUENCY_LABEL[key]}</Text>
+                <Text style={[styles.chipText, { color: freq === key ? sheet.btnFg : sheet.ink }]}>{FREQUENCY_LABEL[key]}</Text>
               </PressableScale>
             ))}
           </View>
@@ -206,6 +206,9 @@ const styles = StyleSheet.create({
   segmentItem: { flex: 1, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   segmentText: { color: sheet.ink2, fontSize: 14.5, fontWeight: '600' },
   label: { color: sheet.ink2, fontSize: 14, fontWeight: '600', marginTop: 20, marginBottom: 8 },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chip: { justifyContent: 'center', height: 40, paddingHorizontal: 14, borderRadius: 20 },
+  chipText: { fontSize: 14.5, fontWeight: '600' },
   dropdown: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 50, paddingHorizontal: 14, borderRadius: 16, backgroundColor: sheet.card },
   dropdownName: { flex: 1, color: sheet.ink, fontSize: 16, fontWeight: '600' },
   dropdownBalance: { color: sheet.ink2, fontSize: 14.5 },
