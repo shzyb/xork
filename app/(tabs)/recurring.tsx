@@ -161,7 +161,7 @@ export default function Recurring() {
           {(['upcoming', 'all'] as const).map((t) => (
             <PressableScale key={t} accessibilityRole="button" onPress={() => setTab(t)}
               style={[styles.tab, tab === t && { backgroundColor: colors.bg }]}>
-              <Text style={{ fontSize: 14.5, fontWeight: '700', color: tab === t ? colors.ink : colors.ink2 }}>
+              <Text style={{ fontSize: 14.5, fontWeight: '600', color: tab === t ? colors.ink : colors.ink2 }}>
                 {t === 'upcoming' ? 'Upcoming' : 'All'}
               </Text>
             </PressableScale>
@@ -210,8 +210,8 @@ const styles = StyleSheet.create({
   topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md },
   screenTitle: { fontSize: fontSize.screen, fontWeight: '800' },
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  tabs: { flexDirection: 'row', alignSelf: 'flex-start', height: 44, borderRadius: 22, padding: 2, marginTop: spacing.md },
-  tab: { paddingHorizontal: 18, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  tabs: { flexDirection: 'row', borderRadius: 22, padding: 3, gap: 3, marginTop: spacing.md },
+  tab: { flex: 1, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   monthBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.lg },
   monthName: { fontSize: 17, fontWeight: '700' },
   week: { flexDirection: 'row', flexWrap: 'wrap' },
