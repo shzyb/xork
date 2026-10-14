@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { PressableScale } from '../../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AccountDot } from '../../src/components/AccountButton';
 import { Button } from '../../src/components/Button';
 import { ColorSwatches } from '../../src/components/ColorSwatches';
 import { Field } from '../../src/components/Field';
@@ -97,9 +98,7 @@ function AccountForm({ editing, accountCount }: { editing: Account | null; accou
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <FadeScrollView style={styles.flex} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
           <View style={styles.preview}>
-            <View style={[styles.initial, { backgroundColor: color }]}>
-              <Text style={styles.initialText}>{name.trim().charAt(0).toUpperCase() || '?'}</Text>
-            </View>
+            <AccountDot account={{ type, color }} size={88} />
           </View>
           <Field label="Account name" value={name} onChangeText={setName} placeholder="e.g. Bank" maxLength={32} />
           <Text style={styles.label}>Type</Text>
@@ -152,8 +151,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   content: { paddingBottom: spacing.lg },
   preview: { alignItems: 'center', paddingVertical: 4 },
-  initial: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
-  initialText: { color: '#FFFFFF', fontSize: 26, fontWeight: '700' },
   label: { color: sheet.ink2, fontSize: 14, fontWeight: '600', marginTop: 20, marginBottom: 8 },
   types: { gap: 8 },
   type: { minHeight: 44, paddingHorizontal: 18, borderRadius: 22, backgroundColor: sheet.card, alignItems: 'center', justifyContent: 'center' },

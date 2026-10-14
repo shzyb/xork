@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
 import { PressableScale } from '../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AccountDot } from '../src/components/AccountButton';
 import { Button } from '../src/components/Button';
 import { getAccountsWithBalance } from '../src/db';
 import { formatMoney } from '../src/money';
@@ -37,9 +38,7 @@ export default function Accounts() {
                 onPress={() => router.push({ pathname: '/account/detail/[id]', params: { id: String(a.id) } })}
                 style={styles.row}
               >
-                <View style={[styles.initial, { backgroundColor: a.color }]}>
-                  <Text style={styles.initialText}>{a.name.trim().charAt(0).toUpperCase() || '?'}</Text>
-                </View>
+                <AccountDot account={a} size={44} />
                 <View style={styles.nameBox}>
                   <Text style={[styles.name, { color: colors.ink }]} numberOfLines={1}>{a.name}</Text>
                   <Text style={{ color: colors.ink3, fontSize: 13, marginTop: 1 }}>
@@ -79,8 +78,6 @@ const styles = StyleSheet.create({
   content: { paddingBottom: spacing.lg },
   title: { fontSize: fontSize.screen, fontWeight: '800' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64, paddingVertical: 6 },
-  initial: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  initialText: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
   nameBox: { flex: 1 },
   name: { fontSize: 16.5, fontWeight: '600' },
   end: { alignItems: 'flex-end' },

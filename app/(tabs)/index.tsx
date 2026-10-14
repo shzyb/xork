@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { PressableScale } from '../../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AccountDot } from '../../src/components/AccountButton';
 import { EmptyState } from '../../src/components/EmptyState';
 import { HomeHero } from '../../src/components/HomeHero';
 import { RecurringRow } from '../../src/components/RecurringRow';
@@ -121,9 +122,7 @@ export default function Home() {
                     onPress={() => router.push({ pathname: '/account/detail/[id]', params: { id: String(a.id) } })}
                     style={styles.row}
                   >
-                    <View style={[styles.initial, { backgroundColor: a.color }]}>
-                      <Text style={styles.initialText}>{a.name.trim().charAt(0).toUpperCase() || '?'}</Text>
-                    </View>
+                    <AccountDot account={a} size={44} />
                     <View style={styles.nameBox}>
                       <Text style={[styles.name, { color: colors.ink }]} numberOfLines={1}>{a.name}</Text>
                       <Text style={{ color: colors.ink3, fontSize: 13, marginTop: 1 }}>
@@ -208,7 +207,6 @@ const styles = StyleSheet.create({
   tab: { fontSize: fontSize.body, fontWeight: '700' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64 },
   initial: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  initialText: { color: '#FFFFFF', fontSize: 17, fontWeight: '700' },
   title: { flex: 1, fontSize: 16.5, fontWeight: '600' },
   nameBox: { flex: 1 },
   name: { fontSize: 16.5, fontWeight: '600' },

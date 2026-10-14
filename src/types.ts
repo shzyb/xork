@@ -8,11 +8,11 @@ export const THEME_OPTIONS: { value: ThemeSetting; label: string }[] = [
 
 export type AccountType = 'cash' | 'debit' | 'savings' | 'credit';
 
-export const ACCOUNT_TYPES: { value: AccountType; label: string }[] = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'debit', label: 'Debit' },
-  { value: 'savings', label: 'Savings' },
-  { value: 'credit', label: 'Credit card' },
+export const ACCOUNT_TYPES: { value: AccountType; label: string; emoji: string }[] = [
+  { value: 'cash', emoji: '💵', label: 'Cash' },
+  { value: 'debit', emoji: '🏦', label: 'Debit' },
+  { value: 'savings', emoji: '💰', label: 'Savings' },
+  { value: 'credit', emoji: '💳', label: 'Credit card' },
 ];
 
 export type Account = {

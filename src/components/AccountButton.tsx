@@ -1,23 +1,22 @@
 import { ArrowLeftRight } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
+import { CategoryIcon } from './CategoryIcon';
 import { PickerSheet } from './PickerSheet';
 import type { PickerOption } from './PickerSheet';
 import { PressableScale } from './PressableScale';
 import { formatMoney } from '../money';
 import { sheet } from '../theme';
+import { ACCOUNT_TYPES } from '../types';
+import type { AccountType } from '../types';
 import { Text } from './Text';
 
-type Account = { name: string; color: string; balance_minor: number };
+type Account = { name: string; type: AccountType; color: string; balance_minor: number };
 
 export const BUTTON_HEIGHT = 44; // the date and note buttons use the same height
 
-// The account's coloured initial, used in the button and in the picker rows.
-export function AccountDot({ account, size }: { account: Account; size: number }) {
-  return (
-    <View style={[styles.dot, { width: size, height: size, borderRadius: size / 2, backgroundColor: account.color }]}>
-      <Text style={[styles.initial, { fontSize: size * 0.42 }]}>{account.name.trim().charAt(0).toUpperCase() || '?'}</Text>
-    </View>
-  );
+// The account's type emoji on a tint of its colour. Used wherever an account is shown.
+export function AccountDot({ account, size }: { account: Pick<Account, 'type' | 'color'>; size: number }) {
+  return <CategoryIcon name={ACCOUNT_TYPES.find((t) => t.value === account.type)?.emoji ?? null} color={account.color} size={size} />;
 }
 
 // "Choose one account" sheet, one row per account with its balance.
@@ -83,6 +82,4 @@ const styles = StyleSheet.create({
   swapCircle: { width: 28, height: 28, borderRadius: 14, backgroundColor: sheet.card2, alignItems: 'center', justifyContent: 'center' },
   button: { flexShrink: 1, flexDirection: 'row', alignItems: 'center', gap: 10, height: BUTTON_HEIGHT, paddingLeft: 6, paddingRight: 16, borderRadius: BUTTON_HEIGHT / 2, backgroundColor: sheet.card },
   name: { flexShrink: 1, color: sheet.ink, fontSize: 15, fontWeight: '600' },
-  dot: { alignItems: 'center', justifyContent: 'center' },
-  initial: { color: '#FFFFFF', fontWeight: '700' },
 });

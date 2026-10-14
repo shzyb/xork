@@ -1,6 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { FadeScrollView } from '../../../src/components/FadeScrollView';
 import { StyleSheet, View } from 'react-native';
+import { AccountDot } from '../../../src/components/AccountButton';
 import { Button } from '../../../src/components/Button';
 import { Sheet } from '../../../src/components/Sheet';
 import { SheetHeader } from '../../../src/components/SheetHeader';
@@ -47,9 +48,7 @@ export default function AccountDetail() {
       <SheetHeader title="" onClose={() => router.back()} />
       <FadeScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <View style={styles.hero}>
-          <View style={[styles.initial, { backgroundColor: account.color }]}>
-            <Text style={styles.initialText}>{account.name.trim().charAt(0).toUpperCase() || '?'}</Text>
-          </View>
+          <AccountDot account={account} size={64} />
           <Text style={styles.kind} numberOfLines={1}>{account.name}</Text>
           <Text style={styles.amount} numberOfLines={1} adjustsFontSizeToFit>
             {formatMoney(credit ? -account.balance_minor : account.balance_minor)}
@@ -89,8 +88,6 @@ const styles = StyleSheet.create({
   scroll: { flexShrink: 1 },
   content: { paddingBottom: spacing.lg },
   hero: { alignItems: 'center', gap: 6, paddingBottom: 6 },
-  initial: { width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center' },
-  initialText: { color: '#FFFFFF', fontSize: 26, fontWeight: '700' },
   kind: { color: sheet.ink2, fontSize: 15, marginTop: 6, maxWidth: '80%' },
   amount: { color: sheet.ink, fontSize: 40, fontWeight: '800', letterSpacing: -1, maxWidth: '100%' },
   sub: { color: sheet.ink3, fontSize: 13.5 },

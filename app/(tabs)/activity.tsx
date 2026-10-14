@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { PressableScale } from '../../src/components/PressableScale';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AccountDot } from '../../src/components/AccountButton';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
 import { EmptyState } from '../../src/components/EmptyState';
 import { PickerSheet } from '../../src/components/PickerSheet';
@@ -93,11 +94,7 @@ export default function Activity() {
         ...(accounts ?? []).map((a) => ({
           value: a.id,
           label: a.name,
-          lead: (
-            <View style={[styles.initial, { backgroundColor: a.color }]}>
-              <Text style={styles.initialText}>{a.name.trim().charAt(0).toUpperCase() || '?'}</Text>
-            </View>
-          ),
+          lead: <AccountDot account={a} size={36} />,
         })),
       ];
       return <PickerSheet title="Account" options={options} current={accountId} onPick={(v) => pick({ accountId: v })} onClose={() => setPicker(null)} />;
@@ -214,6 +211,4 @@ const styles = StyleSheet.create({
   summary: { fontSize: 14, paddingTop: 10 },
   empty: { alignItems: 'center', gap: 12, paddingVertical: 36 },
   pill: { height: 40, paddingHorizontal: 16, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  initial: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  initialText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
 });
