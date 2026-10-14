@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ChevronLeft, ChevronRight, CreditCard, Plus, Repeat } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Plus, Repeat } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
@@ -62,7 +62,7 @@ export default function Recurring() {
     if (date < a.created_at.slice(0, 10)) continue;
     entries.push({
       key: `c${a.id}`, date, kind: 'card', title: a.name, sub: 'Card payment due', amount: owed(a.balance_minor),
-      emoji: null, color: a.color, path: '/account/detail/[id]', id: a.id,
+      emoji: '💳', color: a.color, path: '/account/detail/[id]', id: a.id,
     });
   }
   entries.sort((a, b) => a.date.localeCompare(b.date));
@@ -85,11 +85,7 @@ export default function Recurring() {
       onPress={() => router.push({ pathname: e.path as '/transaction/[id]', params: { id: String(e.id) } })}
       style={styles.row}
     >
-      {e.kind === 'card' ? (
-        <View style={[styles.cardIcon, { backgroundColor: `${e.color}33` }]}><CreditCard color={colors.ink} size={20} /></View>
-      ) : (
-        <CategoryIcon name={e.emoji} color={e.color} recurring />
-      )}
+      <CategoryIcon name={e.emoji} color={e.color} recurring={e.kind !== 'card'} />
       <View style={styles.main}>
         <Text style={[styles.title, { color: colors.ink }]} numberOfLines={1}>{e.title}</Text>
         <Text style={{ color: colors.ink2, fontSize: fontSize.small }} numberOfLines={1}>{e.sub}</Text>
@@ -198,7 +194,7 @@ export default function Recurring() {
               {group('Credit cards', cards.map((a) => row({
                 key: `c${a.id}`, date: nextDue(a.due_day!), kind: 'card', title: a.name,
                 sub: `Due on day ${a.due_day} each month`, amount: owed(a.balance_minor),
-                emoji: null, color: a.color, path: '/account/detail/[id]', id: a.id,
+                emoji: '💳', color: a.color, path: '/account/detail/[id]', id: a.id,
               })))}
             </>
           )
@@ -229,5 +225,4 @@ const styles = StyleSheet.create({
   main: { flex: 1 },
   end: { alignItems: 'flex-end', maxWidth: '45%' },
   title: { fontSize: 16.5, fontWeight: '600' },
-  cardIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 });
