@@ -5,7 +5,7 @@ import { ICON_NAMES, toEmoji } from './emoji';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, SCHEMA } from './seed';
 import { BACKUP_VERSION } from './backup';
 import type { Backup } from './backup';
-import type { Account, Category, CategorySpend, DaySpend, InsightsData, MonthTotals, NetWorthTrend, Recurring, RecurringRow, Transaction, ThemeSetting, TransactionFilter, TransactionRow } from './types';
+import type { Account, Category, CategorySpend, DaySpend, HomeMetric, InsightsData, MonthTotals, NetWorthTrend, Recurring, RecurringRow, Transaction, ThemeSetting, TransactionFilter, TransactionRow } from './types';
 
 // The small part of expo-sqlite that we use, so tests can pass a fake.
 export type Db = {
@@ -151,6 +151,11 @@ export async function setTheme(theme: ThemeSetting) {
 
 export async function setHideBalances(on: boolean) {
   await write((handle) => handle.runAsync(UPSERT_SETTING, 'hide_balances', on ? '1' : '0'));
+}
+
+// What the top of Home shows. It stays chosen when the app is closed and opened again.
+export async function setHomeMetric(metric: HomeMetric) {
+  await write((handle) => handle.runAsync(UPSERT_SETTING, 'home_metric', metric));
 }
 
 // First launch: save the chosen currency and mark the welcome screen as done, together.

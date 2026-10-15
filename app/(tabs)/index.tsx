@@ -11,7 +11,7 @@ import { HomeHero } from '../../src/components/HomeHero';
 import { RecurringRow } from '../../src/components/RecurringRow';
 import { SwipePages } from '../../src/components/SwipePages';
 import { TransactionList } from '../../src/components/TransactionList';
-import { getAccountsWithBalance, getRecurring, getSetting, getTransactions, NO_FILTER } from '../../src/db';
+import { getAccountsWithBalance, getRecurring, getSetting, getTransactions, NO_FILTER, setHomeMetric } from '../../src/db';
 import { today, upcomingOccurrences } from '../../src/dates';
 import { formatMoney } from '../../src/money';
 import { fabClearance, fontSize, spacing, useColors } from '../../src/theme';
@@ -30,7 +30,9 @@ export default function Home() {
   const colors = useColors();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('recent');
-  const [metric, setMetric] = useState<HomeMetric>('balance');
+  // The last choice is saved, so the app opens on it. Balance until one is made.
+  const savedMetric = useData(() => getSetting('home_metric'));
+  const metric: HomeMetric = savedMetric === 'expense' ? 'expense' : 'balance';
   const screenRef = useRef<View>(null);
   const titleRef = useRef<View>(null);
   const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
@@ -71,10 +73,12 @@ export default function Home() {
       <FadeScrollView contentContainerStyle={styles.content}>
         <View style={styles.topbar}>
           <View ref={titleRef} collapsable={false}>
-            <PressableScale accessibilityRole="button" accessibilityLabel={`Showing ${METRIC_LABELS[metric]}. Change`} onPress={openMenu} style={styles.metricButton}>
-              <Text style={[styles.brand, { color: colors.ink }]}>{METRIC_LABELS[metric]}</Text>
-              <View style={styles.chevron}><ChevronDown color={colors.ink} size={24} strokeWidth={2.4} /></View>
-            </PressableScale>
+            {savedMetric !== undefined && (
+              <PressableScale accessibilityRole="button" accessibilityLabel={`Showing ${METRIC_LABELS[metric]}. Change`} onPress={openMenu} style={styles.metricButton}>
+                <Text style={[styles.brand, { color: colors.ink }]}>{METRIC_LABELS[metric]}</Text>
+                <View style={styles.chevron}><ChevronDown color={colors.ink} size={24} strokeWidth={2.4} /></View>
+              </PressableScale>
+            )}
           </View>
           <View style={styles.actions}>
             <PressableScale accessibilityRole="button" accessibilityLabel={hidden ? 'Show balances' : 'Hide balances'} onPress={() => setShown(hidden)} style={styles.iconButton}>
@@ -86,7 +90,7 @@ export default function Home() {
           </View>
         </View>
 
-        {hideOnOpen !== undefined && <HomeHero metric={metric} total={total} hidden={hidden} />}
+        {hideOnOpen !== undefined && savedMetric !== undefined && <HomeHero metric={metric} total={total} hidden={hidden} />}
 
         <View style={[styles.tabs, { borderBottomColor: colors.line }]}>
           {TABS.map((key) => (
@@ -173,7 +177,7 @@ export default function Home() {
                 key={value}
                 accessibilityRole="button"
                 accessibilityState={{ selected: value === metric }}
-                onPress={() => { setMetric(value); setMenuAt(null); }}
+                onPress={() => { setHomeMetric(value); setMenuAt(null); }}
                 style={styles.menuRow}
               >
                 <Text style={[styles.menuLabel, { color: colors.ink }]}>{METRIC_LABELS[value]}</Text>
