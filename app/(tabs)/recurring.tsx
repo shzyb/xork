@@ -125,7 +125,7 @@ export default function Recurring() {
           return (
             <PressableScale key={day} accessibilityRole="button" accessibilityLabel={prettyDate(day)}
               onPress={() => setSelected(on ? null : day)} style={styles.cell}>
-              <View style={[styles.day, on && { backgroundColor: colors.ink }, !on && day === today() && { backgroundColor: colors.fill }]}>
+              <View style={[styles.day, { backgroundColor: on ? colors.ink : day === today() ? colors.fill : 'transparent' }]}>
                 <Text style={{ fontSize: fontSize.body, fontWeight: day === today() ? '800' : '500', color: on ? colors.bg : colors.ink }}>
                   {Number(day.slice(8))}
                 </Text>
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
   week: { flexDirection: 'row', flexWrap: 'wrap' },
   cell: { width: `${100 / 7}%`, height: 50, alignItems: 'center' },
   weekday: { height: 28, textAlign: 'center', fontSize: 12.5, fontWeight: '600' },
-  day: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  day: { width: 34, height: 34, borderRadius: 17, overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   dots: { flexDirection: 'row', gap: 3, height: 6, marginTop: 2 },
   dot: { width: 5, height: 5, borderRadius: 2.5 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64 },
