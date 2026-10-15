@@ -13,7 +13,7 @@ import { MonthChips } from '../../src/components/MonthChips';
 import { PressableScale } from '../../src/components/PressableScale';
 import { Text } from '../../src/components/Text';
 import { getInsights } from '../../src/db';
-import { currentMonth, daysInMonth, monthName, today } from '../../src/dates';
+import { currentMonth, daysInMonth, monthName, monthShort, today } from '../../src/dates';
 import { biggestPriceRise, categoryUsual, creditStatus, dueText, forecast, keptPercent, runway, stillDue, usual, vsUsual, yearlyCost } from '../../src/insights';
 import { formatMoney } from '../../src/money';
 import { buildNotes } from '../../src/notes';
@@ -22,11 +22,14 @@ import type { InsightsData } from '../../src/types';
 import { useData } from '../../src/useData';
 
 const TOP_COUNT = 5;
+const GAP = 12;
 
 function percent(part: number, total: number) {
   const p = (part / total) * 100;
   return p > 0 && p < 1 ? '<1%' : `${Math.round(p)}%`;
 }
+
+type Tile = { label: string; value: string; sub: string; subColor?: string };
 
 export default function Insights() {
   const colors = useColors();
@@ -89,20 +92,53 @@ function Body({ data, month, contentWidth, onSelectMonth, expanded, onToggleExpa
   const heading = noIncome ? (isCurrent ? 'On track to spend' : 'Spent')
     : saved >= 0 ? (isCurrent ? 'On track to save' : 'Saved')
     : isCurrent ? 'On track to overspend by' : 'Overspent by';
-  const incomeDiff = vsUsual(summary.in_minor, usualIncome, isCurrent);
-
-  const fixed = recurringOut + due.bills;
-  const fixedShare = result.income > 0 ? Math.round((fixed / result.income) * 100) : null;
-  const subscriptions = data.recurring.filter((r) => r.active && r.type === 'expense' && r.category_name === 'Subscriptions');
-  const rise = biggestPriceRise(data.recurring, data.recurringLogs);
 
   const notes = buildNotes({
     month, isCurrent, todayDate, spent: out, usualSpent, spending, usualByCategory, biggest: data.biggest,
     recurring: data.recurring, payday: data.payday, dayToDay: data.dayToDay, monthly: data.monthly,
   });
 
-  const cards = data.accounts.filter((a) => a.type === 'credit' && a.limit_minor);
+  // The small facts, two to a row. Each shows only when it has something to say.
+  const tiles: Tile[] = [];
+  const fixed = recurringOut + due.bills;
+  if (fixed > 0) {
+    tiles.push(result.income > 0
+      ? { label: 'Fixed costs', value: `${Math.round((fixed / result.income) * 100)}%`, sub: `of income, ${formatMoney(fixed)}` }
+      : { label: 'Fixed costs', value: formatMoney(fixed), sub: 'bills and subscriptions' });
+  }
   const safety = isCurrent && usualSpent ? runway(data.accounts, usualSpent) : null;
+  if (safety) tiles.push({ label: 'Money lasts', value: `${safety.months} ${safety.months === 1 ? 'month' : 'months'}`, sub: 'at your usual spending' });
+  if (due.bills > 0) tiles.push({ label: 'Bills still due', value: formatMoney(due.bills), sub: `by the end of ${monthName(month)}` });
+  if (due.income > 0) tiles.push({ label: 'Income to come', value: formatMoney(due.income), sub: `by the end of ${monthName(month)}` });
+  if (summary.in_minor > 0) {
+    const diff = vsUsual(summary.in_minor, usualIncome, isCurrent);
+    tiles.push({
+      label: 'Income',
+      value: formatMoney(summary.in_minor),
+      sub: diff !== null ? `${formatMoney(Math.abs(diff))} ${diff > 0 ? 'above' : 'below'} usual`
+        : income.length > 1 ? `${percent(income[0].total_minor, summary.in_minor)} from ${income[0].name}` : 'this month',
+      subColor: diff === null ? undefined : diff > 0 ? colors.pos : colors.neg,
+    });
+  }
+  const subscriptions = isCurrent ? data.recurring.filter((r) => r.active && r.type === 'expense' && r.category_name === 'Subscriptions') : [];
+  if (subscriptions.length > 0) {
+    tiles.push({ label: 'Subscriptions', value: formatMoney(yearlyCost(subscriptions)), sub: `a year for ${subscriptions.length}` });
+  }
+  const rise = isCurrent ? biggestPriceRise(data.recurring, data.recurringLogs) : null;
+  if (rise) tiles.push({ label: 'Price rise', value: `+${rise.percent}%`, sub: `${rise.name} since ${monthShort(rise.since)}`, subColor: colors.neg });
+  if (isCurrent) {
+    for (const a of data.accounts) {
+      if (a.type !== 'credit' || !a.limit_minor) continue;
+      const status = creditStatus(-a.balance_minor, a.limit_minor);
+      const payment = a.due_day ? dueText(a.due_day, todayDate) : 'of the limit used';
+      tiles.push({
+        label: a.name,
+        value: `${status.percent}% used`,
+        sub: payment.charAt(0).toUpperCase() + payment.slice(1),
+        subColor: status.state === 'ok' ? undefined : status.state === 'warn' ? colors.warn : colors.neg,
+      });
+    }
+  }
 
   const grouped = spending.length > TOP_COUNT;
   const top = grouped ? spending.slice(0, TOP_COUNT) : spending;
@@ -117,10 +153,9 @@ function Body({ data, month, contentWidth, onSelectMonth, expanded, onToggleExpa
         <CategoryIcon name={c.icon} color={c.color} size={36} />
         <View style={styles.main}>
           <Text style={[styles.rowTitle, { color: colors.ink }]} numberOfLines={1}>{c.name}</Text>
-          <Text style={{ color: colors.ink2, fontSize: 14 }}>{c.count} {c.count === 1 ? 'transaction' : 'transactions'}</Text>
-          {diff !== null && (
-            <ChangeLine up={diff > 0} good={diff < 0}>{`${formatMoney(Math.abs(diff))} ${diff > 0 ? 'above' : 'below'} your usual`}</ChangeLine>
-          )}
+          {diff === null
+            ? <Text style={{ color: colors.ink2, fontSize: 14 }}>{c.count} {c.count === 1 ? 'transaction' : 'transactions'}</Text>
+            : <ChangeLine up={diff > 0} good={diff < 0}>{`${formatMoney(Math.abs(diff))} ${diff > 0 ? 'above' : 'below'} usual`}</ChangeLine>}
         </View>
         <View style={styles.end}>
           <Text style={[styles.rowTitle, { color: colors.ink }]}>{formatMoney(c.total_minor)}</Text>
@@ -135,63 +170,32 @@ function Body({ data, month, contentWidth, onSelectMonth, expanded, onToggleExpa
       <CashFlowChart monthly={data.monthly} selected={month} onSelect={onSelectMonth} width={contentWidth} />
       <MonthChips selected={month} earliest={data.earliestMonth} onSelect={onSelectMonth} />
 
-      <ListHeading>Did you live within your means?</ListHeading>
-      <Text style={[styles.label, { color: colors.ink2 }]}>{heading}</Text>
-      <Text style={[styles.big, { color: !noIncome && saved < 0 ? colors.neg : colors.ink }]} numberOfLines={1} adjustsFontSizeToFit>
-        {formatMoney(noIncome ? result.spend : Math.abs(saved))}
-      </Text>
-      {noIncome && <Text style={[styles.line, { color: colors.ink2 }]}>No income logged{isCurrent ? ' yet' : ''} in {monthName(month)}.</Text>}
-      {rate !== null && rate >= 0 && (usualRate !== null && rate !== usualRate
-        ? <ChangeLine up={rate > usualRate} good={rate > usualRate}>{`${rate}% of income · your usual is ${usualRate}%`}</ChangeLine>
-        : <Text style={[styles.line, { color: colors.ink2 }]}>{rate}% of income</Text>)}
-      <View style={styles.details}>
-        <Text style={[styles.small, { color: colors.ink2 }]}>
-          {isCurrent ? 'So far: ' : ''}In {formatMoney(summary.in_minor)} · Out {formatMoney(out)}
+      <View style={[styles.hero, { backgroundColor: colors.fill }]}>
+        <Text style={{ color: colors.ink2, fontSize: 15 }}>{heading}</Text>
+        <Text style={[styles.big, { color: !noIncome && saved < 0 ? colors.neg : colors.ink }]} numberOfLines={1} adjustsFontSizeToFit>
+          {formatMoney(noIncome ? result.spend : Math.abs(saved))}
         </Text>
-        {(due.bills > 0 || due.income > 0) && (
-          <Text style={[styles.small, { color: colors.ink2 }]}>
-            {due.bills > 0 ? `${formatMoney(due.bills)} of bills still due this month` : ''}
-            {due.bills > 0 && due.income > 0 ? ', ' : ''}
-            {due.income > 0 ? `${formatMoney(due.income)} of income to come` : ''}
+        {rate !== null && rate >= 0 && usualRate !== null && rate !== usualRate
+          ? <ChangeLine up={rate > usualRate} good={rate > usualRate}>{`${rate}% of income · usual ${usualRate}%`}</ChangeLine>
+          : <Text style={{ color: colors.ink2, fontSize: 15 }}>{noIncome ? `No income logged${isCurrent ? ' yet' : ''}` : rate !== null && rate >= 0 ? `${rate}% of income` : 'More than your income'}</Text>}
+        <View style={[styles.split, { borderTopColor: colors.line }]}>
+          <Text style={{ color: colors.ink2, fontSize: 14 }}>{isCurrent ? 'So far' : monthName(month)}</Text>
+          <Text style={{ color: colors.ink, fontSize: 14, fontWeight: '600', flexShrink: 1, textAlign: 'right' }}>
+            In {formatMoney(summary.in_minor)} · Out {formatMoney(out)}
           </Text>
-        )}
-        {incomeDiff !== null && (
-          <ChangeLine up={incomeDiff > 0} good={incomeDiff > 0}>{`Income ${formatMoney(Math.abs(incomeDiff))} ${incomeDiff > 0 ? 'above' : 'below'} your usual`}</ChangeLine>
-        )}
-        {income.length > 1 && (
-          <Text style={[styles.small, { color: colors.ink2 }]}>
-            {income.slice(0, 3).map((c) => `${c.name} ${percent(c.total_minor, summary.in_minor)}`).join(' · ')}
-          </Text>
-        )}
+        </View>
       </View>
 
-      {(fixed > 0 || (isCurrent && (subscriptions.length > 0 || rise))) && (
-        <>
-          <ListHeading>What's already spoken for</ListHeading>
-          {fixedShare !== null && fixed > 0 && (
-            <>
-              <Bar parts={[{ value: Math.min(fixed, result.income), color: colors.ink }, { value: Math.max(0, result.income - fixed), color: colors.fill2 }]} />
-              <View style={styles.barLabels}>
-                <Text style={[styles.small, { color: colors.ink }]}>Fixed {Math.min(100, fixedShare)}%</Text>
-                <Text style={[styles.small, { color: colors.ink2 }]}>Flexible {Math.max(0, 100 - fixedShare)}%</Text>
-              </View>
-            </>
-          )}
-          {fixed > 0 && (
-            <Text style={[styles.line, { color: colors.ink2 }]}>
-              Bills and subscriptions {isCurrent ? 'take' : 'took'} {formatMoney(fixed)}
-              {fixedShare === null ? '.' : fixedShare >= 100 ? ', more than your income.' : `, ${fixedShare}% of your income. ${isCurrent ? 'You choose' : 'You chose'} the rest.`}
-            </Text>
-          )}
-          {isCurrent && subscriptions.length > 0 && (
-            <Text style={[styles.line, { color: colors.ink }]}>
-              {subscriptions.length} {subscriptions.length === 1 ? 'subscription' : 'subscriptions'} · {formatMoney(yearlyCost(subscriptions))} a year
-            </Text>
-          )}
-          {isCurrent && rise && (
-            <ChangeLine up good={false}>{`${rise.name} went up ${rise.percent}% since ${monthName(rise.since)}`}</ChangeLine>
-          )}
-        </>
+      {tiles.length > 0 && (
+        <View style={styles.tiles}>
+          {tiles.map((t, i) => (
+            <View key={i} style={[styles.tile, { width: (contentWidth - GAP) / 2, backgroundColor: colors.fill }]}>
+              <Text style={{ color: colors.ink2, fontSize: 13 }} numberOfLines={1}>{t.label}</Text>
+              <Text style={[styles.tileValue, { color: colors.ink }]} numberOfLines={1} adjustsFontSizeToFit>{t.value}</Text>
+              <Text style={{ color: t.subColor ?? colors.ink2, fontSize: 13 }} numberOfLines={2}>{t.sub}</Text>
+            </View>
+          ))}
+        </View>
       )}
 
       {notes.length > 0 && (
@@ -211,12 +215,12 @@ function Body({ data, month, contentWidth, onSelectMonth, expanded, onToggleExpa
 
       <ListHeading>Top categories</ListHeading>
       {spending.length > 0 && (
-        <Bar
-          parts={[
-            ...(expanded ? spending : top).map((c) => ({ value: c.total_minor, color: c.color })),
-            ...(grouped && !expanded ? [{ value: restTotal, color: colors.ink3 }] : []),
-          ]}
-        />
+        <View style={styles.stack}>
+          {(expanded ? spending : top).map((c) => (
+            <View key={c.id} style={{ flex: c.total_minor, backgroundColor: c.color, minWidth: 3 }} />
+          ))}
+          {grouped && !expanded && <View style={{ flex: restTotal, backgroundColor: colors.ink3, minWidth: 3 }} />}
+        </View>
       )}
       {spending.length === 0 && (
         <Text style={{ color: colors.ink2, paddingVertical: spacing.md }}>No expenses in {monthName(month)}.</Text>
@@ -234,33 +238,6 @@ function Body({ data, month, contentWidth, onSelectMonth, expanded, onToggleExpa
         </PressableScale>
       )}
 
-      {safety && (
-        <>
-          <ListHeading>How long your money lasts</ListHeading>
-          <Text style={[styles.big, { color: colors.ink }]}>{safety.months} {safety.months === 1 ? 'month' : 'months'}</Text>
-          <Text style={[styles.line, { color: colors.ink2 }]}>
-            What your accounts would cover at your usual spending of {formatMoney(usualSpent ?? 0)} a month.
-          </Text>
-          <StatRow label="Cash, bank and savings" value={formatMoney(safety.have)} />
-          {safety.owed > 0 && <StatRow label="Owed on cards" value={`− ${formatMoney(safety.owed)}`} />}
-          {cards.map((a) => {
-            const status = creditStatus(-a.balance_minor, a.limit_minor ?? 0);
-            const tint = status.state === 'ok' ? colors.ink2 : status.state === 'warn' ? colors.warn : colors.neg;
-            const due = a.due_day ? dueText(a.due_day, todayDate) : '';
-            return (
-              <View key={a.id} style={styles.row}>
-                <CategoryIcon name="💳" color={a.color} size={36} />
-                <View style={styles.main}>
-                  <Text style={[styles.rowTitle, { color: colors.ink }]} numberOfLines={1}>{a.name}</Text>
-                  <Text style={{ color: tint, fontSize: 14 }}>{status.percent}% of limit used</Text>
-                </View>
-                {!!due && <Text style={{ color: colors.ink2, fontSize: 14 }}>{due.charAt(0).toUpperCase() + due.slice(1)}</Text>}
-              </View>
-            );
-          })}
-        </>
-      )}
-
       <Text style={[styles.foot, { color: colors.ink3 }]}>
         Moving money between your own accounts isn't counted as expense or income.
       </Text>
@@ -268,43 +245,21 @@ function Body({ data, month, contentWidth, onSelectMonth, expanded, onToggleExpa
   );
 }
 
-// A row of coloured segments sized by value, e.g. each category's share of spending.
-function Bar({ parts }: { parts: { value: number; color: string }[] }) {
-  return (
-    <View style={styles.bar}>
-      {parts.filter((p) => p.value > 0).map((p, i) => (
-        <View key={i} style={{ flex: p.value, backgroundColor: p.color, minWidth: 3 }} />
-      ))}
-    </View>
-  );
-}
-
-function StatRow({ label, value }: { label: string; value: string }) {
-  const colors = useColors();
-  return (
-    <View style={[styles.statRow, { borderBottomColor: colors.line }]}>
-      <Text style={{ color: colors.ink2, fontSize: 16 }}>{label}</Text>
-      <Text style={[styles.rowTitle, { color: colors.ink }]}>{value}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingHorizontal: spacing.xl, paddingBottom: fabClearance },
   title: { fontSize: fontSize.screen, fontWeight: '800', marginTop: spacing.md },
-  label: { fontSize: 15, marginTop: 4 },
-  big: { fontSize: 40, fontWeight: '800', letterSpacing: -1, marginBottom: 4 },
-  line: { fontSize: 15, lineHeight: 21, marginTop: 4 },
-  small: { fontSize: 14, lineHeight: 20 },
-  details: { gap: 4, marginTop: spacing.md },
-  barLabels: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 60, paddingVertical: 4 },
+  hero: { borderRadius: 24, padding: 20, marginTop: spacing.lg, gap: 2 },
+  big: { fontSize: 40, fontWeight: '800', letterSpacing: -1, marginVertical: 2 },
+  split: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.md, marginTop: spacing.md },
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, marginTop: GAP },
+  tile: { borderRadius: 20, padding: 16, gap: 2 },
+  tileValue: { fontSize: 22, fontWeight: '700', marginVertical: 2 },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 60 },
   main: { flex: 1 },
   end: { alignItems: 'flex-end', maxWidth: '45%' },
   rowTitle: { fontSize: 16.5, fontWeight: '600' },
   more: { alignSelf: 'center', minHeight: 44, paddingHorizontal: 20, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginVertical: spacing.sm },
-  bar: { flexDirection: 'row', height: 20, borderRadius: 5, overflow: 'hidden', gap: 2, marginTop: 8, marginBottom: 6 },
-  statRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', minHeight: 52, borderBottomWidth: StyleSheet.hairlineWidth },
+  stack: { flexDirection: 'row', height: 20, borderRadius: 5, overflow: 'hidden', gap: 2, marginTop: 8, marginBottom: 6 },
   foot: { fontSize: 12.5, lineHeight: 19, marginTop: 26 },
 });
