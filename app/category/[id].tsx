@@ -19,9 +19,9 @@ import type { Category, CategoryKind } from '../../src/types';
 import { useData } from '../../src/useData';
 import { Text } from '../../src/components/Text';
 
-// /category/new?kind=income adds a category, /category/5 edits category 5.
+// /category/new?kind=income adds a category, /category/5 edits category 5. Insights adds ?budget= to suggest a budget.
 export default function CategoryScreen() {
-  const { id, kind } = useLocalSearchParams<{ id: string; kind?: string }>();
+  const { id, kind, budget } = useLocalSearchParams<{ id: string; kind?: string; budget?: string }>();
   const isNew = id === 'new';
   const editing = useData(() => (isNew ? Promise.resolve(null) : getCategory(Number(id))), [id]);
 
@@ -29,10 +29,15 @@ export default function CategoryScreen() {
 
   if (editing === undefined || count === undefined) return null;
   if (!isNew && editing === null) return null;
-  return <CategoryForm editing={editing} startKind={kind === 'income' ? 'income' : 'expense'} count={count} />;
+  return <CategoryForm editing={editing} startKind={kind === 'income' ? 'income' : 'expense'} count={count} suggestedBudget={Number(budget) || null} />;
 }
 
-function CategoryForm({ editing, startKind, count }: { editing: Category | null; startKind: CategoryKind; count: number }) {
+function CategoryForm({ editing, startKind, count, suggestedBudget }: {
+  editing: Category | null;
+  startKind: CategoryKind;
+  count: number;
+  suggestedBudget: number | null; // in minor units
+}) {
   const router = useRouter();
   const [kind, setKind] = useState<CategoryKind>(editing?.kind ?? startKind);
   const [name, setName] = useState(editing?.name ?? '');
@@ -42,7 +47,8 @@ function CategoryForm({ editing, startKind, count }: { editing: Category | null;
   const [color, setColor] = useState(editing?.color ?? categoryColors[count % categoryColors.length]);
   const suggestions = suggestEmoji(name);
   const emoji = picked || suggestions[0] || (kind === 'income' ? '💰' : '🏷️');
-  const [budget, setBudget] = useState(editing?.budget_minor ? minorToTyped(editing.budget_minor) : '');
+  const startBudget = editing?.budget_minor ?? suggestedBudget;
+  const [budget, setBudget] = useState(startBudget ? minorToTyped(startBudget) : '');
   const [error, setError] = useState('');
 
   async function save() {

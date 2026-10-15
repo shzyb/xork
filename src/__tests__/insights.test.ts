@@ -1,11 +1,12 @@
 import { setAppCurrency } from '../money';
-import { budgetStatus, buildNotes, creditStatus, delta, dueText, keptPercent, netWorthSeries, runningTotal, spendComparison } from '../insights';
-import type { CategorySpend, MonthTotals } from '../types';
+import { biggestPriceRise, budgetStatus, categoryUsual, creditStatus, dueText, forecast, keptPercent, netWorthSeries, runningTotal, runway, stillDue, usual, vsUsual, yearlyCost } from '../insights';
+import type { Recurring } from '../types';
 
 beforeEach(() => setAppCurrency('USD'));
 
-const cat = (id: number, name: string, total_minor: number, budget_minor: number | null = null): CategorySpend => ({
-  id, name, icon: 'tag', color: '#000', budget_minor, total_minor, count: 1,
+const item = (id: number, over: Partial<Recurring>): Recurring => ({
+  id, name: `Item ${id}`, type: 'expense', amount_minor: 1000, account_id: 1, category_id: 1,
+  freq: 'monthly', anchor_day: 1, next_date: '2026-11-01', active: 1, ...over,
 });
 
 describe('runningTotal', () => {
@@ -34,22 +35,6 @@ describe('netWorthSeries', () => {
   });
 });
 
-describe('delta', () => {
-  it('shows the percent change', () => {
-    expect(delta(118, 100)).toEqual({ kind: 'up', percent: 18 });
-    expect(delta(60, 100)).toEqual({ kind: 'down', percent: 40 });
-  });
-
-  it('calls tiny changes the same, and new spending new', () => {
-    expect(delta(101, 100)).toEqual({ kind: 'same', percent: 0 });
-    expect(delta(500, 0)).toEqual({ kind: 'new', percent: 0 });
-  });
-
-  it('shows nothing when there is no spending in either month', () => {
-    expect(delta(0, 0)).toBeNull();
-  });
-});
-
 describe('keptPercent', () => {
   it('is the share of income left over, or null with no income', () => {
     expect(keptPercent(200000, 150000)).toBe(25);
@@ -63,84 +48,6 @@ describe('budgetStatus', () => {
     expect(budgetStatus(50000, 100000)).toMatchObject({ state: 'ok', text: '$500.00 left of $1,000.00' });
     expect(budgetStatus(90000, 100000)).toMatchObject({ state: 'warn', percent: 90 });
     expect(budgetStatus(120000, 100000)).toMatchObject({ state: 'over', text: '$200.00 over a $1,000.00 budget' });
-  });
-});
-
-describe('spendComparison', () => {
-  it('says more or less than last month, naming the same point for the current month', () => {
-    expect(spendComparison(120000, 100000, true, '2026-08')).toEqual({ more: true, text: '$200.00 more than this point in August' });
-    expect(spendComparison(80000, 100000, false, '2026-08')).toEqual({ more: false, text: '$200.00 less than August' });
-  });
-
-  it('is null when last month has nothing', () => {
-    expect(spendComparison(100, 0, true, '2026-08')).toBeNull();
-  });
-});
-
-describe('buildNotes', () => {
-  const base = {
-    month: '2026-09', prevMonth: '2026-08', isCurrent: false, elapsedDays: 30, spent: 100000,
-    prevFullSpent: 90000, recurringOut: 0, spending: [] as CategorySpend[], prevSpending: [] as CategorySpend[],
-    monthly: [] as MonthTotals[],
-  };
-  const text = (notes: ReturnType<typeof buildNotes>) => notes.map((n) => `${n.value}. ${n.detail}`);
-
-  it('reports the biggest rise and the biggest cut against last month', () => {
-    const notes = buildNotes({
-      ...base,
-      spending: [cat(1, 'Groceries', 40000), cat(2, 'Dining out', 10000), cat(3, 'Fuel', 5000)],
-      prevSpending: [cat(1, 'Groceries', 30000), cat(2, 'Dining out', 20000), cat(3, 'Fuel', 5000)],
-    });
-    expect(text(notes)).toEqual([
-      '33%. More spent on Groceries than in August, $100.00 more.',
-      '50%. Less spent on Dining out than in August, $100.00 less.',
-    ]);
-    expect(notes.map((n) => [n.tone, n.categoryId])).toEqual([['bad', 1], ['good', 2]]);
-  });
-
-  it('ignores small changes', () => {
-    const notes = buildNotes({
-      ...base,
-      spending: [cat(1, 'Groceries', 31000)],
-      prevSpending: [cat(1, 'Groceries', 30000)],
-    });
-    expect(notes).toEqual([]);
-  });
-
-  it('projects the month-end spending only for the current month', () => {
-    const current = buildNotes({ ...base, isCurrent: true, elapsedDays: 10, spent: 30000 });
-    expect(text(current)).toEqual(["$900.00. You're on track to spend this by the end of the month."]);
-    const higher = buildNotes({ ...base, isCurrent: true, elapsedDays: 10, spent: 30000, prevFullSpent: 80000 });
-    expect(text(higher)).toEqual(["$900.00. You're on track to spend this by the end of the month, $100.00 more than August."]);
-    expect(buildNotes({ ...base, spent: 30000 })).toEqual([]);
-  });
-
-  it('shows the recurring share', () => {
-    const notes = buildNotes({ ...base, spent: 100000, recurringOut: 25000 });
-    expect(text(notes)).toEqual(['25%. Of your spending was recurring. The other $750.00 was day-to-day.']);
-  });
-
-  it('flags one or several categories over budget', () => {
-    const one = buildNotes({ ...base, spending: [cat(1, 'Dining out', 30000, 20000)] });
-    expect(text(one)).toEqual(['$100.00. Over your Dining out budget in September.']);
-    const two = buildNotes({ ...base, spending: [cat(1, 'Dining out', 30000, 20000), cat(2, 'Fuel', 9000, 5000)] });
-    expect(text(two)).toEqual(['2. Categories are over budget: Dining out and Fuel.']);
-  });
-
-  it('warns when a category has used 80% of its budget this month', () => {
-    const notes = buildNotes({ ...base, isCurrent: true, elapsedDays: 20, spent: 0, spending: [cat(1, 'Dining out', 9000, 10000), cat(2, 'Fuel', 5000, 10000)] });
-    expect(text(notes)).toEqual(['90%. Of your Dining out budget is used. $10.00 left for 10 days.']);
-  });
-
-  it('does not warn about a close budget in a finished month', () => {
-    expect(buildNotes({ ...base, spending: [cat(1, 'Dining out', 9000, 10000)] })).toEqual([]);
-  });
-
-  it('counts months of saving in a row up to the chosen month', () => {
-    const m = (month: string, in_minor: number, out_minor: number): MonthTotals => ({ month, in_minor, out_minor });
-    const monthly = [m('2026-06', 100, 200), m('2026-07', 300, 100), m('2026-08', 300, 100), m('2026-09', 300, 100), m('2026-10', 100, 200)];
-    expect(text(buildNotes({ ...base, monthly }))).toEqual(["$6.00. You've saved this amount over 3 months running."]);
-    expect(buildNotes({ ...base, month: '2026-10', monthly })).toEqual([]);
   });
 });
 
@@ -183,5 +90,120 @@ describe('dueText', () => {
     expect(dueText(2, '2026-10-20')).toBe('due on the 2nd');
     expect(dueText(23, '2026-10-01')).toBe('due on the 23rd');
     expect(dueText(11, '2026-10-01')).toBe('due on the 11th');
+  });
+});
+
+describe('usual', () => {
+  it('is the middle of the earlier months, so one odd month does not move it', () => {
+    expect(usual([3000, 1000, 2000])).toBe(2000);
+    expect(usual([1000, 1100, 1200, 9000])).toBe(1150);
+  });
+
+  it('needs at least two months', () => {
+    expect(usual([])).toBeNull();
+    expect(usual([5000])).toBeNull();
+  });
+});
+
+describe('categoryUsual', () => {
+  const months = ['2026-07', '2026-08', '2026-09'];
+
+  it('counts a month with nothing as zero', () => {
+    const rows = [{ id: 1, month: '2026-07', total_minor: 100 }, { id: 1, month: '2026-09', total_minor: 300 }];
+    expect(categoryUsual(rows, months).get(1)).toBe(100);
+  });
+
+  it('leaves out a category that is usually zero, and everything with under two months', () => {
+    expect(categoryUsual([{ id: 2, month: '2026-08', total_minor: 500 }], months).has(2)).toBe(false);
+    expect(categoryUsual([{ id: 1, month: '2026-09', total_minor: 300 }], ['2026-09']).size).toBe(0);
+  });
+});
+
+describe('vsUsual', () => {
+  it('reports a difference of a fifth or more either way', () => {
+    expect(vsUsual(1300, 1000, false)).toBe(300);
+    expect(vsUsual(700, 1000, false)).toBe(-300);
+    expect(vsUsual(1100, 1000, false)).toBeNull();
+  });
+
+  it('only calls a running month above usual, and needs a usual', () => {
+    expect(vsUsual(700, 1000, true)).toBeNull();
+    expect(vsUsual(1300, 1000, true)).toBe(300);
+    expect(vsUsual(1300, null, false)).toBeNull();
+    expect(vsUsual(1300, 0, false)).toBeNull();
+  });
+});
+
+describe('stillDue', () => {
+  it('adds up bills and income still to come this month, skipping paused items', () => {
+    const items = [
+      item(1, { freq: 'weekly', amount_minor: 2000, next_date: '2026-10-20' }), // the 20th and the 27th
+      item(2, { amount_minor: 50000, next_date: '2026-11-01' }), // next month
+      item(3, { type: 'income', amount_minor: 300000, next_date: '2026-10-30' }),
+      item(4, { amount_minor: 9999, next_date: '2026-10-25', active: 0 }),
+    ];
+    expect(stillDue(items, '2026-10-15', '2026-10')).toEqual({ bills: 4000, income: 300000 });
+  });
+});
+
+describe('forecast', () => {
+  it('scales only day-to-day spending up to the whole month', () => {
+    const result = forecast({
+      inSoFar: 18500000, outSoFar: 10200000, fixedPaid: 6200000, due: { bills: 1400000, income: 0 }, elapsedDays: 15, days: 31,
+    });
+    expect(result).toEqual({ income: 18500000, spend: 6200000 + 1400000 + 8266700 });
+  });
+
+  it('does not multiply rent paid on the 1st', () => {
+    const result = forecast({ inSoFar: 0, outSoFar: 5000000, fixedPaid: 5000000, due: { bills: 0, income: 0 }, elapsedDays: 3, days: 31 });
+    expect(result.spend).toBe(5000000);
+  });
+
+  it('counts recurring income still to come', () => {
+    const result = forecast({ inSoFar: 0, outSoFar: 0, fixedPaid: 0, due: { bills: 0, income: 300000 }, elapsedDays: 5, days: 30 });
+    expect(result.income).toBe(300000);
+  });
+});
+
+describe('runway', () => {
+  it('is what the accounts hold, less what cards owe, in months of usual spending', () => {
+    const accounts = [
+      { type: 'cash' as const, balance_minor: 1200000 },
+      { type: 'debit' as const, balance_minor: 21000000 },
+      { type: 'savings' as const, balance_minor: 30000000 },
+      { type: 'credit' as const, balance_minor: -1800000 },
+    ];
+    expect(runway(accounts, 15000000)).toEqual({ have: 52200000, owed: 1800000, months: 3.4 });
+  });
+
+  it('never goes below zero, and a card in credit owes nothing', () => {
+    const accounts = [{ type: 'cash' as const, balance_minor: 1000 }, { type: 'credit' as const, balance_minor: -50000 }];
+    expect(runway(accounts, 10000).months).toBe(0);
+    expect(runway([{ type: 'credit' as const, balance_minor: 500 }], 10000).owed).toBe(0);
+  });
+});
+
+describe('yearlyCost', () => {
+  it('turns each frequency into a year', () => {
+    expect(yearlyCost([{ freq: 'monthly', amount_minor: 1000 }, { freq: 'yearly', amount_minor: 12000 }])).toBe(24000);
+  });
+});
+
+describe('biggestPriceRise', () => {
+  it('compares the amount now with the first payment in the logs', () => {
+    const items = [item(1, { name: 'Netflix', amount_minor: 1200 }), item(2, { amount_minor: 500 })];
+    const logs = [
+      { recurring_id: 1, amount_minor: 1000, date: '2026-03-05' },
+      { recurring_id: 2, amount_minor: 500, date: '2026-03-05' },
+      { recurring_id: 1, amount_minor: 1200, date: '2026-06-05' },
+    ];
+    expect(biggestPriceRise(items, logs)).toEqual({ name: 'Netflix', percent: 20, since: '2026-03' });
+  });
+
+  it('ignores small rises, paused items and items with no payments', () => {
+    const logs = [{ recurring_id: 1, amount_minor: 1000, date: '2026-03-05' }];
+    expect(biggestPriceRise([item(1, { amount_minor: 1040 })], logs)).toBeNull();
+    expect(biggestPriceRise([item(1, { amount_minor: 2000, active: 0 })], logs)).toBeNull();
+    expect(biggestPriceRise([item(3, { amount_minor: 2000 })], logs)).toBeNull();
   });
 });

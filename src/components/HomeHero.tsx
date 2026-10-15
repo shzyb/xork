@@ -1,4 +1,3 @@
-import { ArrowDown, ArrowUp } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, useWindowDimensions, View } from 'react-native';
@@ -9,6 +8,7 @@ import { formatMoney } from '../money';
 import { fontSize, spacing, useColors } from '../theme';
 import type { DaySpend, HomeMetric } from '../types';
 import { useData } from '../useData';
+import { ChangeLine } from './ChangeLine';
 import { RunningTotalChart } from './Charts';
 import { NetWorthChart } from './NetWorthChart';
 import { isReduceMotion } from './PressableScale';
@@ -96,12 +96,7 @@ export function HomeHero({ metric, total, hidden }: { metric: HomeMetric; total:
     <View style={{ marginTop: spacing.xxl }}>
       <CountUp value={amount} format={mask} style={[styles.big, { color: colors.ink }]} />
       <Animated.View style={[styles.change, slideIn]}>
-        {!!change && (
-          <>
-            {change > 0 ? <ArrowUp color={colors.pos} size={16} strokeWidth={2.4} /> : <ArrowDown color={colors.neg} size={16} strokeWidth={2.4} />}
-            <Text style={{ color: colors.ink2, opacity: 0.8, fontSize: 15, fontWeight: '600', flexShrink: 1 }}>{mask(Math.abs(change))} vs last month</Text>
-          </>
-        )}
+        {!!change && <ChangeLine up={change > 0} good={change > 0}>{`${mask(Math.abs(change))} vs last month`}</ChangeLine>}
       </Animated.View>
       <View style={styles.chart}>
         {metric === 'balance' ? (

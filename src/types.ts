@@ -114,31 +114,21 @@ export type DaySpend = { day: number; total_minor: number };
 // Home's net worth chart: the balance before this month, each day's income minus expenses, and the balance on this date last month.
 export type NetWorthTrend = { startMinor: number; daily: DaySpend[]; prevPointMinor: number };
 
-// One credit card on Insights. Owed, limit and due day are right now; spent and paid are for the chosen month.
-export type CardInsight = {
-  id: number;
-  name: string;
-  color: string;
-  limit_minor: number | null;
-  due_day: number | null;
-  owed_minor: number;
-  spent_minor: number;
-  paid_minor: number;
-};
-
-// Everything the Insights screen shows for one month. "prev" is the month before it.
+// Everything the Insights screen shows for one month. "Earlier" months are the ones before it, back to the first transaction.
 export type InsightsData = {
   summary: { in_minor: number; out_minor: number };
-  prevSummary: { in_minor: number; out_minor: number };
   spending: CategorySpend[];
-  prevSpending: CategorySpend[]; // same point in the month when `month` is the current one
   income: CategorySpend[];
-  daily: DaySpend[];
-  prevDaily: DaySpend[];
-  recurringOut: number;
-  biggest: { amount_minor: number; label: string } | null; // the largest expense of the month
-  spendDays: number; // days with a non-recurring expense
-  monthly: MonthTotals[];
-  cards: CardInsight[];
+  recurringOut: number; // recurring expenses logged in the month
+  monthly: MonthTotals[]; // the six months ending now, for the chart
+  earlier: MonthTotals[]; // up to six earlier months, oldest first
+  earlierByCategory: { id: number; month: string; total_minor: number }[]; // expenses per category in up to three earlier months
+  earlierCategoryMonths: string[];
+  recurring: RecurringRow[];
+  recurringLogs: { recurring_id: number; amount_minor: number; date: string }[]; // the last year's recurring expenses, oldest first
+  biggest: { amount_minor: number; label: string } | null; // the largest one-off expense of the month
+  payday: string | null; // the date of the month's biggest income
+  dayToDay: DaySpend[]; // expenses that aren't recurring, by day
+  accounts: (Account & { balance_minor: number })[];
   earliestMonth: string | null; // the month of the oldest transaction, for disabling earlier month chips
 };
