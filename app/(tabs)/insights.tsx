@@ -216,12 +216,6 @@ function Body({ data, month, contentWidth, onSelectMonth, expanded, onToggleExpa
             : <Text style={[styles.sub, { color: colors.ink2 }]}>{rate}% of income</Text>)}
         </View>
         <SavingsChart path={path} today={isCurrent ? day : null} width={contentWidth} />
-        <View style={styles.split}>
-          <Text style={[styles.sub, { color: colors.ink2 }]}>{isCurrent ? 'So far' : monthName(month)}</Text>
-          <Text style={[styles.sub, { color: colors.ink, fontWeight: '600', flexShrink: 1, textAlign: 'right' }]}>
-            In {formatMoney(summary.in_minor)} · Out {formatMoney(out)}
-          </Text>
-        </View>
       </View>
 
       {tiles.length > 0 && (
@@ -297,7 +291,6 @@ const styles = StyleSheet.create({
   amountRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.lg, marginTop: 4 },
   big: { fontSize: 32, fontWeight: '800', letterSpacing: -0.5, flexShrink: 1 },
   sub: { fontSize: 14 },
-  split: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm, marginTop: spacing.sm },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, marginTop: spacing.xl },
   tile: { borderRadius: 20, padding: 16, gap: 2 },
   tileValue: { fontSize: 22, fontWeight: '700', marginVertical: 2 },
