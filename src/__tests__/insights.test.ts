@@ -1,5 +1,5 @@
 import { setAppCurrency } from '../money';
-import { biggestPriceRise, budgetStatus, categoryUsual, creditStatus, dueText, forecast, keptPercent, netWorthSeries, runningTotal, runway, stillDue, usual, vsUsual, yearlyCost } from '../insights';
+import { biggestPriceRise, budgetStatus, categoryUsual, creditStatus, dueByDay, dueText, forecast, keptPercent, netWorthSeries, runningTotal, runway, savingsPath, stillDue, usual, vsUsual, yearlyCost } from '../insights';
 import type { Recurring } from '../types';
 
 beforeEach(() => setAppCurrency('USD'));
@@ -143,6 +143,34 @@ describe('stillDue', () => {
       item(4, { amount_minor: 9999, next_date: '2026-10-25', active: 0 }),
     ];
     expect(stillDue(items, '2026-10-15', '2026-10')).toEqual({ bills: 4000, income: 300000 });
+  });
+});
+
+describe('dueByDay', () => {
+  it('lists each payment on its day, bills as minus', () => {
+    const items = [item(1, { freq: 'weekly', amount_minor: 2000, next_date: '2026-10-20' }), item(2, { type: 'income', amount_minor: 300000, next_date: '2026-10-30' })];
+    expect(dueByDay(items, '2026-10-15', '2026-10')).toEqual([
+      { day: 20, total_minor: -2000 },
+      { day: 27, total_minor: -2000 },
+      { day: 30, total_minor: 300000 },
+    ]);
+  });
+});
+
+describe('savingsPath', () => {
+  it('adds up each day for a finished month, below zero too', () => {
+    expect(savingsPath([{ day: 1, total_minor: -5000 }, { day: 3, total_minor: 20000 }], 5)).toEqual([-5000, -5000, 15000, 15000, 15000]);
+  });
+
+  it('projects the rest of a running month: bills on their days, day-to-day spending spread evenly', () => {
+    const dailyNet = [{ day: 1, total_minor: 100000 }, { day: 2, total_minor: -10000 }];
+    const path = savingsPath(dailyNet, 5, { today: 2, due: [{ day: 4, total_minor: -20000 }], flexibleLeft: 3000 });
+    expect(path).toEqual([100000, 90000, 89000, 68000, 67000]);
+  });
+
+  it('counts a transaction dated ahead of today on its own day', () => {
+    const dailyNet = [{ day: 1, total_minor: 10000 }, { day: 4, total_minor: -4000 }];
+    expect(savingsPath(dailyNet, 4, { today: 2, due: [], flexibleLeft: 0 })).toEqual([10000, 10000, 10000, 6000]);
   });
 });
 

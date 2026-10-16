@@ -95,6 +95,24 @@ export function stillDue(items: Recurring[], from: string, month: string): { bil
   return due;
 }
 
+// The same payments one by one, as a day of the month and an amount: income plus, bills minus.
+export function dueByDay(items: Recurring[], from: string, month: string): DaySpend[] {
+  return occurrencesBetween(items, from, monthRange(month).end).map(({ item, date }) => ({
+    day: Number(date.slice(8)),
+    total_minor: item.type === 'income' ? item.amount_minor : -item.amount_minor,
+  }));
+}
+
+// What you've kept by the end of each day of the month: income minus expenses, added up from the 1st. In a running month
+// the days after today are a projection: anything already dated ahead, recurring payments on their days, and the
+// day-to-day spending still expected (`flexibleLeft`) spread evenly, so the line ends on the forecast.
+export function savingsPath(dailyNet: DaySpend[], days: number, running?: { today: number; due: DaySpend[]; flexibleLeft: number }): number[] {
+  if (!running) return runningTotal(dailyNet, days);
+  const { today, due, flexibleLeft } = running;
+  const perDay = days > today ? flexibleLeft / (days - today) : 0;
+  return runningTotal([...dailyNet, ...due], days).map((v, i) => (i + 1 > today ? Math.round(v - perDay * (i + 1 - today)) : v));
+}
+
 // Where a running month is heading. Recurring bills count once at their real amount; only day-to-day spending is
 // scaled up to the whole month, so rent paid on the 1st isn't multiplied by 30. Income counts only what is known to come.
 export function forecast(input: {

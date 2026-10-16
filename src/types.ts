@@ -129,6 +129,7 @@ export type InsightsData = {
   biggest: { amount_minor: number; label: string } | null; // the largest one-off expense of the month
   payday: string | null; // the date of the month's biggest income
   dayToDay: DaySpend[]; // expenses that aren't recurring, by day
+  dailyNet: DaySpend[]; // income minus expenses, by day
   accounts: (Account & { balance_minor: number })[];
   earliestMonth: string | null; // the month of the oldest transaction, for disabling earlier month chips
 };

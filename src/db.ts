@@ -605,6 +605,17 @@ async function getNetWorthOn(date: string): Promise<number> {
   return row?.total ?? 0;
 }
 
+// Each day's income minus expenses in a month. Transfers are neither.
+async function getDailyNet(month: string): Promise<DaySpend[]> {
+  const { start, end } = monthRange(month);
+  return db!.getAllAsync(
+    `SELECT CAST(substr(date, 9, 2) AS INTEGER) AS day,
+            SUM(CASE WHEN type = 'income' THEN amount_minor ELSE -amount_minor END) AS total_minor
+     FROM transactions WHERE type != 'transfer' AND date BETWEEN ? AND ? GROUP BY date`,
+    start, end,
+  );
+}
+
 // For the net worth chart on Home: the balance before this month, each day's change this month (income minus
 // expenses, and the opening balance of an account on the day it was added), and the balance on the same date last month.
 // So the line is zero until the first account or transaction, then steps up.
@@ -614,12 +625,7 @@ export async function getNetWorthTrend(): Promise<NetWorthTrend> {
   const { start, end } = monthRange(month);
   const dayOf = (m: string, day: number) => `${m}-${String(day).padStart(2, '0')}`;
   const startMinor = await getNetWorthOn(dayOf(prev, daysInMonth(prev)));
-  const moved = await db!.getAllAsync<DaySpend>(
-    `SELECT CAST(substr(date, 9, 2) AS INTEGER) AS day,
-            SUM(CASE WHEN type = 'income' THEN amount_minor ELSE -amount_minor END) AS total_minor
-     FROM transactions WHERE type != 'transfer' AND date BETWEEN ? AND ? GROUP BY date`,
-    start, end,
-  );
+  const moved = await getDailyNet(month);
   const opened = await db!.getAllAsync<DaySpend>(
     `SELECT CAST(substr(${ADDED}, 9, 2) AS INTEGER) AS day, SUM(opening_minor) AS total_minor
      FROM accounts WHERE ${ADDED} BETWEEN ? AND ? GROUP BY ${ADDED}`,
@@ -692,6 +698,7 @@ export async function getInsights(month: string): Promise<InsightsData> {
     biggest: biggest ?? null,
     payday: payday?.date ?? null,
     dayToDay,
+    dailyNet: await getDailyNet(month),
     accounts: await getAccountsWithBalance(),
     earliestMonth: earliest,
   };

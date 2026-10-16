@@ -1,20 +1,21 @@
 import { useFocusEffect, useRouter } from 'expo-router';
+import { ChevronDown } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import type { ReactNode } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
 import { ChangeLine } from '../../src/components/ChangeLine';
-import { CashFlowChart } from '../../src/components/Charts';
+import { CashFlowChart, SavingsChart } from '../../src/components/Charts';
 import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { InsightCards } from '../../src/components/InsightCards';
 import { ListHeading } from '../../src/components/ListHeading';
-import { MonthChips } from '../../src/components/MonthChips';
+import { PickerSheet } from '../../src/components/PickerSheet';
 import { PressableScale } from '../../src/components/PressableScale';
 import { Text } from '../../src/components/Text';
 import { getInsights } from '../../src/db';
-import { currentMonth, daysInMonth, monthName, monthShort, today } from '../../src/dates';
-import { biggestPriceRise, categoryUsual, creditStatus, dueText, forecast, keptPercent, runway, stillDue, usual, vsUsual, yearlyCost } from '../../src/insights';
+import { currentMonth, daysInMonth, monthLabel, monthName, monthShort, shiftMonth, today } from '../../src/dates';
+import { biggestPriceRise, categoryUsual, creditStatus, dueByDay, dueText, forecast, keptPercent, runway, savingsPath, stillDue, usual, vsUsual, yearlyCost } from '../../src/insights';
 import { formatMoney } from '../../src/money';
 import { buildNotes } from '../../src/notes';
 import { fabClearance, fontSize, spacing, useColors } from '../../src/theme';
@@ -37,25 +38,51 @@ export default function Insights() {
   const [month, setMonth] = useState(currentMonth());
   const data = useData(() => getInsights(month), [month]);
   const [expanded, setExpanded] = useState(false);
+  const [picking, setPicking] = useState(false);
 
   // The group of smaller categories folds back up when you leave the tab or change month.
   useFocusEffect(useCallback(() => () => setExpanded(false), []));
+
+  const selectMonth = (m: string) => { setExpanded(false); setMonth(m); };
+  // Every month from this one back to the first transaction, newest first.
+  const months = [currentMonth()];
+  while (data?.earliestMonth && shiftMonth(months[months.length - 1], -1) >= data.earliestMonth) {
+    months.push(shiftMonth(months[months.length - 1], -1));
+  }
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
       <FadeScrollView contentContainerStyle={styles.content}>
         <Text style={[styles.title, { color: colors.ink }]}>Insights</Text>
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel={`Month: ${monthLabel(month)}. Change`}
+          onPress={() => setPicking(true)}
+          style={[styles.chip, { backgroundColor: colors.btnBg }]}
+        >
+          <Text style={[styles.chipText, { color: colors.btnFg }]}>{monthLabel(month)}</Text>
+          <ChevronDown color={colors.btnFg} size={15} strokeWidth={2.2} />
+        </PressableScale>
         {data && (
           <Body
             data={data}
             month={month}
             contentWidth={width - spacing.xl * 2}
-            onSelectMonth={(m) => { setExpanded(false); setMonth(m); }}
+            onSelectMonth={selectMonth}
             expanded={expanded}
             onToggleExpanded={() => setExpanded((e) => !e)}
           />
         )}
       </FadeScrollView>
+      {picking && (
+        <PickerSheet
+          title="Month"
+          options={months.map((m) => ({ value: m, label: monthLabel(m) }))}
+          current={month}
+          onPick={(m) => { selectMonth(m); setPicking(false); }}
+          onClose={() => setPicking(false)}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -82,11 +109,17 @@ function Body({ data, month, contentWidth, onSelectMonth, expanded, onToggleExpa
   const usualByCategory = categoryUsual(data.earlierByCategory, data.earlierCategoryMonths);
 
   // A running month is judged on where it is heading; a finished one on what happened.
+  const day = Number(todayDate.slice(8));
+  const days = daysInMonth(month);
   const due = isCurrent ? stillDue(data.recurring, todayDate, month) : { bills: 0, income: 0 };
   const result = isCurrent
-    ? forecast({ inSoFar: summary.in_minor, outSoFar: out, fixedPaid: recurringOut, due, elapsedDays: Number(todayDate.slice(8)), days: daysInMonth(month) })
+    ? forecast({ inSoFar: summary.in_minor, outSoFar: out, fixedPaid: recurringOut, due, elapsedDays: day, days })
     : { income: summary.in_minor, spend: out };
   const saved = result.income - result.spend;
+  // The chart under it: what you've kept day by day, and for this month the days still to come, ending on the forecast.
+  const path = savingsPath(data.dailyNet, days, isCurrent
+    ? { today: day, due: dueByDay(data.recurring, todayDate, month), flexibleLeft: result.spend - due.bills - out }
+    : undefined);
   const rate = keptPercent(result.income, result.spend);
   const noIncome = result.income === 0;
   const heading = noIncome ? (isCurrent ? 'On track to spend' : 'Spent')
@@ -167,20 +200,18 @@ function Body({ data, month, contentWidth, onSelectMonth, expanded, onToggleExpa
 
   return (
     <>
-      <CashFlowChart monthly={data.monthly} selected={month} onSelect={onSelectMonth} width={contentWidth} />
-      <MonthChips selected={month} earliest={data.earliestMonth} onSelect={onSelectMonth} />
-
-      <View style={[styles.hero, { backgroundColor: colors.fill }]}>
-        <Text style={{ color: colors.ink2, fontSize: 15 }}>{heading}</Text>
+      <View style={[styles.section, { borderTopColor: colors.line }]}>
+        <Text style={[styles.sectionTitle, { color: colors.ink }]}>{heading}</Text>
         <Text style={[styles.big, { color: !noIncome && saved < 0 ? colors.neg : colors.ink }]} numberOfLines={1} adjustsFontSizeToFit>
           {formatMoney(noIncome ? result.spend : Math.abs(saved))}
         </Text>
         {rate !== null && rate >= 0 && usualRate !== null && rate !== usualRate
           ? <ChangeLine up={rate > usualRate} good={rate > usualRate}>{`${rate}% of income · usual ${usualRate}%`}</ChangeLine>
-          : <Text style={{ color: colors.ink2, fontSize: 15 }}>{noIncome ? `No income logged${isCurrent ? ' yet' : ''}` : rate !== null && rate >= 0 ? `${rate}% of income` : 'More than your income'}</Text>}
-        <View style={[styles.split, { borderTopColor: colors.line }]}>
-          <Text style={{ color: colors.ink2, fontSize: 14 }}>{isCurrent ? 'So far' : monthName(month)}</Text>
-          <Text style={{ color: colors.ink, fontSize: 14, fontWeight: '600', flexShrink: 1, textAlign: 'right' }}>
+          : <Text style={[styles.sub, { color: colors.ink2 }]}>{noIncome ? `No income logged${isCurrent ? ' yet' : ''}` : rate !== null && rate >= 0 ? `${rate}% of income` : 'More than your income'}</Text>}
+        <SavingsChart path={path} today={isCurrent ? day : null} width={contentWidth} />
+        <View style={styles.split}>
+          <Text style={[styles.sub, { color: colors.ink2 }]}>{isCurrent ? 'So far' : monthName(month)}</Text>
+          <Text style={[styles.sub, { color: colors.ink, fontWeight: '600', flexShrink: 1, textAlign: 'right' }]}>
             In {formatMoney(summary.in_minor)} · Out {formatMoney(out)}
           </Text>
         </View>
@@ -238,6 +269,12 @@ function Body({ data, month, contentWidth, onSelectMonth, expanded, onToggleExpa
         </PressableScale>
       )}
 
+      <View style={[styles.section, { borderTopColor: colors.line }]}>
+        <Text style={[styles.sectionTitle, { color: colors.ink }]}>Income and expense</Text>
+        <Text style={[styles.sub, { color: colors.ink2 }]}>Last 6 months · tap a month to open it</Text>
+        <CashFlowChart monthly={data.monthly} selected={month} onSelect={onSelectMonth} width={contentWidth} />
+      </View>
+
       <Text style={[styles.foot, { color: colors.ink3 }]}>
         Moving money between your own accounts isn't counted as expense or income.
       </Text>
@@ -249,10 +286,15 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingHorizontal: spacing.xl, paddingBottom: fabClearance },
   title: { fontSize: fontSize.screen, fontWeight: '800', marginTop: spacing.md },
-  hero: { borderRadius: 24, padding: 20, marginTop: spacing.lg, gap: 2 },
-  big: { fontSize: 40, fontWeight: '800', letterSpacing: -1, marginVertical: 2 },
-  split: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm, borderTopWidth: StyleSheet.hairlineWidth, paddingTop: spacing.md, marginTop: spacing.md },
-  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, marginTop: GAP },
+  chip: { flexDirection: 'row', alignSelf: 'flex-start', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 13, borderRadius: 18, marginTop: 10 },
+  chipText: { fontSize: 14.5, fontWeight: '600' },
+  // A section has no card around it, only a thin line above.
+  section: { borderTopWidth: StyleSheet.hairlineWidth, marginTop: spacing.xl, paddingTop: spacing.lg },
+  sectionTitle: { fontSize: 17, fontWeight: '600' },
+  big: { fontSize: 32, fontWeight: '800', letterSpacing: -0.5, marginTop: 4 },
+  sub: { fontSize: 14 },
+  split: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm, marginTop: spacing.sm },
+  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, marginTop: spacing.xl },
   tile: { borderRadius: 20, padding: 16, gap: 2 },
   tileValue: { fontSize: 22, fontWeight: '700', marginVertical: 2 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 60 },

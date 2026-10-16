@@ -205,6 +205,89 @@ export function CashFlowChart({ monthly, selected, onSelect, width }: {
   );
 }
 
+// What you've kept so far, day by day (see savingsPath). In a running month the line is solid up to today, with a dot,
+// and dashed after it, where it is the projection ending on what you're on track to save. It can dip below zero, e.g.
+// when rent goes out before payday. Touch and drag to read a day.
+export function SavingsChart({ path, today, width }: { path: number[]; today: number | null; width: number }) {
+  const colors = useColors();
+  if (path.every((v) => v === 0)) return null;
+  const days = path.length;
+  const max = Math.max(0, ...path) / 100;
+  const min = Math.min(0, ...path) / 100;
+  // Round steps that cover both sides of zero; the height is shared out so the chart stays the same size either way.
+  const step = niceTop((max - min) * 100) / 3;
+  const above = Math.max(1, Math.ceil(max / step));
+  const below = Math.ceil(-min / step);
+  const stepHeight = 120 / (above + below);
+  const chartWidth = width - 56;
+  const edge = 8;
+  const gap = (chartWidth - edge * 2) / (days - 1);
+  const projected = today !== null && today < days;
+
+  return (
+    <View style={styles.chartBox}>
+      <LineChart
+        data={path.map((v, i) => ({ value: v / 100, hideDataPoint: i !== (today ?? days) - 1 && i !== days - 1 }))}
+        color={colors.ink}
+        thickness={3}
+        lineSegments={projected ? [{ startIndex: today - 1, endIndex: days - 1, color: colors.ink3, strokeDashArray: [6, 5] }] : undefined}
+        dataPointsColor={colors.ink}
+        dataPointsRadius={5}
+        curved
+        width={chartWidth}
+        height={stepHeight * above}
+        stepHeight={stepHeight}
+        noOfSections={above}
+        stepValue={step}
+        maxValue={step * above}
+        noOfSectionsBelowXAxis={below}
+        mostNegativeValue={-step * below}
+        initialSpacing={edge}
+        endSpacing={edge}
+        spacing={gap}
+        yAxisThickness={0}
+        xAxisThickness={1}
+        xAxisColor={colors.line}
+        xAxisType="dashed"
+        rulesColor={colors.line}
+        yAxisTextStyle={{ color: colors.ink3, fontSize: 11, fontFamily: 'OpenRunde-Regular' }}
+        yAxisLabelWidth={44}
+        formatYLabel={(label) => compactMoney(Number(label) * 100)}
+        disableScroll
+        pointerConfig={{
+          pointerStripColor: colors.ink3,
+          pointerColor: colors.ink,
+          radius: 4,
+          pointerLabelWidth: TIP,
+          pointerLabelHeight: 48,
+          autoAdjustPointerLabelPosition: false,
+          shiftPointerLabelY: TIP / 2 - 4,
+          pointerLabelComponent: (_items: unknown, _secondary: unknown, index: number) => {
+            const x = edge + index * gap;
+            const origin = x - 6;
+            const offset = Math.min(Math.max(-TIP / 2 + 6, -origin), chartWidth - TIP - origin);
+            return (
+              <View style={[styles.tooltip, { backgroundColor: colors.btnBg, width: TIP, marginLeft: offset }]}>
+                <Text style={{ color: colors.btnFg, fontWeight: '700', fontSize: 12.5 }}>
+                  Day {index + 1}{today !== null && index + 1 > today ? ' · expected' : ''}
+                </Text>
+                <Text style={{ color: colors.btnFg, fontSize: 12.5 }}>{formatMoney(path[index])}</Text>
+              </View>
+            );
+          },
+        }}
+      />
+      <View style={{ height: 18, marginLeft: 44 }}>
+        {[1, 8, 15, 22, 29].map((day) => (
+          <Text key={day} style={{ position: 'absolute', left: edge + (day - 1) * gap - 14, width: 28, textAlign: 'center', color: colors.ink3, fontSize: 11 }}>
+            {day}
+          </Text>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 export function LegendItem({ color, label, dashed }: { color: string; label: string; dashed?: boolean }) {
   const colors = useColors();
   return (
