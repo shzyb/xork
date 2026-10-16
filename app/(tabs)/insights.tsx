@@ -122,9 +122,8 @@ function Body({ data, month, contentWidth, onSelectMonth, expanded, onToggleExpa
     : undefined);
   const rate = keptPercent(result.income, result.spend);
   const noIncome = result.income === 0;
-  const heading = noIncome ? (isCurrent ? 'On track to spend' : 'Spent')
-    : saved >= 0 ? (isCurrent ? 'On track to save' : 'Saved')
-    : isCurrent ? 'On track to overspend by' : 'Overspent by';
+  // One word. For this month the amount is where it is heading; the dashed part of the chart shows that.
+  const heading = noIncome ? 'Spending' : saved >= 0 ? 'Savings' : 'Overspent';
 
   const notes = buildNotes({
     month, isCurrent, todayDate, spent: out, usualSpent, spending, usualByCategory, biggest: data.biggest,
@@ -208,12 +207,14 @@ function Body({ data, month, contentWidth, onSelectMonth, expanded, onToggleExpa
 
       <View style={[styles.section, { borderTopColor: colors.line }]}>
         <Text style={[styles.sectionTitle, { color: colors.ink }]}>{heading}</Text>
-        <Text style={[styles.big, { color: !noIncome && saved < 0 ? colors.neg : colors.ink }]} numberOfLines={1} adjustsFontSizeToFit>
-          {formatMoney(noIncome ? result.spend : Math.abs(saved))}
-        </Text>
-        {rate !== null && rate >= 0 && usualRate !== null && rate !== usualRate
-          ? <ChangeLine up={rate > usualRate} good={rate > usualRate}>{`${rate}% of income · usual ${usualRate}%`}</ChangeLine>
-          : <Text style={[styles.sub, { color: colors.ink2 }]}>{noIncome ? `No income logged${isCurrent ? ' yet' : ''}` : rate !== null && rate >= 0 ? `${rate}% of income` : 'More than your income'}</Text>}
+        <View style={styles.amountRow}>
+          <Text style={[styles.big, { color: !noIncome && saved < 0 ? colors.neg : colors.ink }]} numberOfLines={1} adjustsFontSizeToFit>
+            {formatMoney(noIncome ? result.spend : Math.abs(saved))}
+          </Text>
+          {rate !== null && rate >= 0 && (usualRate !== null && rate !== usualRate
+            ? <ChangeLine up={rate > usualRate} good={rate > usualRate}>{`${rate}% of income`}</ChangeLine>
+            : <Text style={[styles.sub, { color: colors.ink2 }]}>{rate}% of income</Text>)}
+        </View>
         <SavingsChart path={path} today={isCurrent ? day : null} width={contentWidth} />
         <View style={styles.split}>
           <Text style={[styles.sub, { color: colors.ink2 }]}>{isCurrent ? 'So far' : monthName(month)}</Text>
@@ -293,7 +294,8 @@ const styles = StyleSheet.create({
   first: { marginTop: spacing.xl }, // the top section sits right under the month chip, so it has no line above
 
   sectionTitle: { fontSize: 17, fontWeight: '600' },
-  big: { fontSize: 32, fontWeight: '800', letterSpacing: -0.5, marginTop: 4 },
+  amountRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.lg, marginTop: 4 },
+  big: { fontSize: 32, fontWeight: '800', letterSpacing: -0.5, flexShrink: 1 },
   sub: { fontSize: 14 },
   split: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm, marginTop: spacing.sm },
   tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: GAP, marginTop: spacing.xl },
