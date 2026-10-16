@@ -125,7 +125,8 @@ export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed,
   );
 }
 
-// Money in (green) and out for the last six months. Tap a month to open it.
+// Money in (green) and out (red) for the last six months. The colours say which is which, so there is no legend.
+// Tap a month to open it.
 export function CashFlowChart({ monthly, selected, onSelect, width }: {
   monthly: InsightsData['monthly'];
   selected: string;
@@ -156,7 +157,7 @@ export function CashFlowChart({ monthly, selected, onSelect, width }: {
         labelTextStyle: { color: on ? colors.ink : colors.ink3, fontSize: 11, fontFamily: 'OpenRunde-Regular', textAlign: 'center' as const, marginLeft: -(group - barWidth * 2 - gap) / 2 },
         onPress: press,
       },
-      { value: m.out_minor / 100, frontColor: colors.ink, opacity: on ? 1 : 0.35, spacing: between, onPress: press },
+      { value: m.out_minor / 100, frontColor: colors.neg, opacity: on ? 1 : 0.35, spacing: between, onPress: press },
     ];
   });
 
@@ -197,10 +198,6 @@ export function CashFlowChart({ monthly, selected, onSelect, width }: {
         autoCenterTooltip
         leftShiftForLastIndexTooltip={40}
       />
-      <View style={styles.legend}>
-        <LegendItem color={colors.pos} label="Income" />
-        <LegendItem color={colors.ink} label="Expense" />
-      </View>
     </View>
   );
 }

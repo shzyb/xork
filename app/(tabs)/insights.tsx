@@ -200,8 +200,8 @@ function Body({ data, month, contentWidth, onSelectMonth, expanded, onToggleExpa
 
   return (
     <>
-      <View style={[styles.section, { borderTopColor: colors.line }]}>
-        <Text style={[styles.sectionTitle, { color: colors.ink }]}>Income and expense</Text>
+      <View style={styles.first}>
+        <Text style={[styles.sectionTitle, { color: colors.ink }]}>Cashflow</Text>
         <Text style={[styles.sub, { color: colors.ink2 }]}>Last 6 months · tap a month to open it</Text>
         <CashFlowChart monthly={data.monthly} selected={month} onSelect={onSelectMonth} width={contentWidth} />
       </View>
@@ -290,6 +290,8 @@ const styles = StyleSheet.create({
   chipText: { fontSize: 14.5, fontWeight: '600' },
   // A section has no card around it, only a thin line above.
   section: { borderTopWidth: StyleSheet.hairlineWidth, marginTop: spacing.xl, paddingTop: spacing.lg },
+  first: { marginTop: spacing.xl }, // the top section sits right under the month chip, so it has no line above
+
   sectionTitle: { fontSize: 17, fontWeight: '600' },
   big: { fontSize: 32, fontWeight: '800', letterSpacing: -0.5, marginTop: 4 },
   sub: { fontSize: 14 },
