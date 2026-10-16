@@ -201,6 +201,12 @@ function Body({ data, month, contentWidth, onSelectMonth, expanded, onToggleExpa
   return (
     <>
       <View style={[styles.section, { borderTopColor: colors.line }]}>
+        <Text style={[styles.sectionTitle, { color: colors.ink }]}>Income and expense</Text>
+        <Text style={[styles.sub, { color: colors.ink2 }]}>Last 6 months · tap a month to open it</Text>
+        <CashFlowChart monthly={data.monthly} selected={month} onSelect={onSelectMonth} width={contentWidth} />
+      </View>
+
+      <View style={[styles.section, { borderTopColor: colors.line }]}>
         <Text style={[styles.sectionTitle, { color: colors.ink }]}>{heading}</Text>
         <Text style={[styles.big, { color: !noIncome && saved < 0 ? colors.neg : colors.ink }]} numberOfLines={1} adjustsFontSizeToFit>
           {formatMoney(noIncome ? result.spend : Math.abs(saved))}
@@ -268,12 +274,6 @@ function Body({ data, month, contentWidth, onSelectMonth, expanded, onToggleExpa
           <Text style={{ color: colors.ink, fontSize: 14, fontWeight: '600' }}>{expanded ? 'Show less' : 'Show more'}</Text>
         </PressableScale>
       )}
-
-      <View style={[styles.section, { borderTopColor: colors.line }]}>
-        <Text style={[styles.sectionTitle, { color: colors.ink }]}>Income and expense</Text>
-        <Text style={[styles.sub, { color: colors.ink2 }]}>Last 6 months · tap a month to open it</Text>
-        <CashFlowChart monthly={data.monthly} selected={month} onSelect={onSelectMonth} width={contentWidth} />
-      </View>
 
       <Text style={[styles.foot, { color: colors.ink3 }]}>
         Moving money between your own accounts isn't counted as expense or income.
