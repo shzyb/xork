@@ -1,5 +1,5 @@
-import { useNavigation, usePreventRemove } from 'expo-router';
-import { useEffect, useRef } from 'react';
+import { usePreventRemove } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { sheet, useTrayColor } from '../theme';
@@ -15,7 +15,6 @@ const EXIT_MS = 200;
 export function Sheet({ onClose, color, children }: { onClose: () => void; color?: string; children: React.ReactNode }) {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
-  const navigation = useNavigation();
   const trayColor = useTrayColor();
   const slide = useRef(new Animated.Value(height)).current;
   const dim = useRef(new Animated.Value(0)).current;
@@ -39,17 +38,19 @@ export function Sheet({ onClose, color, children }: { onClose: () => void; color
   useEffect(() => () => running.current?.stop(), []);
 
   // Hold back a "go back" until the exit has played, then let it through. Replace and push are left alone.
-  const releaseRemoval: () => void = usePreventRemove(true, ({ data }) => {
+  const [guard, setGuard] = useState(true);
+  usePreventRemove(guard, ({ data, repeat }) => {
+    if (closing.current) return;
     const type = data.action.type;
-    if (closing.current || (type !== 'GO_BACK' && type !== 'POP')) {
-      releaseRemoval();
-      navigation.dispatch(data.action);
+    if (type !== 'GO_BACK' && type !== 'POP') {
+      setGuard(false);
+      repeat();
       return;
     }
     closing.current = true;
     run(hiddenAt.current, 0, EXIT_MS, () => {
-      releaseRemoval();
-      if (navigation.canGoBack()) navigation.dispatch(data.action);
+      setGuard(false);
+      repeat();
     });
   });
 
