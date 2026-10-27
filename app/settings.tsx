@@ -48,10 +48,10 @@ export default function Settings() {
     setBusy('export');
     try {
       if (!(await Sharing.isAvailableAsync())) return setMessage('Sharing is not available on this phone.');
-      const file = new File(Paths.cache, `xork-backup-${today()}.json`);
+      const file = new File(Paths.cache, `dimedog-backup-${today()}.json`);
       file.create({ overwrite: true });
       file.write(JSON.stringify(await exportAll()));
-      await Sharing.shareAsync(file.uri, { mimeType: 'application/json', dialogTitle: 'Save your Xork backup' });
+      await Sharing.shareAsync(file.uri, { mimeType: 'application/json', dialogTitle: 'Save your Dimedog backup' });
     } catch {
       setMessage('Could not export. Try again.');
     } finally {

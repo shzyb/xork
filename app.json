@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Xork",
-    "slug": "xork",
+    "name": "Dimedog",
+    "slug": "dimedog",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "xork",
+    "scheme": "dimedog",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon"
@@ -14,11 +14,10 @@
       "adaptiveIcon": {
         "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.shahzaibali.xork",
+      "package": "com.shahzaibali.dimedog",
       "versionCode": 1
     },
     "web": {
