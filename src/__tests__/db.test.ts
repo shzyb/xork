@@ -1,4 +1,4 @@
-import { getCategories, getNetWorthTrend, reorderCategories, getRecurringActivity, logRecurringNow, setRecurringActive, skipRecurring, deleteAllData, exportAll, NO_FILTER, replaceAllData, addAccount, addCategory, addRecurring, deleteRecurring, logDueRecurring, updateRecurring, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, setHideBalances, setHomeMetric, setTheme, updateAccount, updateCategory, updateTransaction } from '../db';
+import { getCategories, getNetWorthTrend, reorderCategories, getRecurringActivity, logRecurringNow, setRecurringActive, skipRecurring, deleteAllData, exportAll, NO_FILTER, replaceAllData, addAccount, addCategory, addRecurring, deleteRecurring, logDueRecurring, updateRecurring, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, setHideBalances, setTheme, updateAccount, updateCategory, updateTransaction } from '../db';
 import { formatMoney } from '../money';
 
 function fakeDb(overrides: Partial<Db> = {}): Db {
@@ -150,7 +150,6 @@ describe.each([
   ['updateCategory', () => updateCategory(3, FOOD), 'UPDATE categories'],
   ['setTheme', () => setTheme('dark'), 'INSERT OR REPLACE INTO settings'],
   ['setHideBalances', () => setHideBalances(true), 'INSERT OR REPLACE INTO settings'],
-  ['setHomeMetric', () => setHomeMetric('expense'), 'INSERT OR REPLACE INTO settings'],
 ])('%s', (_name, run, sql) => {
   it('bumps version and calls listeners', async () => {
     const db = fakeDb();

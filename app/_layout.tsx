@@ -12,23 +12,24 @@ import { useData } from '../src/useData';
 SplashScreen.preventAutoHideAsync();
 
 // Floating trays: a transparent modal with no router animation. The Sheet component fades the dim and slides the tray.
-const TRAYS = ['add-menu', 'settings', 'currency', 'transaction/[id]', 'recurring/detail/[id]', 'account/detail/[id]'];
+const TRAYS = ['add-menu', 'settings', 'currency', 'transaction/[id]', 'recurring/detail/[id]'];
 const TRAY_OPTIONS = { presentation: 'transparentModal', animation: 'none', contentStyle: { backgroundColor: 'transparent' } } as const;
 
 export default function RootLayout() {
   const [dbReady, setDbReady] = useState(false);
   const [fontsLoaded, fontError] = useFonts(FONT_FILES);
 
-  // Due recurring items are logged before the splash hides, so Home opens already up to date.
+  // The splash only waits for the database to open. Screens show grey placeholders until their data arrives.
   useEffect(() => {
     openDb()
-      .then(logDueRecurring)
       .then(async () => applyTheme(await getSetting('theme')))
       .then(() => setDbReady(true));
   }, []);
 
-  // ...and again whenever the app comes back to the foreground.
+  // Due recurring items are logged once the app is open, and again whenever it comes back to the foreground.
+  // Open screens update by themselves when that adds transactions.
   useEffect(() => {
+    if (dbReady) logDueRecurring();
     const subscription = AppState.addEventListener('change', (state) => {
       if (state === 'active' && dbReady) logDueRecurring();
     });
@@ -66,7 +67,7 @@ function Routes() {
         {TRAYS.map((name) => (
           <Stack.Screen key={name} name={name} options={TRAY_OPTIONS} />
         ))}
-        <Stack.Screen name="accounts" />
+        <Stack.Screen name="account/detail/[id]" />
         <Stack.Screen name="categories" />
         <Stack.Screen name="category-activity" />
         <Stack.Screen name="appearance" />

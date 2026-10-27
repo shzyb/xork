@@ -2,6 +2,7 @@ import { StickyNote } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Animated, Easing, Keyboard, StyleSheet, View } from 'react-native';
+import type { ViewInstance } from 'react-native';
 import { BUTTON_HEIGHT } from './AccountButton';
 import { isReduceMotion, PressableScale } from './PressableScale';
 import { Text, TextInput } from './Text';
@@ -33,7 +34,7 @@ export function NoteRow({ left, value, onChange, placeholder, open, onOpen, onCl
   const t = useRef(new Animated.Value(0)).current; // 0 = pill, 1 = field. Drives the width and the two fades.
   const lift = useRef(new Animated.Value(0)).current; // native: moves the row above the keyboard
   const liftTo = useRef(0);
-  const row = useRef<View>(null);
+  const row = useRef<ViewInstance>(null);
   const [rowWidth, setRowWidth] = useState(0);
   const [leftWidth, setLeftWidth] = useState(0);
   const [pillWidth, setPillWidth] = useState(0);

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Animated, ScrollView, StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
+import type { ScrollViewInstance, ViewInstance } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useColors } from '../theme';
@@ -22,8 +23,8 @@ export function DragList<T extends { id: number }>({ items, rowHeight, renderRow
   contentContainerStyle: StyleProp<ViewStyle>;
 }) {
   const colors = useColors();
-  const scroll = useRef<ScrollView>(null);
-  const box = useRef<View>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
+  const box = useRef<ViewInstance>(null);
   const scrollY = useRef(0);
   const viewport = useRef({ top: 0, bottom: 0 });
   const drag = useRef({ from: -1, over: -1, startScroll: 0, translation: 0, absoluteY: 0 });

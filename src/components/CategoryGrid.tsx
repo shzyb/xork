@@ -1,5 +1,6 @@
 import { useRef } from 'react';
-import { ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import type { ScrollViewInstance } from 'react-native';
 import { FadeScrollView } from './FadeScrollView';
 import { PressableScale } from './PressableScale';
 import { sheet, spacing } from '../theme';
@@ -15,7 +16,7 @@ export function CategoryGrid({ categories, selectedId, onSelect }: {
   onSelect: (id: number) => void;
 }) {
   const cellWidth = (useWindowDimensions().width - spacing.xl * 2) / 4.5;
-  const scroll = useRef<ScrollView>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
   const jumped = useRef(false);
 
   // On first layout, scroll so an already selected category (when editing) is in view.

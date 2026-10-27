@@ -5,7 +5,7 @@ import { ICON_NAMES, toEmoji } from './emoji';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, SCHEMA } from './seed';
 import { BACKUP_VERSION } from './backup';
 import type { Backup } from './backup';
-import type { Account, Category, CategorySpend, DaySpend, HomeMetric, InsightsData, MonthTotals, NetWorthTrend, Recurring, RecurringRow, Transaction, ThemeSetting, TransactionFilter, TransactionRow } from './types';
+import type { Account, Category, CategorySpend, DaySpend, InsightsData, MonthTotals, NetWorthTrend, Recurring, RecurringRow, Transaction, ThemeSetting, TransactionFilter, TransactionRow } from './types';
 
 // The small part of expo-sqlite that we use, so tests can pass a fake.
 export type Db = {
@@ -151,11 +151,6 @@ export async function setTheme(theme: ThemeSetting) {
 
 export async function setHideBalances(on: boolean) {
   await write((handle) => handle.runAsync(UPSERT_SETTING, 'hide_balances', on ? '1' : '0'));
-}
-
-// What the top of Home shows. It stays chosen when the app is closed and opened again.
-export async function setHomeMetric(metric: HomeMetric) {
-  await write((handle) => handle.runAsync(UPSERT_SETTING, 'home_metric', metric));
 }
 
 // First launch: save the chosen currency and mark the welcome screen as done, together.
@@ -651,56 +646,16 @@ async function getMonthlyTotals(endMonth: string): Promise<MonthTotals[]> {
 // One call per screen load. Queries run one after another on purpose (see useData).
 export async function getInsights(month: string): Promise<InsightsData> {
   const { start, end } = monthRange(month);
-  const earliest = await getEarliestMonth();
-  // Earlier months only count from the first transaction, so a new user's empty months don't drag "usual" down.
-  const since = (m: string) => earliest !== null && m >= earliest;
-  const earlier = (await getMonthlyTotals(shiftMonth(month, -1))).filter((m) => since(m.month));
-  const earlierCategoryMonths = lastMonths(shiftMonth(month, -1), 3).filter(since);
-  const earlierByCategory = await db!.getAllAsync<{ id: number; month: string; total_minor: number }>(
-    `SELECT category_id AS id, substr(date, 1, 7) AS month, SUM(amount_minor) AS total_minor FROM transactions
-     WHERE type = 'expense' AND category_id IS NOT NULL AND date BETWEEN ? AND ? GROUP BY id, month`,
-    monthRange(shiftMonth(month, -3)).start, monthRange(shiftMonth(month, -1)).end,
-  );
-  const recurringOut = await db!.getFirstAsync<{ total: number }>(
-    `SELECT COALESCE(SUM(amount_minor), 0) AS total FROM transactions
-     WHERE type = 'expense' AND recurring_id IS NOT NULL AND date BETWEEN ? AND ?`,
-    start, end,
-  );
-  const biggest = await db!.getFirstAsync<{ amount_minor: number; label: string }>(
-    `SELECT t.amount_minor, COALESCE(NULLIF(t.note, ''), c.name, 'Expense') AS label
-     FROM transactions t LEFT JOIN categories c ON c.id = t.category_id
-     WHERE t.type = 'expense' AND t.recurring_id IS NULL AND t.date BETWEEN ? AND ? ORDER BY t.amount_minor DESC LIMIT 1`,
-    start, end,
-  );
-  const payday = await db!.getFirstAsync<{ date: string }>(
-    `SELECT date FROM transactions WHERE type = 'income' AND date BETWEEN ? AND ? ORDER BY amount_minor DESC LIMIT 1`,
-    start, end,
-  );
-  const dayToDay = await db!.getAllAsync<DaySpend>(
-    `SELECT CAST(substr(date, 9, 2) AS INTEGER) AS day, SUM(amount_minor) AS total_minor
-     FROM transactions WHERE type = 'expense' AND recurring_id IS NULL AND date BETWEEN ? AND ? GROUP BY date`,
-    start, end,
-  );
-  const recurringLogs = await db!.getAllAsync<{ recurring_id: number; amount_minor: number; date: string }>(
-    `SELECT recurring_id, amount_minor, date FROM transactions
-     WHERE type = 'expense' AND recurring_id IS NOT NULL AND date >= ? ORDER BY date, id`,
-    monthRange(shiftMonth(currentMonth(), -11)).start,
-  );
   return {
     summary: await getMonthSummary(month),
     spending: await getTotalsByCategory('expense', month),
-    income: await getTotalsByCategory('income', month),
-    recurringOut: recurringOut?.total ?? 0,
     monthly: await getMonthlyTotals(currentMonth()),
-    earlier, earlierByCategory, earlierCategoryMonths,
-    recurring: await getRecurring(),
-    recurringLogs,
-    biggest: biggest ?? null,
-    payday: payday?.date ?? null,
-    dayToDay,
-    dailyNet: await getDailyNet(month),
-    accounts: await getAccountsWithBalance(),
-    earliestMonth: earliest,
+    byDay: await db!.getAllAsync(
+      `SELECT CAST(substr(date, 9, 2) AS INTEGER) AS day, category_id, SUM(amount_minor) AS total_minor
+       FROM transactions WHERE type = 'expense' AND date BETWEEN ? AND ? GROUP BY date, category_id`,
+      start, end,
+    ),
+    earliestMonth: await getEarliestMonth(),
   };
 }
 

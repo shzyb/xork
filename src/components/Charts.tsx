@@ -1,10 +1,12 @@
+import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { BarChart, LineChart } from 'react-native-gifted-charts';
-import { daysInMonth, monthName, monthShort } from '../dates';
-import { runningTotal } from '../insights';
+import { daysInMonth, monthName, monthShort, prettyDate } from '../dates';
+import { dayParts, runningTotal } from '../insights';
 import { compactMoney, formatMoney } from '../money';
 import { spacing, useColors } from '../theme';
-import type { DaySpend, InsightsData } from '../types';
+import type { CategorySpend, DaySpend, InsightsData } from '../types';
 import { Text } from './Text';
 
 // The top of the y-axis for a biggest value in minor units: rounded up so the three sections get round numbers.
@@ -15,6 +17,8 @@ export function niceTop(maxMinor: number): number {
 }
 
 const TIP = 130; // width of the touch tooltip
+const PLOT = 160; // the bars' area in the bar charts: their height of 150 plus the 10 the library adds above it
+const BAR_TIP = 150; // the same for the bar charts, whose rows carry a category name
 
 // The whole month on the x-axis: last month dashed in full, this month solid up to today with a dot at the end.
 // Last month is the first line because the chart takes its day labels from it. Touch and drag to read a day.
@@ -126,26 +130,25 @@ export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed,
 }
 
 // Money in (green) and out (red) for the last six months. The colours say which is which, so there is no legend.
-// Tap a month to open it.
-export function CashFlowChart({ monthly, selected, onSelect, width }: {
+// The selected month is highlighted. Touching a bar shows that month's income and expense under the chart; it doesn't change the month.
+export function CashFlowChart({ monthly, selected, width }: {
   monthly: InsightsData['monthly'];
   selected: string;
-  onSelect: (month: string) => void;
   width: number;
 }) {
   const colors = useColors();
+  const [touched, setTouched] = useState<number | null>(null);
   const chartWidth = width - 56;
   const barWidth = 14;
   const gap = 4;
   const group = chartWidth / monthly.length;
   const between = group - (barWidth * 2 + gap);
-  // Room above the tallest bar for its tooltip, which sits on top of the bar and would be cut off at the chart's edge.
   const biggest = Math.max(...monthly.flatMap((m) => [m.in_minor, m.out_minor]));
-  const top = biggest > 0 ? niceTop(biggest * 1.4) : undefined;
+  const top = biggest > 0 ? niceTop(biggest) : undefined;
 
-  const bars = monthly.flatMap((m) => {
+  const bars = monthly.flatMap((m, i) => {
     const on = m.month === selected;
-    const press = () => onSelect(m.month);
+    const press = (bar: number) => () => setTouched(touched === bar ? null : bar);
     return [
       {
         value: m.in_minor / 100,
@@ -155,9 +158,9 @@ export function CashFlowChart({ monthly, selected, onSelect, width }: {
         label: monthShort(m.month),
         labelWidth: group,
         labelTextStyle: { color: on ? colors.ink : colors.ink3, fontSize: 11, fontFamily: 'OpenRunde-Regular', textAlign: 'center' as const, marginLeft: -(group - barWidth * 2 - gap) / 2 },
-        onPress: press,
+        onPress: press(i * 2),
       },
-      { value: m.out_minor / 100, frontColor: colors.neg, opacity: on ? 1 : 0.35, spacing: between, onPress: press },
+      { value: m.out_minor / 100, frontColor: colors.neg, opacity: on ? 1 : 0.35, spacing: between, onPress: press(i * 2 + 1) },
     ];
   });
 
@@ -180,107 +183,144 @@ export function CashFlowChart({ monthly, selected, onSelect, width }: {
         yAxisLabelWidth={44}
         formatYLabel={(label) => compactMoney(Number(label) * 100)}
         disableScroll
-        // Tap a bar to see its amount. The bars alternate in, out, in, out, so the index says which one it is.
-        renderTooltip={(_item: unknown, index: number) => {
-          const m = monthly[Math.floor(index / 2)];
-          const isIn = index % 2 === 0;
-          return (
-            <View style={[styles.tooltip, { backgroundColor: colors.btnBg, marginBottom: 6 }]}>
-              <Text style={{ color: colors.btnFg, opacity: 0.7, fontSize: 12.5 }} numberOfLines={1}>
-                {monthShort(m.month)} · {isIn ? 'Income' : 'Expense'}
-              </Text>
-              <Text style={{ color: colors.btnFg, fontWeight: '700', fontSize: 12.5 }} numberOfLines={1}>
-                {formatMoney(isIn ? m.in_minor : m.out_minor)}
-              </Text>
-            </View>
-          );
-        }}
-        autoCenterTooltip
-        leftShiftForLastIndexTooltip={40}
       />
+      {touched !== null && top !== undefined && (
+        <ChartTip
+          x={group * Math.floor(touched / 2) + between / 2 + barWidth / 2 + (touched % 2) * (barWidth + gap)}
+          barHeight={(((touched % 2 ? monthly[touched >> 1].out_minor : monthly[touched >> 1].in_minor) / 100) / top) * PLOT}
+          lines={3}
+          chartWidth={chartWidth}
+        >
+          <Text style={{ color: colors.btnFg, fontWeight: '700', fontSize: 12.5 }}>{monthName(monthly[touched >> 1].month)}</Text>
+          <TipRow color={colors.pos} label="Income" value={formatMoney(monthly[touched >> 1].in_minor)} />
+          <TipRow color={colors.neg} label="Expense" value={formatMoney(monthly[touched >> 1].out_minor)} />
+        </ChartTip>
+      )}
     </View>
   );
 }
 
-// What you've kept so far, day by day (see savingsPath). In a running month the line is solid up to today, with a dot,
-// and dashed after it, where it is the projection ending on what you're on track to save. It can dip below zero, e.g.
-// when rent goes out before payday. Touch and drag to read a day.
-export function SavingsChart({ path, today, width }: { path: number[]; today: number | null; width: number }) {
+// Spending for every day of the month, one bar per day, split into coloured blocks by category (see dayParts).
+// A few huge days (rent) would flatten all the others, so the axis stops at about the 90th percentile and a bar taller
+// than that is cut short with a small arrow; touching it still shows the real amounts. Touch a bar to read the day.
+export function DailyCategoryChart({ byDay, categories, month, today, width }: {
+  byDay: InsightsData['byDay'];
+  categories: CategorySpend[];
+  month: string;
+  today: number | null; // the day of the month it is now, for a month that is still running
+  width: number;
+}) {
   const colors = useColors();
-  if (path.every((v) => v === 0)) return null;
-  const days = path.length;
-  const max = Math.max(0, ...path) / 100;
-  const min = Math.min(0, ...path) / 100;
-  // Round steps that cover both sides of zero; the height is shared out so the chart stays the same size either way.
-  const step = niceTop((max - min) * 100) / 3;
-  const above = Math.max(1, Math.ceil(max / step));
-  const below = Math.ceil(-min / step);
-  const stepHeight = 120 / (above + below);
+  const [touched, setTouched] = useState<number | null>(null);
+  const days = daysInMonth(month);
+  const parts = dayParts(byDay, days);
+  const totals = parts.map((p) => p.reduce((sum, x) => sum + x.total_minor, 0));
+  if (totals.every((t) => t === 0)) return null;
+
+  const sorted = totals.filter((t) => t > 0).sort((a, b) => a - b);
+  const p90 = sorted[Math.floor((sorted.length - 1) * 0.9)];
+  const top = niceTop(Math.min(sorted[sorted.length - 1], p90 * 1.25));
   const chartWidth = width - 56;
-  const edge = 8;
-  const gap = (chartWidth - edge * 2) / (days - 1);
-  const projected = today !== null && today < days;
+  const edge = 4;
+  const slot = (chartWidth - edge * 2) / days;
+  const barWidth = Math.max(3, Math.floor(slot * 0.7));
+  const byId = new Map(categories.map((c) => [c.id, c]));
+  const colorOf = (id: number | null) => (id === null ? colors.ink3 : byId.get(id)?.color ?? colors.ink3);
+
+  const data = parts.map((day, i) => {
+    const cut = totals[i] > top * 100;
+    const scale = cut ? (top * 100) / totals[i] : 1;
+    return {
+      stacks: day.length > 0
+        ? day.map((x, j) => ({ value: (x.total_minor * scale) / 100, color: colorOf(x.category_id), marginBottom: j > 0 ? 2 : 0, borderRadius: 2 }))
+        : [{ value: top * 0.03, color: colors.fill }], // a short grey bar on a day with no spending
+      spacing: slot - barWidth,
+      onPress: () => setTouched(touched === i ? null : i),
+      topLabelComponent: cut ? () => <Text style={{ color: colors.ink3, fontSize: 9, textAlign: 'center', width: 12 }}>▲</Text> : undefined,
+    };
+  });
+  const labels = [1, 8, 15, 22, 29].filter((d) => d <= days && (today === null || Math.abs(d - today) > 2));
+  if (today !== null) labels.push(today);
 
   return (
     <View style={styles.chartBox}>
-      <LineChart
-        data={path.map((v, i) => ({ value: v / 100, hideDataPoint: i !== (today ?? days) - 1 && i !== days - 1 }))}
-        color={colors.ink}
-        thickness={3}
-        lineSegments={projected ? [{ startIndex: today - 1, endIndex: days - 1, color: colors.ink3, strokeDashArray: [6, 5] }] : undefined}
-        dataPointsColor={colors.ink}
-        dataPointsRadius={5}
-        curved
+      <BarChart
+        stackData={data}
+        barWidth={barWidth}
+        barBorderRadius={2}
         width={chartWidth}
-        height={stepHeight * above}
-        stepHeight={stepHeight}
-        noOfSections={above}
-        stepValue={step}
-        maxValue={step * above}
-        noOfSectionsBelowXAxis={below}
-        mostNegativeValue={-step * below}
-        initialSpacing={edge}
-        endSpacing={edge}
-        spacing={gap}
+        height={150}
+        initialSpacing={edge + (slot - barWidth) / 2}
+        endSpacing={0}
+        noOfSections={3}
+        maxValue={top}
         yAxisThickness={0}
-        xAxisThickness={1}
-        xAxisColor={colors.line}
-        xAxisType="dashed"
+        xAxisThickness={0}
         rulesColor={colors.line}
         yAxisTextStyle={{ color: colors.ink3, fontSize: 11, fontFamily: 'OpenRunde-Regular' }}
         yAxisLabelWidth={44}
         formatYLabel={(label) => compactMoney(Number(label) * 100)}
         disableScroll
-        pointerConfig={{
-          pointerStripColor: colors.ink3,
-          pointerColor: colors.ink,
-          radius: 4,
-          pointerLabelWidth: TIP,
-          pointerLabelHeight: 48,
-          autoAdjustPointerLabelPosition: false,
-          shiftPointerLabelY: TIP / 2 - 4,
-          pointerLabelComponent: (_items: unknown, _secondary: unknown, index: number) => {
-            const x = edge + index * gap;
-            const origin = x - 6;
-            const offset = Math.min(Math.max(-TIP / 2 + 6, -origin), chartWidth - TIP - origin);
-            return (
-              <View style={[styles.tooltip, { backgroundColor: colors.btnBg, width: TIP, marginLeft: offset }]}>
-                <Text style={{ color: colors.btnFg, fontWeight: '700', fontSize: 12.5 }}>
-                  Day {index + 1}{today !== null && index + 1 > today ? ' · expected' : ''}
-                </Text>
-                <Text style={{ color: colors.btnFg, fontSize: 12.5 }}>{formatMoney(path[index])}</Text>
-              </View>
-            );
-          },
-        }}
       />
       <View style={{ height: 18, marginLeft: 44 }}>
-        {[1, 8, 15, 22, 29].map((day) => (
-          <Text key={day} style={{ position: 'absolute', left: edge + (day - 1) * gap - 14, width: 28, textAlign: 'center', color: colors.ink3, fontSize: 11 }}>
+        {labels.map((day) => (
+          <Text
+            key={day}
+            style={{ position: 'absolute', left: edge + (day - 0.5) * slot - 14, width: 28, textAlign: 'center', fontSize: 11, color: day === today ? colors.ink : colors.ink3, fontWeight: day === today ? '700' : '400' }}
+          >
             {day}
           </Text>
         ))}
       </View>
+      {touched !== null && touched < days && (
+        <ChartTip
+          x={edge + (touched + 0.5) * slot}
+          barHeight={(Math.min(totals[touched], top * 100) / (top * 100)) * PLOT}
+          lines={2 + parts[touched].length}
+          chartWidth={chartWidth}
+        >
+          <Text style={{ color: colors.btnFg, fontWeight: '700', fontSize: 12.5 }}>
+            {prettyDate(`${month}-${String(touched + 1).padStart(2, '0')}`)}
+          </Text>
+          {parts[touched].length === 0 && <Text style={{ color: colors.btnFg, opacity: 0.7, fontSize: 12.5 }}>No spending</Text>}
+          {parts[touched].map((x) => (
+            <TipRow key={x.category_id ?? 'other'} color={colorOf(x.category_id)} label={x.category_id === null ? 'Other' : byId.get(x.category_id)?.name ?? ''} value={formatMoney(x.total_minor)} />
+          ))}
+          {parts[touched].length > 1 && <TipRow label="Total" value={formatMoney(totals[touched])} bold />}
+        </ChartTip>
+      )}
+    </View>
+  );
+}
+
+// The popup for a touched bar, on the chart like the one on Home's line chart. It sits just above the bar, centred on it
+// and kept inside the chart. `x` is the bar's centre across the chart (without the y-axis labels), `barHeight` how tall
+// the bar is, and `lines` how many lines the popup has, so a tall bar can't push it off the top of the chart.
+function ChartTip({ x, barHeight, lines, chartWidth, children }: {
+  x: number;
+  barHeight: number;
+  lines: number;
+  chartWidth: number;
+  children: ReactNode;
+}) {
+  const colors = useColors();
+  const left = 44 + Math.min(Math.max(4, x - BAR_TIP / 2), chartWidth - BAR_TIP - 4); // 44 = the y-axis labels
+  const above = Math.min(barHeight + 6, Math.max(0, PLOT - (lines * 17 + 12)));
+  return (
+    <View pointerEvents="none" style={[styles.tipArea, { paddingBottom: above }]}>
+      <View style={[styles.tooltip, { marginLeft: left, width: BAR_TIP, backgroundColor: colors.btnBg }]}>{children}</View>
+    </View>
+  );
+}
+
+function TipRow({ color, label, value, bold }: { color?: string; label: string; value: string; bold?: boolean }) {
+  const colors = useColors();
+  const text = { color: colors.btnFg, fontSize: 12.5, fontWeight: bold ? ('700' as const) : ('400' as const) };
+  return (
+    <View style={styles.panelRow}>
+      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color ?? 'transparent' }} />
+      <Text style={[text, { flex: 1 }]} numberOfLines={1}>{label}</Text>
+      <Text style={text}>{value}</Text>
     </View>
   );
 }
@@ -306,4 +346,6 @@ const styles = StyleSheet.create({
   legend: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 14, marginTop: spacing.sm },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   tooltip: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, gap: 1 },
+  tipArea: { position: 'absolute', top: 0, left: 0, right: 0, height: PLOT, justifyContent: 'flex-end' },
+  panelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 });

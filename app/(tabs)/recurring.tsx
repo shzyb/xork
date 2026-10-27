@@ -9,6 +9,7 @@ import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { ListHeading } from '../../src/components/ListHeading';
 import { PressableScale } from '../../src/components/PressableScale';
 import { RecurringRow } from '../../src/components/RecurringRow';
+import { Bone, RowBones } from '../../src/components/Skeleton';
 import { Text } from '../../src/components/Text';
 import { getAccountsWithBalance, getMonthRecurringActivity, getRecurring } from '../../src/db';
 import {
@@ -167,6 +168,15 @@ export default function Recurring() {
             </PressableScale>
           ))}
         </View>
+
+        {(!items || !accounts) && (tab === 'upcoming' ? (
+          <>
+            <Bone width="100%" height={330} radius={14} style={{ marginTop: spacing.lg }} />
+            <RowBones count={3} />
+          </>
+        ) : (
+          <RowBones count={5} />
+        ))}
 
         {tab === 'upcoming' && items && accounts && (
           <>

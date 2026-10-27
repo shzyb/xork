@@ -3,7 +3,7 @@ import { FadeScrollView } from '../src/components/FadeScrollView';
 import { File, Paths } from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
-import { ChevronRight, Download, Globe, Landmark, SunMoon, Tag, Trash2, Upload } from 'lucide-react-native';
+import { ChevronRight, Download, FlaskConical, Globe, SunMoon, Tag, Trash2, Upload } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
@@ -13,6 +13,7 @@ import { Sheet } from '../src/components/Sheet';
 import { SheetHeader } from '../src/components/SheetHeader';
 import { deleteAllData, exportAll, getSetting, replaceAllData } from '../src/db';
 import { today } from '../src/dates';
+import { buildDemoBackup } from '../src/demoData';
 import { currencyOf } from '../src/money';
 import { sheet, spacing } from '../src/theme';
 import { THEME_OPTIONS } from '../src/types';
@@ -36,7 +37,7 @@ export default function Settings() {
   const router = useRouter();
   const currencyCode = useData(() => getSetting('currency'));
   const themeSetting = useData(() => getSetting('theme'));
-  const [busy, setBusy] = useState<'export' | 'import' | null>(null);
+  const [busy, setBusy] = useState<'export' | 'import' | 'demo' | null>(null);
   const [message, setMessage] = useState('');
 
   const current = currencyOf(currencyCode ?? 'USD');
@@ -82,6 +83,24 @@ export default function Settings() {
     }
   }
 
+  async function addDemoData() {
+    setMessage('');
+    const ok = await confirm(
+      'Replace everything with demo data?',
+      'This deletes all your accounts, transactions, categories and recurring items and fills the app with about 2 years of made-up data. It cannot be undone.',
+      'Replace',
+    );
+    if (!ok) return;
+    setBusy('demo');
+    try {
+      await replaceAllData(buildDemoBackup(currencyCode ?? 'USD', today()));
+    } catch {
+      setMessage('Could not add demo data. Try again.');
+    } finally {
+      setBusy(null);
+    }
+  }
+
   async function deleteEverything() {
     setMessage('');
     const ok = await confirm(
@@ -101,13 +120,6 @@ export default function Settings() {
     <Sheet onClose={() => router.back()}>
       <SheetHeader title="Settings" onClose={() => router.back()} />
       <FadeScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-        <ActionRow
-          Icon={Landmark}
-          title="Accounts"
-          subtitle="Add, edit or remove accounts"
-          onPress={() => router.push('/accounts')}
-          end={<ChevronRight color={sheet.ink3} size={20} />}
-        />
         <ActionRow
           Icon={Tag}
           title="Categories & budgets"
@@ -143,6 +155,15 @@ export default function Settings() {
           disabled={busy !== null}
           onPress={importBackup}
         />
+        {__DEV__ && (
+          <ActionRow
+            Icon={FlaskConical}
+            title={busy === 'demo' ? 'Adding…' : 'Add 2 years of demo data'}
+            subtitle="Development only. Replaces everything"
+            disabled={busy !== null}
+            onPress={addDemoData}
+          />
+        )}
         <ActionRow
           Icon={Trash2}
           title="Delete all data"

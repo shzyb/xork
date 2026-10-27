@@ -1,13 +1,7 @@
 import { setAppCurrency } from '../money';
-import { biggestPriceRise, budgetStatus, categoryUsual, creditStatus, dueByDay, dueText, forecast, keptPercent, netWorthSeries, runningTotal, runway, savingsPath, stillDue, usual, vsUsual, yearlyCost } from '../insights';
-import type { Recurring } from '../types';
+import { budgetStatus, creditStatus, dayParts, dueText, netWorthSeries, runningTotal } from '../insights';
 
 beforeEach(() => setAppCurrency('USD'));
-
-const item = (id: number, over: Partial<Recurring>): Recurring => ({
-  id, name: `Item ${id}`, type: 'expense', amount_minor: 1000, account_id: 1, category_id: 1,
-  freq: 'monthly', anchor_day: 1, next_date: '2026-11-01', active: 1, ...over,
-});
 
 describe('runningTotal', () => {
   it('adds up by day and carries the total over days with no spending', () => {
@@ -32,14 +26,6 @@ describe('netWorthSeries', () => {
 
   it('can go below zero', () => {
     expect(netWorthSeries(-1000, [{ day: 1, total_minor: -500 }], 2)).toEqual([-1500, -1500]);
-  });
-});
-
-describe('keptPercent', () => {
-  it('is the share of income left over, or null with no income', () => {
-    expect(keptPercent(200000, 150000)).toBe(25);
-    expect(keptPercent(100000, 130000)).toBe(-30);
-    expect(keptPercent(0, 5000)).toBeNull();
   });
 });
 
@@ -93,145 +79,24 @@ describe('dueText', () => {
   });
 });
 
-describe('usual', () => {
-  it('is the middle of the earlier months, so one odd month does not move it', () => {
-    expect(usual([3000, 1000, 2000])).toBe(2000);
-    expect(usual([1000, 1100, 1200, 9000])).toBe(1150);
+describe('dayParts', () => {
+  const rows = [
+    { day: 1, category_id: 1, total_minor: 500 },
+    { day: 1, category_id: 2, total_minor: 900 },
+    { day: 3, category_id: 1, total_minor: 100 },
+    ...[3, 4, 5, 6, 7].map((id) => ({ day: 4, category_id: id, total_minor: id * 10 })),
+  ];
+
+  it('lists each day biggest first and leaves quiet days empty', () => {
+    const parts = dayParts(rows, 3);
+    expect(parts[0]).toEqual([{ category_id: 2, total_minor: 900 }, { category_id: 1, total_minor: 500 }]);
+    expect(parts[1]).toEqual([]);
+    expect(parts[2]).toEqual([{ category_id: 1, total_minor: 100 }]);
   });
 
-  it('needs at least two months', () => {
-    expect(usual([])).toBeNull();
-    expect(usual([5000])).toBeNull();
-  });
-});
-
-describe('categoryUsual', () => {
-  const months = ['2026-07', '2026-08', '2026-09'];
-
-  it('counts a month with nothing as zero', () => {
-    const rows = [{ id: 1, month: '2026-07', total_minor: 100 }, { id: 1, month: '2026-09', total_minor: 300 }];
-    expect(categoryUsual(rows, months).get(1)).toBe(100);
-  });
-
-  it('leaves out a category that is usually zero, and everything with under two months', () => {
-    expect(categoryUsual([{ id: 2, month: '2026-08', total_minor: 500 }], months).has(2)).toBe(false);
-    expect(categoryUsual([{ id: 1, month: '2026-09', total_minor: 300 }], ['2026-09']).size).toBe(0);
-  });
-});
-
-describe('vsUsual', () => {
-  it('reports a difference of a fifth or more either way', () => {
-    expect(vsUsual(1300, 1000, false)).toBe(300);
-    expect(vsUsual(700, 1000, false)).toBe(-300);
-    expect(vsUsual(1100, 1000, false)).toBeNull();
-  });
-
-  it('only calls a running month above usual, and needs a usual', () => {
-    expect(vsUsual(700, 1000, true)).toBeNull();
-    expect(vsUsual(1300, 1000, true)).toBe(300);
-    expect(vsUsual(1300, null, false)).toBeNull();
-    expect(vsUsual(1300, 0, false)).toBeNull();
-  });
-});
-
-describe('stillDue', () => {
-  it('adds up bills and income still to come this month, skipping paused items', () => {
-    const items = [
-      item(1, { freq: 'weekly', amount_minor: 2000, next_date: '2026-10-20' }), // the 20th and the 27th
-      item(2, { amount_minor: 50000, next_date: '2026-11-01' }), // next month
-      item(3, { type: 'income', amount_minor: 300000, next_date: '2026-10-30' }),
-      item(4, { amount_minor: 9999, next_date: '2026-10-25', active: 0 }),
-    ];
-    expect(stillDue(items, '2026-10-15', '2026-10')).toEqual({ bills: 4000, income: 300000 });
-  });
-});
-
-describe('dueByDay', () => {
-  it('lists each payment on its day, bills as minus', () => {
-    const items = [item(1, { freq: 'weekly', amount_minor: 2000, next_date: '2026-10-20' }), item(2, { type: 'income', amount_minor: 300000, next_date: '2026-10-30' })];
-    expect(dueByDay(items, '2026-10-15', '2026-10')).toEqual([
-      { day: 20, total_minor: -2000 },
-      { day: 27, total_minor: -2000 },
-      { day: 30, total_minor: 300000 },
-    ]);
-  });
-});
-
-describe('savingsPath', () => {
-  it('adds up each day for a finished month, below zero too', () => {
-    expect(savingsPath([{ day: 1, total_minor: -5000 }, { day: 3, total_minor: 20000 }], 5)).toEqual([-5000, -5000, 15000, 15000, 15000]);
-  });
-
-  it('projects the rest of a running month: bills on their days, day-to-day spending spread evenly', () => {
-    const dailyNet = [{ day: 1, total_minor: 100000 }, { day: 2, total_minor: -10000 }];
-    const path = savingsPath(dailyNet, 5, { today: 2, due: [{ day: 4, total_minor: -20000 }], flexibleLeft: 3000 });
-    expect(path).toEqual([100000, 90000, 89000, 68000, 67000]);
-  });
-
-  it('counts a transaction dated ahead of today on its own day', () => {
-    const dailyNet = [{ day: 1, total_minor: 10000 }, { day: 4, total_minor: -4000 }];
-    expect(savingsPath(dailyNet, 4, { today: 2, due: [], flexibleLeft: 0 })).toEqual([10000, 10000, 10000, 6000]);
-  });
-});
-
-describe('forecast', () => {
-  it('scales only day-to-day spending up to the whole month', () => {
-    const result = forecast({
-      inSoFar: 18500000, outSoFar: 10200000, fixedPaid: 6200000, due: { bills: 1400000, income: 0 }, elapsedDays: 15, days: 31,
-    });
-    expect(result).toEqual({ income: 18500000, spend: 6200000 + 1400000 + 8266700 });
-  });
-
-  it('does not multiply rent paid on the 1st', () => {
-    const result = forecast({ inSoFar: 0, outSoFar: 5000000, fixedPaid: 5000000, due: { bills: 0, income: 0 }, elapsedDays: 3, days: 31 });
-    expect(result.spend).toBe(5000000);
-  });
-
-  it('counts recurring income still to come', () => {
-    const result = forecast({ inSoFar: 0, outSoFar: 0, fixedPaid: 0, due: { bills: 0, income: 300000 }, elapsedDays: 5, days: 30 });
-    expect(result.income).toBe(300000);
-  });
-});
-
-describe('runway', () => {
-  it('is what the accounts hold, less what cards owe, in months of usual spending', () => {
-    const accounts = [
-      { type: 'cash' as const, balance_minor: 1200000 },
-      { type: 'debit' as const, balance_minor: 21000000 },
-      { type: 'savings' as const, balance_minor: 30000000 },
-      { type: 'credit' as const, balance_minor: -1800000 },
-    ];
-    expect(runway(accounts, 15000000)).toEqual({ have: 52200000, owed: 1800000, months: 3.4 });
-  });
-
-  it('never goes below zero, and a card in credit owes nothing', () => {
-    const accounts = [{ type: 'cash' as const, balance_minor: 1000 }, { type: 'credit' as const, balance_minor: -50000 }];
-    expect(runway(accounts, 10000).months).toBe(0);
-    expect(runway([{ type: 'credit' as const, balance_minor: 500 }], 10000).owed).toBe(0);
-  });
-});
-
-describe('yearlyCost', () => {
-  it('turns each frequency into a year', () => {
-    expect(yearlyCost([{ freq: 'monthly', amount_minor: 1000 }, { freq: 'yearly', amount_minor: 12000 }])).toBe(24000);
-  });
-});
-
-describe('biggestPriceRise', () => {
-  it('compares the amount now with the first payment in the logs', () => {
-    const items = [item(1, { name: 'Netflix', amount_minor: 1200 }), item(2, { amount_minor: 500 })];
-    const logs = [
-      { recurring_id: 1, amount_minor: 1000, date: '2026-03-05' },
-      { recurring_id: 2, amount_minor: 500, date: '2026-03-05' },
-      { recurring_id: 1, amount_minor: 1200, date: '2026-06-05' },
-    ];
-    expect(biggestPriceRise(items, logs)).toEqual({ name: 'Netflix', percent: 20, since: '2026-03' });
-  });
-
-  it('ignores small rises, paused items and items with no payments', () => {
-    const logs = [{ recurring_id: 1, amount_minor: 1000, date: '2026-03-05' }];
-    expect(biggestPriceRise([item(1, { amount_minor: 1040 })], logs)).toBeNull();
-    expect(biggestPriceRise([item(1, { amount_minor: 2000, active: 0 })], logs)).toBeNull();
-    expect(biggestPriceRise([item(3, { amount_minor: 2000 })], logs)).toBeNull();
+  it('keeps the 4 biggest and groups the rest as one part with no category', () => {
+    const parts = dayParts(rows, 4)[3];
+    expect(parts.map((p) => p.category_id)).toEqual([7, 6, 5, 4, null]);
+    expect(parts[4].total_minor).toBe(30);
   });
 });

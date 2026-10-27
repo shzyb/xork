@@ -1,4 +1,4 @@
-import { useNavigation } from 'expo-router';
+import { useNavigation, usePreventRemove } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -39,19 +39,19 @@ export function Sheet({ onClose, color, children }: { onClose: () => void; color
   useEffect(() => () => running.current?.stop(), []);
 
   // Hold back a "go back" until the exit has played, then let it through. Replace and push are left alone.
-  useEffect(
-    () =>
-      navigation.addListener('beforeRemove', (e) => {
-        const type = e.data.action.type;
-        if (closing.current || (type !== 'GO_BACK' && type !== 'POP')) return;
-        e.preventDefault();
-        closing.current = true;
-        run(hiddenAt.current, 0, EXIT_MS, () => {
-          if (navigation.canGoBack()) navigation.dispatch(e.data.action);
-        });
-      }),
-    [navigation],
-  );
+  const releaseRemoval: () => void = usePreventRemove(true, ({ data }) => {
+    const type = data.action.type;
+    if (closing.current || (type !== 'GO_BACK' && type !== 'POP')) {
+      releaseRemoval();
+      navigation.dispatch(data.action);
+      return;
+    }
+    closing.current = true;
+    run(hiddenAt.current, 0, EXIT_MS, () => {
+      releaseRemoval();
+      if (navigation.canGoBack()) navigation.dispatch(data.action);
+    });
+  });
 
   return (
     <View style={styles.root}>

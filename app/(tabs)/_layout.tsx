@@ -1,5 +1,5 @@
 import { Tabs, useRouter } from 'expo-router';
-import { ChartPie, Clock, Plus, Repeat } from 'lucide-react-native';
+import { ChartPie, Clock, Layers, Plus, Repeat } from 'lucide-react-native';
 import { useRef } from 'react';
 import type { ComponentProps, ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -12,7 +12,7 @@ type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>
 type Colors = { focused: boolean; ink: string; bg: string; grey: string };
 
 const SIZE = 25;
-const TAB_ORDER = ['index', 'insights', 'activity', 'recurring'];
+const TAB_ORDER = ['index', 'accounts', 'insights', 'activity', 'recurring'];
 
 // Selected icons are filled black. Home, Clock and Pie are drawn here so their outer outline stays solid and only
 // inner details (the clock hands) are cut out in the background colour, so they don't look smaller.
@@ -58,8 +58,26 @@ function FilledPie({ ink }: { ink: string }) {
   );
 }
 
+// The two lower layers stay outlines; only the top layer is solid.
+function FilledLayers({ ink }: { ink: string }) {
+  return (
+    <Svg width={SIZE} height={SIZE} viewBox="0 0 24 24">
+      <G strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <Path
+          d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"
+          fill={ink}
+          stroke={ink}
+        />
+        <Path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" fill="none" stroke={ink} />
+        <Path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" fill="none" stroke={ink} />
+      </G>
+    </Svg>
+  );
+}
+
 const TABS: Record<string, { label: string; icon: (c: Colors) => ReactNode }> = {
   index: { label: 'Home', icon: (c) => <HomeIcon color={c.focused ? c.ink : c.grey} filled={c.focused} /> },
+  accounts: { label: 'Accounts', icon: (c) => (c.focused ? <FilledLayers ink={c.ink} /> : <Layers size={SIZE} color={c.grey} strokeWidth={2} />) },
   activity: { label: 'Activity', icon: (c) => (c.focused ? <FilledClock ink={c.ink} bg={c.bg} /> : <Clock size={SIZE} color={c.grey} strokeWidth={2} />) },
   // A line icon has nothing to fill, so selected it only turns black; the stroke stays the same weight.
   recurring: { label: 'Recurring', icon: (c) => <Repeat size={SIZE} color={c.focused ? c.ink : c.grey} strokeWidth={2} /> },
@@ -67,7 +85,7 @@ const TABS: Record<string, { label: string; icon: (c: Colors) => ReactNode }> = 
 };
 
 // Our own bar: the built-in one lines icons up at the top of each item, and we want them centred.
-function TabBar({ state, navigation }: TabBarProps) {
+function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
 
@@ -85,8 +103,8 @@ function TabBar({ state, navigation }: TabBarProps) {
         if (!route) return null;
         const focused = state.index === index;
         const onPress = () => {
-          const event = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-          if (!focused && !event.defaultPrevented) navigation.navigate(route.name);
+          const event = emitter.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+          if (!focused && !event.defaultPrevented) navigateToTab(route.key);
         };
         return (
           <PressableScale
@@ -121,7 +139,11 @@ export default function TabsLayout() {
 
   return (
     <View style={styles.root}>
-      <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false }} />
+      <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false, lazy: false }}>
+        {TAB_ORDER.map((name) => (
+          <Tabs.Screen key={name} name={name} />
+        ))}
+      </Tabs>
       <PressableScale
         accessibilityRole="button"
         accessibilityLabel="Add"

@@ -8,6 +8,7 @@ import { AccountDot } from '../../src/components/AccountButton';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
 import { EmptyState } from '../../src/components/EmptyState';
 import { PickerSheet } from '../../src/components/PickerSheet';
+import { RowBones } from '../../src/components/Skeleton';
 import type { PickerOption } from '../../src/components/PickerSheet';
 import { TransactionList } from '../../src/components/TransactionList';
 import {
@@ -159,7 +160,7 @@ export default function Activity() {
         </View>
 
         <View style={rows?.length === 0 ? styles.fill : undefined}>
-          {rows && totals && (rows.length === 0 ? (
+          {!rows || !totals ? <RowBones count={8} /> : (rows.length === 0 ? (
             filtered ? (
               <EmptyState Icon={SearchX} title="No results" text="Nothing matches your search or filters.">
                 <PressableScale

@@ -106,30 +106,16 @@ export type CategorySpend = {
 
 export type MonthTotals = { month: string; in_minor: number; out_minor: number };
 
-// What the top of Home shows.
-export type HomeMetric = 'balance' | 'expense';
-
 export type DaySpend = { day: number; total_minor: number };
 
 // Home's net worth chart: the balance before this month, each day's income minus expenses, and the balance on this date last month.
 export type NetWorthTrend = { startMinor: number; daily: DaySpend[]; prevPointMinor: number };
 
-// Everything the Insights screen shows for one month. "Earlier" months are the ones before it, back to the first transaction.
+// Everything the Insights screen shows for one month.
 export type InsightsData = {
   summary: { in_minor: number; out_minor: number };
   spending: CategorySpend[];
-  income: CategorySpend[];
-  recurringOut: number; // recurring expenses logged in the month
   monthly: MonthTotals[]; // the six months ending now, for the chart
-  earlier: MonthTotals[]; // up to six earlier months, oldest first
-  earlierByCategory: { id: number; month: string; total_minor: number }[]; // expenses per category in up to three earlier months
-  earlierCategoryMonths: string[];
-  recurring: RecurringRow[];
-  recurringLogs: { recurring_id: number; amount_minor: number; date: string }[]; // the last year's recurring expenses, oldest first
-  biggest: { amount_minor: number; label: string } | null; // the largest one-off expense of the month
-  payday: string | null; // the date of the month's biggest income
-  dayToDay: DaySpend[]; // expenses that aren't recurring, by day
-  dailyNet: DaySpend[]; // income minus expenses, by day
-  accounts: (Account & { balance_minor: number })[];
-  earliestMonth: string | null; // the month of the oldest transaction, for disabling earlier month chips
+  byDay: { day: number; category_id: number; total_minor: number }[]; // expenses per day and category
+  earliestMonth: string | null; // the month of the oldest transaction, for the month picker
 };

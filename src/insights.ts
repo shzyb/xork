@@ -1,6 +1,5 @@
-import { monthRange, occurrencesBetween } from './dates';
-import { formatMoney, monthlyMinor } from './money';
-import type { AccountType, DaySpend, Frequency, Recurring } from './types';
+import { formatMoney } from './money';
+import type { DaySpend, InsightsData } from './types';
 
 // Cumulative spending by day, in minor units. `length` days long; days with no spending carry the total forward.
 export function runningTotal(daily: DaySpend[], length: number): number[] {
@@ -15,10 +14,6 @@ export function runningTotal(daily: DaySpend[], length: number): number[] {
 // Total balance at the end of each day, from `start` (the balance before day 1). `daily` is each day's income minus expenses.
 export function netWorthSeries(start: number, daily: DaySpend[], length: number): number[] {
   return runningTotal(daily, length).map((v) => start + v);
-}
-
-export function keptPercent(inMinor: number, outMinor: number): number | null {
-  return inMinor > 0 ? Math.round(((inMinor - outMinor) / inMinor) * 100) : null;
 }
 
 export type Budget = { percent: number; state: 'ok' | 'warn' | 'over'; text: string };
@@ -57,99 +52,15 @@ export function dueText(dueDay: number, todayDate: string): string {
   return `due on the ${dueDay}${nth}`;
 }
 
-// What is normal for you: the middle of the earlier months' values, so one unusual month doesn't move it.
-// Null with fewer than 2 months to go on.
-export function usual(values: number[]): number | null {
-  if (values.length < 2) return null;
-  const sorted = [...values].sort((a, b) => a - b);
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[mid] : Math.round((sorted[mid - 1] + sorted[mid]) / 2);
-}
+export type DayPart = { category_id: number | null; total_minor: number };
 
-// Each category's usual spending over `months`, counting 0 for a month it had nothing.
-export function categoryUsual(rows: { id: number; month: string; total_minor: number }[], months: string[]): Map<number, number> {
-  const result = new Map<number, number>();
-  for (const id of new Set(rows.map((r) => r.id))) {
-    const value = usual(months.map((m) => rows.find((r) => r.id === id && r.month === m)?.total_minor ?? 0));
-    if (value) result.set(id, value);
-  }
-  return result;
-}
-
-// How far an amount is from your usual, when it is a fifth or more away. A month that is still running can only be
-// above usual so far: the rest of it hasn't happened yet.
-export function vsUsual(amount: number, usualAmount: number | null | undefined, running: boolean): number | null {
-  if (!usualAmount) return null;
-  const diff = amount - usualAmount;
-  if (Math.abs(diff) < usualAmount * 0.2 || (running && diff < 0)) return null;
-  return diff;
-}
-
-// Recurring payments still to come from `from` to the end of `month`: bills and income.
-export function stillDue(items: Recurring[], from: string, month: string): { bills: number; income: number } {
-  const due = { bills: 0, income: 0 };
-  for (const { item } of occurrencesBetween(items, from, monthRange(month).end)) {
-    if (item.type === 'expense') due.bills += item.amount_minor;
-    else due.income += item.amount_minor;
-  }
-  return due;
-}
-
-// The same payments one by one, as a day of the month and an amount: income plus, bills minus.
-export function dueByDay(items: Recurring[], from: string, month: string): DaySpend[] {
-  return occurrencesBetween(items, from, monthRange(month).end).map(({ item, date }) => ({
-    day: Number(date.slice(8)),
-    total_minor: item.type === 'income' ? item.amount_minor : -item.amount_minor,
-  }));
-}
-
-// What you've kept by the end of each day of the month: income minus expenses, added up from the 1st. In a running month
-// the days after today are a projection: anything already dated ahead, recurring payments on their days, and the
-// day-to-day spending still expected (`flexibleLeft`) spread evenly, so the line ends on the forecast.
-export function savingsPath(dailyNet: DaySpend[], days: number, running?: { today: number; due: DaySpend[]; flexibleLeft: number }): number[] {
-  if (!running) return runningTotal(dailyNet, days);
-  const { today, due, flexibleLeft } = running;
-  const perDay = days > today ? flexibleLeft / (days - today) : 0;
-  return runningTotal([...dailyNet, ...due], days).map((v, i) => (i + 1 > today ? Math.round(v - perDay * (i + 1 - today)) : v));
-}
-
-// Where a running month is heading. Recurring bills count once at their real amount; only day-to-day spending is
-// scaled up to the whole month, so rent paid on the 1st isn't multiplied by 30. Income counts only what is known to come.
-export function forecast(input: {
-  inSoFar: number;
-  outSoFar: number;
-  fixedPaid: number; // recurring expenses already logged this month
-  due: { bills: number; income: number };
-  elapsedDays: number;
-  days: number;
-}): { income: number; spend: number } {
-  const { inSoFar, outSoFar, fixedPaid, due, elapsedDays, days } = input;
-  const flexible = Math.round((((outSoFar - fixedPaid) / elapsedDays) * days) / 100) * 100;
-  return { income: inSoFar + due.income, spend: fixedPaid + due.bills + flexible };
-}
-
-// How many months the money in your accounts would last at your usual spending. What cards owe counts against it.
-export function runway(accounts: { type: AccountType; balance_minor: number }[], usualSpend: number) {
-  const have = accounts.filter((a) => a.type !== 'credit').reduce((sum, a) => sum + a.balance_minor, 0);
-  const owed = accounts.filter((a) => a.type === 'credit').reduce((sum, a) => sum + Math.max(0, -a.balance_minor), 0);
-  return { have, owed, months: Math.max(0, Math.round(((have - owed) / usualSpend) * 10) / 10) };
-}
-
-export function yearlyCost(items: { freq: Frequency; amount_minor: number }[]): number {
-  return items.reduce((sum, r) => sum + monthlyMinor(r.amount_minor, r.freq) * 12, 0);
-}
-
-// The recurring expense whose amount rose the most since its first payment in `logs` (oldest first). Null under 5%.
-export function biggestPriceRise(
-  items: Recurring[],
-  logs: { recurring_id: number; amount_minor: number; date: string }[],
-): { name: string; percent: number; since: string } | null {
-  let best: { name: string; percent: number; since: string } | null = null;
-  for (const item of items) {
-    const first = logs.find((l) => l.recurring_id === item.id);
-    if (!item.active || item.type !== 'expense' || !first || first.amount_minor <= 0) continue;
-    const percent = Math.round(((item.amount_minor - first.amount_minor) / first.amount_minor) * 100);
-    if (percent >= 5 && (!best || percent > best.percent)) best = { name: item.name, percent, since: first.date.slice(0, 7) };
-  }
-  return best;
+// Each day of a month split by category for the daily chart: the 4 biggest that day, biggest first, and everything
+// smaller together as one part with no category. Days with no spending are empty.
+export function dayParts(byDay: InsightsData['byDay'], days: number): DayPart[][] {
+  return Array.from({ length: days }, (_, i) => {
+    const sorted = byDay.filter((r) => r.day === i + 1).sort((a, b) => b.total_minor - a.total_minor);
+    const parts: DayPart[] = sorted.slice(0, 4).map((r) => ({ category_id: r.category_id, total_minor: r.total_minor }));
+    const rest = sorted.slice(4).reduce((sum, r) => sum + r.total_minor, 0);
+    return rest > 0 ? [...parts, { category_id: null, total_minor: rest }] : parts;
+  });
 }
