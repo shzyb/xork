@@ -32,13 +32,13 @@ export function parseBackup(text: string): ParseResult {
   try {
     data = JSON.parse(text);
   } catch {
-    return fail("This isn't a Xork backup file.");
+    return fail("This isn't a Dimedog backup file.");
   }
-  if (!isRecord(data) || data.app !== 'hisaab') return fail("This isn't a Xork backup file.");
-  if (isInt(data.version) && data.version > BACKUP_VERSION) return fail('This backup is from a newer version of Xork.');
+  if (!isRecord(data) || data.app !== 'hisaab') return fail("This isn't a Dimedog backup file.");
+  if (isInt(data.version) && data.version > BACKUP_VERSION) return fail('This backup is from a newer version of Dimedog.');
   if (data.version !== BACKUP_VERSION) return fail('This backup file is damaged.');
   if (!isStr(data.currency) || !CURRENCIES.some((c) => c.code === data.currency)) {
-    return fail('This backup uses a currency Xork does not support.');
+    return fail('This backup uses a currency Dimedog does not support.');
   }
   const { accounts, categories, transactions, recurring } = data;
   if (![accounts, categories, transactions, recurring].every(Array.isArray)) return fail('This backup file is damaged.');
