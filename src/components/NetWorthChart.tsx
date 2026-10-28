@@ -50,7 +50,6 @@ export function NetWorthChart({ trend, month, elapsed, width, height, hidden }: 
         hideDataPoints={empty}
         dataPointsColor1={colors.ink}
         dataPointsRadius1={5}
-        curved
         width={chartWidth}
         height={height}
         initialSpacing={edge}
