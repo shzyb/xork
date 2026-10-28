@@ -27,7 +27,8 @@ export function NetWorthChart({ trend, month, elapsed, width, height, hidden }: 
   const lastDay = Math.max(elapsed, ...trend.daily.map((d) => d.day));
   const series = netWorthSeries(trend.startMinor, trend.daily, lastDay);
 
-  if (series.every((v) => v === 0)) return null;
+  // No balances yet: keep the empty plane (grid, axis and day labels) but draw no line, dots or touch tooltip.
+  const empty = series.every((v) => v === 0);
 
   // The axis always includes zero, so the labels start at 0 (or go below it when the balance does).
   const low = Math.min(0, ...series);
@@ -44,9 +45,9 @@ export function NetWorthChart({ trend, month, elapsed, width, height, hidden }: 
     <View style={styles.chartBox}>
       <LineChart
         data={series.map((value, i) => ({ value: (value - base) / 100, hideDataPoint: i !== series.length - 1 }))}
-        color1={colors.ink}
+        color1={empty ? 'transparent' : colors.ink}
         thickness1={3}
-        hideDataPoints={false}
+        hideDataPoints={empty}
         dataPointsColor1={colors.ink}
         dataPointsRadius1={5}
         curved
@@ -70,7 +71,7 @@ export function NetWorthChart({ trend, month, elapsed, width, height, hidden }: 
           return (minor < 0 ? '-' : '') + compactMoney(minor);
         }}
         disableScroll
-        pointerConfig={{
+        pointerConfig={empty ? undefined : {
           hidePointer1: true,
           pointerStripColor: colors.ink3,
           pointerLabelWidth: TIP,

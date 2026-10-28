@@ -35,7 +35,9 @@ export default function Accounts() {
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
       <FadeScrollView contentContainerStyle={styles.content}>
-        <Text style={[styles.title, { color: colors.ink }]}>Accounts</Text>
+        <View style={styles.header}>
+          <Text style={[styles.title, { color: colors.ink }]}>Accounts</Text>
+        </View>
         {!accounts || !trend ? (
           <View style={styles.hero}>
             <Bone width={190} height={fontSize.big - 8} radius={14} style={{ alignSelf: 'center' }} />
@@ -99,8 +101,10 @@ export default function Accounts() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { paddingHorizontal: spacing.xl, paddingBottom: fabClearance },
-  title: { fontSize: fontSize.screen, fontWeight: '800', marginTop: spacing.md },
-  hero: { marginTop: spacing.lg },
+  // Same 44px row as the Home title, with 2px more gap above the balance than Home.
+  header: { height: 44, marginTop: spacing.md, justifyContent: 'center' },
+  title: { fontSize: fontSize.screen, fontWeight: '800' },
+  hero: { marginTop: spacing.xxl + 2 },
   big: { fontSize: fontSize.big, fontWeight: '800', letterSpacing: -1.5, textAlign: 'center' },
   change: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, minHeight: 22 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64, paddingVertical: 6 },

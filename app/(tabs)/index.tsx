@@ -51,7 +51,9 @@ export default function Home() {
         <HomeHero spend={hideOnOpen === undefined ? undefined : spend} hidden={hidden} />
 
         {recent === undefined ? <RowBones count={6} /> : (recent.length === 0 ? (
-          <EmptyState Icon={Receipt} title="No transactions yet" text="Tap + to log your first expense or income." />
+          <View style={styles.emptyGap}>
+            <EmptyState Icon={Receipt} title="No transactions yet" text="Tap + to log your first expense or income." />
+          </View>
         ) : (
           <>
             <TransactionList rows={recent} />
@@ -72,5 +74,6 @@ const styles = StyleSheet.create({
   brand: { fontSize: fontSize.screen, fontWeight: '800' },
   actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', marginRight: -10 },
+  emptyGap: { marginTop: spacing.xxl },
   seeAll: { alignSelf: 'center', minHeight: 44, paddingHorizontal: 20, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginVertical: spacing.sm },
 });

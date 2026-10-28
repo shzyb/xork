@@ -40,10 +40,11 @@ export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed,
   const lastDay = Math.max(elapsed ?? 0, ...daily.map((d) => d.day));
   const current = runningTotal(daily, elapsed === undefined ? daysInMonth(month) : lastDay);
   const previous = runningTotal(prevDaily, days);
-  if (current[current.length - 1] === 0 && previous[days - 1] === 0) return null;
+  // No spending yet: keep the empty plane (grid and day labels) but draw no lines, dots, Y labels or touch tooltip.
+  const empty = current[current.length - 1] === 0 && previous[days - 1] === 0;
 
   // The library sizes the y-axis from the first line only, so give it the bigger of the two months, rounded up.
-  const top = niceTop(Math.max(current[current.length - 1], previous[days - 1]));
+  const top = niceTop(empty ? 10000 : Math.max(current[current.length - 1], previous[days - 1]));
 
   const chartWidth = width - 56;
   const edge = 8; // room so the dot on the last day and the first day isn't cut off
@@ -54,13 +55,13 @@ export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed,
       <LineChart
         data={previous.map((value) => ({ value: value / 100 }))}
         data2={current.map((value, i) => ({ value: value / 100, hideDataPoint: i !== current.length - 1 }))}
-        color1={colors.ink3}
-        color2={colors.ink}
+        color1={empty ? 'transparent' : colors.ink3}
+        color2={empty ? 'transparent' : colors.ink}
         thickness1={2}
         thickness2={3}
         strokeDashArray1={[6, 5]}
         hideDataPoints1
-        hideDataPoints2={false}
+        hideDataPoints2={empty}
         dataPointsColor2={colors.ink}
         dataPointsRadius2={5}
         curved
@@ -82,7 +83,8 @@ export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed,
         disableScroll
         // The library parks a marker on each line, and on a day with no data yet (after today) it leaves this month's
         // marker stranded at its last position. The strip and tooltip already show both values, so no markers.
-        pointerConfig={{
+        // Nothing to touch on an empty plane, so no pointer at all.
+        pointerConfig={empty ? undefined : {
           hidePointer1: true,
           hidePointer2: true,
           pointerStripColor: colors.ink3,
@@ -144,7 +146,9 @@ export function CashFlowChart({ monthly, selected, width }: {
   const group = chartWidth / monthly.length;
   const between = group - (barWidth * 2 + gap);
   const biggest = Math.max(...monthly.flatMap((m) => [m.in_minor, m.out_minor]));
-  const top = biggest > 0 ? niceTop(biggest) : undefined;
+  // No money yet: keep the empty plane (axis and month labels) with no bars and no touch tooltip.
+  const empty = biggest === 0;
+  const top = niceTop(empty ? 10000 : biggest);
 
   const bars = monthly.flatMap((m, i) => {
     const on = m.month === selected;
@@ -184,7 +188,7 @@ export function CashFlowChart({ monthly, selected, width }: {
         formatYLabel={(label) => compactMoney(Number(label) * 100)}
         disableScroll
       />
-      {touched !== null && top !== undefined && (
+      {touched !== null && !empty && (
         <ChartTip
           x={group * Math.floor(touched / 2) + between / 2 + barWidth / 2 + (touched % 2) * (barWidth + gap)}
           barHeight={(((touched % 2 ? monthly[touched >> 1].out_minor : monthly[touched >> 1].in_minor) / 100) / top) * PLOT}

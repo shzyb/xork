@@ -181,11 +181,19 @@ export default function Recurring() {
         {tab === 'upcoming' && items && accounts && (
           <>
             {calendar}
-            <ListHeading>{selected ? prettyDate(selected) : monthLabel(month)}</ListHeading>
-            {shown.length > 0 ? shown.map(row) : (
-              <Text style={{ color: colors.ink2, fontSize: fontSize.body, marginTop: spacing.sm }}>
-                {selected ? 'Nothing on this day.' : 'Nothing this month.'}
-              </Text>
+            {items.length === 0 && cards.length === 0 ? (
+              <View style={styles.emptyGap}>
+                <EmptyState Icon={Repeat} title="No recurring items yet" text="Start adding your subscriptions, bills or recurring items here." />
+              </View>
+            ) : (
+              <>
+                <ListHeading>{selected ? prettyDate(selected) : monthLabel(month)}</ListHeading>
+                {shown.length > 0 ? shown.map(row) : (
+                  <Text style={{ color: colors.ink2, fontSize: fontSize.body, marginTop: spacing.sm }}>
+                    {selected ? 'Nothing on this day.' : 'Nothing this month.'}
+                  </Text>
+                )}
+              </>
             )}
           </>
         )}
@@ -219,6 +227,7 @@ const styles = StyleSheet.create({
   content: { paddingHorizontal: spacing.xl, paddingBottom: fabClearance },
   topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md },
   screenTitle: { fontSize: fontSize.screen, fontWeight: '800' },
+  emptyGap: { marginTop: spacing.xxl },
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   tabs: { flexDirection: 'row', borderRadius: 22, padding: 3, gap: 3, marginTop: spacing.md },
   tab: { height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },

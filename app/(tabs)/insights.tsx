@@ -1,10 +1,11 @@
 import { useFocusEffect, useRouter } from 'expo-router';
-import { ChevronLeft, ChevronRight } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, Receipt } from 'lucide-react-native';
 import { useCallback, useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
 import { CashFlowChart, DailyCategoryChart } from '../../src/components/Charts';
+import { EmptyState } from '../../src/components/EmptyState';
 import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { ListHeading } from '../../src/components/ListHeading';
 import { PickerSheet } from '../../src/components/PickerSheet';
@@ -12,7 +13,7 @@ import { PressableScale } from '../../src/components/PressableScale';
 import { Bone, RowBones } from '../../src/components/Skeleton';
 import { Text } from '../../src/components/Text';
 import { getInsights } from '../../src/db';
-import { currentMonth, monthLabel, monthName, shiftMonth, today } from '../../src/dates';
+import { currentMonth, monthLabel, shiftMonth, today } from '../../src/dates';
 import { formatMoney } from '../../src/money';
 import { fabClearance, fontSize, spacing, useColors } from '../../src/theme';
 import type { InsightsData } from '../../src/types';
@@ -114,13 +115,12 @@ function Body({ data, month, contentWidth, expanded, onToggleExpanded }: {
   const { summary, spending } = data;
   const out = summary.out_minor;
   const saved = summary.in_minor - out;
-  const noIncome = summary.in_minor === 0;
   const isCurrent = month === currentMonth();
 
   // The three amounts share one font size, small enough for the longest of them to fit in half the width.
   const incomeText = formatMoney(summary.in_minor);
   const expenseText = formatMoney(out);
-  const savedText = noIncome ? '—' : formatMoney(saved);
+  const savedText = formatMoney(saved);
   const longest = Math.max(incomeText.length, expenseText.length, savedText.length);
   const size = longest <= 12 ? 26 : longest <= 15 ? 22 : 18;
 
@@ -155,30 +155,33 @@ function Body({ data, month, contentWidth, expanded, onToggleExpanded }: {
 
       <CashFlowChart monthly={data.monthly} selected={month} width={contentWidth} />
 
-      <ListHeading>Monthly Spending</ListHeading>
-      <DailyCategoryChart
-        byDay={data.byDay}
-        categories={spending}
-        month={month}
-        today={isCurrent ? Number(today().slice(8)) : null}
-        width={contentWidth}
-      />
+      {spending.length === 0 ? (
+        <EmptyState Icon={Receipt} title="No expenses this month" text="Enter a transaction for this month to see it here." />
+      ) : (
+        <>
+          <ListHeading>Monthly Spending</ListHeading>
+          <DailyCategoryChart
+            byDay={data.byDay}
+            categories={spending}
+            month={month}
+            today={isCurrent ? Number(today().slice(8)) : null}
+            width={contentWidth}
+          />
 
-      <ListHeading>Top categories</ListHeading>
-      {spending.length === 0 && (
-        <Text style={{ color: colors.ink2, paddingVertical: spacing.md }}>No expenses in {monthName(month)}.</Text>
-      )}
-      {top.map((c) => spendingRow(c))}
-      {expanded && rest.map((c) => spendingRow(c))}
-      {grouped && (
-        <PressableScale
-          accessibilityRole="button"
-          accessibilityLabel={expanded ? 'Show fewer categories' : `Show ${rest.length} more categories`}
-          onPress={onToggleExpanded}
-          style={[styles.more, { backgroundColor: colors.fill }]}
-        >
-          <Text style={{ color: colors.ink, fontSize: 14, fontWeight: '600' }}>{expanded ? 'Show less' : 'Show more'}</Text>
-        </PressableScale>
+          <ListHeading>Top categories</ListHeading>
+          {top.map((c) => spendingRow(c))}
+          {expanded && rest.map((c) => spendingRow(c))}
+          {grouped && (
+            <PressableScale
+              accessibilityRole="button"
+              accessibilityLabel={expanded ? 'Show fewer categories' : `Show ${rest.length} more categories`}
+              onPress={onToggleExpanded}
+              style={[styles.more, { backgroundColor: colors.fill }]}
+            >
+              <Text style={{ color: colors.ink, fontSize: 14, fontWeight: '600' }}>{expanded ? 'Show less' : 'Show more'}</Text>
+            </PressableScale>
+          )}
+        </>
       )}
 
       <Text style={[styles.foot, { color: colors.ink3 }]}>
