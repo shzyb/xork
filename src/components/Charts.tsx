@@ -6,7 +6,7 @@ import { daysInMonth, monthName, monthShort, prettyDate } from '../dates';
 import { dayParts, runningTotal } from '../insights';
 import { compactMoney, formatMoney } from '../money';
 import { spacing, useColors } from '../theme';
-import type { CategorySpend, DaySpend, InsightsData } from '../types';
+import type { CategorySpend, DaySpend, InsightsData, TransactionRow } from '../types';
 import { Text } from './Text';
 
 // The top of the y-axis for a biggest value in minor units: rounded up so the three sections get round numbers.
@@ -16,15 +16,16 @@ export function niceTop(maxMinor: number): number {
   return Math.ceil(rawStep / unit) * unit * 3;
 }
 
-const TIP = 130; // width of the touch tooltip
+const TIP = 200; // width of the touch tooltip on the Home chart, wide enough for a day's expenses
 const PLOT = 160; // the bars' area in the bar charts: their height of 150 plus the 10 the library adds above it
 const BAR_TIP = 150; // the same for the bar charts, whose rows carry a category name
 
 // The whole month on the x-axis: last month dashed in full, this month solid up to today with a dot at the end.
 // Last month is the first line because the chart takes its day labels from it. Touch and drag to read a day.
-export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed, width, height, hidden, legend }: {
+export function RunningTotalChart({ daily, prevDaily, expenses, month, prevMonth, elapsed, width, height, hidden, legend }: {
   daily: DaySpend[];
   prevDaily: DaySpend[];
+  expenses: TransactionRow[]; // this month's expenses, listed for the touched day
   month: string;
   prevMonth: string;
   elapsed: number | undefined;
@@ -92,13 +93,14 @@ export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed,
           // The library only places the label next to the touch point on its own. Pinned to the top instead:
           // it sits at a fixed height, and the label centres itself on the line, kept inside the chart.
           pointerLabelWidth: TIP,
-          pointerLabelHeight: 64,
+          pointerLabelHeight: 130,
           autoAdjustPointerLabelPosition: false,
-          shiftPointerLabelY: TIP / 2 - 4,
+          shiftPointerLabelY: 61, // where the label has always sat
           pointerLabelComponent: (_items: unknown, _secondary: unknown, index: number) => {
             const x = edge + index * gap; // where the line is, from the start of the lines
             const origin = x - 6; // where the library puts the left edge of the label
             const offset = Math.min(Math.max(-TIP / 2 + 6, -origin), chartWidth - TIP - origin);
+            const dayExpenses = expenses.filter((e) => Number(e.date.slice(8)) === index + 1);
             return (
               <View style={[styles.tooltip, { backgroundColor: colors.btnBg, width: TIP, marginLeft: offset }]}>
                 <Text style={{ color: colors.btnFg, fontWeight: '700', fontSize: 12.5 }}>Day {index + 1}</Text>
@@ -108,6 +110,23 @@ export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed,
                 <Text style={{ color: colors.btnFg, fontSize: 12.5, opacity: 0.7 }}>
                   {monthShort(prevMonth)} {money(previous[index])}
                 </Text>
+                {index < current.length && (dayExpenses.length === 0 ? (
+                  <Text style={{ color: colors.btnFg, fontSize: 12, opacity: 0.7, marginTop: 4 }}>No expenses</Text>
+                ) : (
+                  <View style={{ marginTop: 4, gap: 2 }}>
+                    {dayExpenses.slice(0, 3).map((e) => (
+                      <View key={e.id} style={styles.expenseRow}>
+                        <Text numberOfLines={1} style={[styles.expenseName, { color: colors.btnFg }]}>
+                          {e.note || e.category_name || 'Expense'}
+                        </Text>
+                        <Text style={{ color: colors.btnFg, fontSize: 12 }}>{money(e.amount_minor)}</Text>
+                      </View>
+                    ))}
+                    {dayExpenses.length > 3 && (
+                      <Text style={{ color: colors.btnFg, fontSize: 12, opacity: 0.7 }}>+{dayExpenses.length - 3} more</Text>
+                    )}
+                  </View>
+                ))}
               </View>
             );
           },
@@ -349,6 +368,8 @@ const styles = StyleSheet.create({
   legend: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 14, marginTop: spacing.sm },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   tooltip: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, gap: 1 },
+  expenseRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
+  expenseName: { flex: 1, fontSize: 12 },
   tipArea: { position: 'absolute', top: 0, left: 0, right: 0, height: PLOT, justifyContent: 'flex-end' },
   panelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 });

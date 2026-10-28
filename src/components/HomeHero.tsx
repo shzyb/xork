@@ -2,7 +2,7 @@ import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { currentMonth, shiftMonth, today } from '../dates';
 import { formatMoney } from '../money';
 import { fontSize, spacing, useColors } from '../theme';
-import type { DaySpend } from '../types';
+import type { DaySpend, TransactionRow } from '../types';
 import { ChangeLine } from './ChangeLine';
 import { RunningTotalChart } from './Charts';
 import { Bone } from './Skeleton';
@@ -12,7 +12,7 @@ const sum = (rows: { total_minor: number }[]) => rows.reduce((n, r) => n + r.tot
 
 // The top of Home: this month's expense so far, how it compares with the same point last month, and its chart.
 // Until the data arrives it shows grey blocks of about the same size, so nothing below it jumps when the chart appears.
-export function HomeHero({ spend, hidden }: { spend: { daily: DaySpend[]; prevDaily: DaySpend[] } | undefined; hidden: boolean }) {
+export function HomeHero({ spend, hidden }: { spend: { daily: DaySpend[]; prevDaily: DaySpend[]; expenses: TransactionRow[] } | undefined; hidden: boolean }) {
   const colors = useColors();
   const { width } = useWindowDimensions();
   if (!spend) {
@@ -41,6 +41,7 @@ export function HomeHero({ spend, hidden }: { spend: { daily: DaySpend[]; prevDa
       <RunningTotalChart
         daily={spend.daily}
         prevDaily={spend.prevDaily}
+        expenses={spend.expenses}
         month={month}
         prevMonth={shiftMonth(month, -1)}
         elapsed={elapsed}
