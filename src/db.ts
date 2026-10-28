@@ -771,7 +771,7 @@ export async function setRecurringActive(id: number, active: boolean) {
 export async function getRecurringActivity(id: number): Promise<{ history: TransactionRow[]; yearCount: number; yearTotal: number }> {
   const year = today().slice(0, 4);
   const history = await db!.getAllAsync<TransactionRow>(
-    `${TX_SELECT} ${TX_FROM} WHERE t.recurring_id = ? ORDER BY t.date DESC, t.id DESC LIMIT 4`, id,
+    `${TX_SELECT} ${TX_FROM} WHERE t.recurring_id = ? ORDER BY t.date DESC, t.id DESC LIMIT 2`, id,
   );
   const sum = await db!.getFirstAsync<{ count: number; total: number }>(
     `SELECT COUNT(*) AS count, COALESCE(SUM(amount_minor), 0) AS total FROM transactions

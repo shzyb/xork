@@ -63,7 +63,6 @@ export default function RecurringDetail() {
     ['Next', item.active ? fullDate(item.next_date) : 'Paused'],
     [income ? 'Paid into' : 'Paid from', item.account_name],
     ['Category', item.category_name],
-    ['Logging', 'Automatic on the day'],
     [`${income ? 'Income' : 'Expense'} in ${year}`, `${formatMoney(activity.yearTotal)} · ${activity.yearCount}×`],
   ];
 
@@ -153,7 +152,7 @@ const styles = StyleSheet.create({
   tagText: { color: sheet.ink2, fontSize: 12.5, fontWeight: '600' },
   logButton: { marginTop: 16 },
   card: { backgroundColor: sheet.card, borderRadius: 20, paddingHorizontal: 16, marginTop: 16 },
-  detailRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 16, paddingVertical: 13 },
+  detailRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 16, paddingVertical: 11 },
   detailDivider: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: sheet.card2 },
   detailLabel: { color: sheet.ink2, fontSize: 16 },
   detailValue: { color: sheet.ink, fontSize: 16, fontWeight: '600', flex: 1, textAlign: 'right' },
