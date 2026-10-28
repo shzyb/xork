@@ -64,7 +64,6 @@ export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed,
         hideDataPoints2={empty}
         dataPointsColor2={colors.ink}
         dataPointsRadius2={5}
-        curved
         width={chartWidth}
         height={height}
         initialSpacing={edge}
