@@ -585,13 +585,12 @@ async function getDailySpending(month: string): Promise<DaySpend[]> {
   );
 }
 
-// Daily spending for this month and last, and this month's expenses, for the small chart on Home.
-export async function getSpendTrend(): Promise<{ daily: DaySpend[]; prevDaily: DaySpend[]; expenses: TransactionRow[] }> {
+// Daily spending for this month and last, for the small chart on Home.
+export async function getSpendTrend(): Promise<{ daily: DaySpend[]; prevDaily: DaySpend[] }> {
   const month = currentMonth();
   const daily = await getDailySpending(month);
   const prevDaily = await getDailySpending(shiftMonth(month, -1));
-  const expenses = await getTransactions({ ...NO_FILTER, type: 'expense', month }, 500);
-  return { daily, prevDaily, expenses };
+  return { daily, prevDaily };
 }
 
 // The local date an account was added (created_at is a UTC timestamp).
