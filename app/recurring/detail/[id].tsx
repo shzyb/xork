@@ -63,7 +63,7 @@ export default function RecurringDetail() {
     ['Next', item.active ? fullDate(item.next_date) : 'Paused'],
     [income ? 'Paid into' : 'Paid from', item.account_name],
     ['Category', item.category_name],
-    [`${income ? 'Income' : 'Expense'} in ${year}`, `${formatMoney(activity.yearTotal)} · ${activity.yearCount}×`],
+    [`${income ? 'Income' : 'Expense'} in ${year}`, `${formatMoney(activity.yearTotal)}${activity.yearCount > 0 ? ` · ${activity.yearCount}×` : ''}`],
   ];
 
   return (
