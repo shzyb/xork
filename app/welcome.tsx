@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { PressableScale } from '../src/components/PressableScale';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Check } from 'lucide-react-native';
 import { Button } from '../src/components/Button';
 import { completeWelcome } from '../src/db';
 import { CURRENCIES, guessCurrency } from '../src/money';
@@ -18,23 +17,21 @@ export default function Welcome() {
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]}>
       <Text style={[styles.title, { color: colors.ink }]}>Which currency do you use?</Text>
-      <FadeScrollView style={styles.list}>
+      <FadeScrollView style={styles.list} contentContainerStyle={styles.pills}>
         {CURRENCIES.map((currency) => {
           const on = currency.code === selected;
           return (
             <PressableScale
               key={currency.code}
-              accessibilityRole="radio"
+              accessibilityRole="button"
+              accessibilityLabel={currency.name}
               accessibilityState={{ selected: on }}
               onPress={() => setSelected(currency.code)}
-              style={[styles.row, { backgroundColor: on ? colors.fill : colors.bg }]}
+              style={[styles.pill, { backgroundColor: on ? colors.btnBg : colors.fill }]}
             >
-              <Text style={[styles.symbol, { color: colors.ink }]}>{currency.symbol}</Text>
-              <View style={styles.names}>
-                <Text style={[styles.code, { color: colors.ink }]}>{currency.code}</Text>
-                <Text style={{ color: colors.ink2, fontSize: fontSize.small }}>{currency.name}</Text>
-              </View>
-              {on && <Check color={colors.ink} size={22} />}
+              <Text style={[styles.pillText, { color: on ? colors.btnFg : colors.ink }]}>
+                {currency.symbol} {currency.code}
+              </Text>
             </PressableScale>
           );
         })}
@@ -50,9 +47,8 @@ const styles = StyleSheet.create({
   screen: { flex: 1, paddingHorizontal: spacing.xl, paddingBottom: spacing.lg },
   title: { fontSize: fontSize.screen, fontWeight: '800', marginTop: spacing.xxl, marginBottom: spacing.lg },
   list: { flex: 1 },
-  row: { flexDirection: 'row', alignItems: 'center', minHeight: 56, borderRadius: 16, paddingHorizontal: spacing.md, gap: spacing.md },
-  symbol: { width: 48, fontSize: fontSize.title, fontWeight: '700', textAlign: 'center' },
-  names: { flex: 1 },
-  code: { fontSize: fontSize.body, fontWeight: '600' },
+  pills: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, paddingBottom: spacing.md },
+  pill: { minHeight: 44, paddingHorizontal: 18, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  pillText: { fontSize: fontSize.body, fontWeight: '600' },
   footer: { marginTop: spacing.md },
 });
