@@ -142,7 +142,7 @@ function RecurringForm({ editing, accounts, categories }: {
           </PressableScale>
           <Text style={styles.label}>Frequency</Text>
           <View style={styles.chips}>
-            {(['weekly', 'monthly', 'yearly'] as const).map((key) => (
+            {(['weekly', 'monthly', 'quarterly', 'yearly'] as const).map((key) => (
               <Chip key={key} label={FREQUENCY_LABEL[key]} on={freq === key} onPress={() => setFreq(key)} />
             ))}
           </View>

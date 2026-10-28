@@ -30,7 +30,8 @@ export function monthRange(month: string): { start: string; end: string } {
 export function nextOccurrence(freq: Frequency, anchorDay: number, from: string): string {
   const date = parseISO(from);
   if (freq === 'weekly') return format(addDays(date, 7), DAY);
-  const target = addMonths(new Date(date.getFullYear(), date.getMonth(), 1), freq === 'yearly' ? 12 : 1);
+  const months = { monthly: 1, quarterly: 3, yearly: 12 }[freq];
+  const target = addMonths(new Date(date.getFullYear(), date.getMonth(), 1), months);
   const day = Math.min(anchorDay, getDaysInMonth(target));
   return format(new Date(target.getFullYear(), target.getMonth(), day), DAY);
 }
@@ -90,7 +91,7 @@ export function occurrencesBetween<T extends { freq: Frequency; anchor_day: numb
   return found.sort((a, b) => a.date.localeCompare(b.date));
 }
 
-export const FREQUENCY_LABEL: Record<Frequency, string> = { weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly' };
+export const FREQUENCY_LABEL: Record<Frequency, string> = { weekly: 'Weekly', monthly: 'Monthly', quarterly: 'Quarterly', yearly: 'Yearly' };
 
 // The last `count` month keys ending at `month`, oldest first.
 export function lastMonths(month: string, count: number): string[] {

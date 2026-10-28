@@ -54,7 +54,7 @@ export type Transaction = {
   created_at: string;
 };
 
-export type Frequency = 'weekly' | 'monthly' | 'yearly';
+export type Frequency = 'weekly' | 'monthly' | 'quarterly' | 'yearly';
 
 export type Recurring = {
   id: number;

@@ -36,6 +36,12 @@ describe('nextOccurrence', () => {
     expect(nextOccurrence('monthly', 31, '2026-12-31')).toBe('2027-01-31');
   });
 
+  it('handles quarterly, including month ends and the year wrap', () => {
+    expect(nextOccurrence('quarterly', 10, '2026-10-10')).toBe('2027-01-10');
+    expect(nextOccurrence('quarterly', 31, '2026-08-31')).toBe('2026-11-30');
+    expect(nextOccurrence('quarterly', 31, '2026-11-30')).toBe('2027-02-28');
+  });
+
   it('handles yearly, including 29 February', () => {
     expect(nextOccurrence('yearly', 10, '2026-05-10')).toBe('2027-05-10');
     expect(nextOccurrence('yearly', 29, '2028-02-29')).toBe('2029-02-28');

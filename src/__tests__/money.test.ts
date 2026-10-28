@@ -90,6 +90,7 @@ describe('monthlyMinor', () => {
   it('turns a recurring amount into an average month', () => {
     expect(monthlyMinor(120000, 'monthly')).toBe(120000);
     expect(monthlyMinor(120000, 'yearly')).toBe(10000);
+    expect(monthlyMinor(90000, 'quarterly')).toBe(30000);
     expect(monthlyMinor(100000, 'weekly')).toBe(433333);
   });
 });

@@ -79,7 +79,7 @@ export function parseBackup(text: string): ParseResult {
   for (const r of recurring as unknown[]) {
     if (
       !isRecord(r) || !isInt(r.id) || !isStr(r.name) || (r.type !== 'expense' && r.type !== 'income') || !isInt(r.amount_minor) ||
-      !isInt(r.account_id) || !isInt(r.category_id) || !['weekly', 'monthly', 'yearly'].includes(r.freq as string) ||
+      !isInt(r.account_id) || !isInt(r.category_id) || !['weekly', 'monthly', 'quarterly', 'yearly'].includes(r.freq as string) ||
       !isInt(r.anchor_day) || !isStr(r.next_date) || !DAY.test(r.next_date) || (r.active !== 0 && r.active !== 1)
     ) {
       return fail('A recurring item in this backup is damaged.');

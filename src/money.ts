@@ -88,6 +88,7 @@ export function minorToTyped(minor: number): string {
 // What a recurring amount comes to in an average month.
 export function monthlyMinor(minor: number, freq: Frequency): number {
   if (freq === 'weekly') return Math.round((minor * 52) / 12);
+  if (freq === 'quarterly') return Math.round(minor / 3);
   if (freq === 'yearly') return Math.round(minor / 12);
   return minor;
 }
