@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Repeat } from 'lucide-react-native';
-import { StyleSheet, View } from 'react-native';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
 import { EmptyState } from '../../src/components/EmptyState';
@@ -35,6 +35,11 @@ export default function Recurring() {
   const [tab, setTab] = useState<'upcoming' | 'all'>('upcoming');
   const [month, setMonth] = useState(currentMonth());
   const [tabsWidth, setTabsWidth] = useState(0);
+  // The highlight slides from Upcoming (0) to All Recurring (1) when the tab changes.
+  const slide = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.timing(slide, { toValue: tab === 'upcoming' ? 0 : 1, duration: 220, easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [tab, slide]);
   const [selected, setSelected] = useState<string | null>(null);
   const items = useData(getRecurring);
   const accounts = useData(getAccountsWithBalance);
@@ -159,9 +164,16 @@ export default function Recurring() {
         </View>
 
         <View style={[styles.tabs, { backgroundColor: colors.fill }]} onLayout={(e) => setTabsWidth(e.nativeEvent.layout.width)}>
+          <Animated.View
+            style={[styles.pill, {
+              width: (tabsWidth - 9) / 2,
+              backgroundColor: colors.bg,
+              transform: [{ translateX: slide.interpolate({ inputRange: [0, 1], outputRange: [0, (tabsWidth - 9) / 2 + 3] }) }],
+            }]}
+          />
           {(['upcoming', 'all'] as const).map((t) => (
             <PressableScale key={t} accessibilityRole="button" onPress={() => setTab(t)}
-              style={[styles.tab, { width: (tabsWidth - 9) / 2 }, tab === t && { backgroundColor: colors.bg }]}>
+              style={[styles.tab, { width: (tabsWidth - 9) / 2 }]}>
               <Text style={{ fontSize: 14.5, fontWeight: '600', color: tab === t ? colors.ink : colors.ink2 }}>
                 {t === 'upcoming' ? 'Upcoming' : 'All Recurring'}
               </Text>
@@ -235,6 +247,7 @@ const styles = StyleSheet.create({
   iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   tabs: { flexDirection: 'row', borderRadius: 22, padding: 3, gap: 3, marginTop: spacing.md },
   tab: { height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
+  pill: { position: 'absolute', top: 3, bottom: 3, left: 3, borderRadius: 19 },
   monthBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.lg },
   monthName: { fontSize: 17, fontWeight: '700' },
   week: { flexDirection: 'row', flexWrap: 'wrap' },
