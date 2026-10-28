@@ -39,6 +39,8 @@ export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed,
   // Reaches the last day with spending, so a transaction dated ahead of today still draws.
   const lastDay = Math.max(elapsed ?? 0, ...daily.map((d) => d.day));
   const current = runningTotal(daily, elapsed === undefined ? daysInMonth(month) : lastDay);
+  // What was spent on one day of this month (not the running total), for the touch tooltip.
+  const daySpend = (day: number) => daily.find((d) => d.day === day)?.total_minor ?? 0;
   const previous = runningTotal(prevDaily, days);
   // No spending yet: keep the empty plane (grid and day labels) but draw no lines, dots, Y labels or touch tooltip.
   const empty = current[current.length - 1] === 0 && previous[days - 1] === 0;
@@ -102,6 +104,9 @@ export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed,
             return (
               <View style={[styles.tooltip, { backgroundColor: colors.btnBg, width: TIP, marginLeft: offset }]}>
                 <Text style={{ color: colors.btnFg, fontWeight: '700', fontSize: 12.5 }}>Day {index + 1}</Text>
+                {index < current.length && (
+                  <Text style={{ color: colors.btnFg, fontSize: 12.5 }}>Expense {money(daySpend(index + 1))}</Text>
+                )}
                 {index < current.length && (
                   <Text style={{ color: colors.btnFg, fontSize: 12.5 }}>{monthShort(month)} {money(current[index])}</Text>
                 )}
