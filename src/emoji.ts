@@ -1,4 +1,7 @@
-// Category emoji: the names the old icons had, and a few suggestions for a typed category name.
+import { emojisByCategory } from 'rn-emoji-keyboard';
+
+// Category emoji: the names the old icons had, and suggestions for a typed category name.
+const ALL_EMOJI = emojisByCategory.flatMap((category) => category.data);
 
 // The old Lucide icon names, and the emoji that replace them.
 const ICON_EMOJI: Record<string, string> = {
@@ -46,13 +49,31 @@ const SUGGESTIONS: [string[], string][] = [
   [['interest'], '💰'], [['other', 'misc'], '🏷️'],
 ];
 
+// Emoji whose name or keywords match a word typed in the name ("woman" → 👩). Regular plurals match too ("cats" → 🐱).
+function searchEmoji(words: string[]): string[] {
+  const found: string[] = [];
+  for (const item of ALL_EMOJI) {
+    const names = [item.name, ...(item.keywords ?? [])].map((n) => n.toLowerCase());
+    const hit = words.some((word) => names.some((n) => n === word || n === word.replace(/s$/, '')));
+    if (hit) found.push(item.emoji);
+  }
+  return found;
+}
+
 // Up to 5 different emoji for a category name. Empty when the name matches nothing.
+// Order: an emoji typed in the name, then the curated words, then the picker's names and keywords.
 export function suggestEmoji(name: string): string[] {
   const text = name.trim().toLowerCase();
   if (text === '') return [];
   const found: string[] = [];
+  const add = (emoji: string) => {
+    if (!found.includes(emoji)) found.push(emoji);
+  };
+  ALL_EMOJI.filter((item) => text.includes(item.emoji)).forEach((item) => add(item.emoji));
   for (const [words, emoji] of SUGGESTIONS) {
-    if (words.some((word) => text.includes(word)) && !found.includes(emoji)) found.push(emoji);
+    if (words.some((word) => text.includes(word))) add(emoji);
   }
+  const words = text.split(/\s+/).filter((word) => word.length >= 3);
+  searchEmoji(words).forEach(add);
   return found.slice(0, 5);
 }
