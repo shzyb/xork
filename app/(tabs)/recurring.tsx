@@ -186,14 +186,18 @@ export default function Recurring() {
                 <EmptyState Icon={Repeat} title="No recurring items yet" text="Start adding your subscriptions, bills or recurring items here." />
               </View>
             ) : (
-              <>
-                <ListHeading>{selected ? prettyDate(selected) : monthLabel(month)}</ListHeading>
-                {shown.length > 0 ? shown.map(row) : (
-                  <Text style={{ color: colors.ink2, fontSize: fontSize.body, marginTop: spacing.sm }}>
-                    {selected ? 'Nothing on this day.' : 'Nothing this month.'}
-                  </Text>
-                )}
-              </>
+              shown.length === 0 && !selected ? (
+                <View style={styles.emptyGap}>
+                  <EmptyState Icon={Repeat} title="Nothing due this month" text="Recurring items due this month show up here." />
+                </View>
+              ) : (
+                <>
+                  <ListHeading>{selected ? prettyDate(selected) : monthLabel(month)}</ListHeading>
+                  {shown.length > 0 ? shown.map(row) : (
+                    <Text style={{ color: colors.ink2, fontSize: fontSize.body, marginTop: spacing.sm }}>Nothing on this day.</Text>
+                  )}
+                </>
+              )
             )}
           </>
         )}

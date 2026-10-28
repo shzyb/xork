@@ -454,6 +454,14 @@ export type NewRecurring = Pick<
   'name' | 'type' | 'amount_minor' | 'account_id' | 'category_id' | 'freq' | 'anchor_day' | 'next_date' | 'active'
 >;
 
+// How many active items are due on the given day but not logged yet. The Recurring tab shows a dot for tomorrow.
+export async function countRecurringDueOn(day: string): Promise<number> {
+  const row = await db!.getFirstAsync<{ count: number }>(
+    'SELECT COUNT(*) AS count FROM recurring WHERE active = 1 AND next_date = ?', day,
+  );
+  return row?.count ?? 0;
+}
+
 export async function getRecurring(): Promise<RecurringRow[]> {
   return db!.getAllAsync(
     `SELECT r.*, a.name AS account_name, c.name AS category_name, c.icon AS category_icon, c.color AS category_color

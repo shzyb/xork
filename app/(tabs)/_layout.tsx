@@ -6,9 +6,12 @@ import { StyleSheet, View } from 'react-native';
 import { PressableScale } from '../../src/components/PressableScale';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, G, Path } from 'react-native-svg';
-import { tabBarHeight, useColors } from '../../src/theme';
+import { actionColors, tabBarHeight, useColors } from '../../src/theme';
+import { countRecurringDueOn } from '../../src/db';
+import { tomorrow } from '../../src/dates';
+import { useData } from '../../src/useData';
 
-type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0];
+type TabBarProps = Parameters<NonNullable<ComponentProps<typeof Tabs>['tabBar']>>[0] & { recurringDue: boolean };
 type Colors = { focused: boolean; ink: string; bg: string; grey: string };
 
 const SIZE = 25;
@@ -85,7 +88,7 @@ const TABS: Record<string, { label: string; icon: (c: Colors) => ReactNode }> = 
 };
 
 // Our own bar: the built-in one lines icons up at the top of each item, and we want them centred.
-function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
+function TabBar({ state, emitter, navigateToTab, recurringDue }: TabBarProps) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
 
@@ -115,7 +118,10 @@ function TabBar({ state, emitter, navigateToTab }: TabBarProps) {
             onPress={onPress}
             style={styles.item}
           >
-            {tab.icon({ focused, ink: colors.ink, bg: colors.bg, grey: colors.ink3 })}
+            <View>
+              {tab.icon({ focused, ink: colors.ink, bg: colors.bg, grey: colors.ink3 })}
+              {name === 'recurring' && recurringDue && <View style={styles.dot} />}
+            </View>
           </PressableScale>
         );
       })}
@@ -128,6 +134,8 @@ export default function TabsLayout() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const opening = useRef(false);
+  // A red dot on Recurring when an item is due tomorrow, so it can be looked at before it is logged.
+  const recurringDue = useData(async () => (await countRecurringDueOn(tomorrow())) > 0) ?? false;
 
   // A quick double tap would otherwise push the tray twice.
   function openMenu() {
@@ -139,7 +147,7 @@ export default function TabsLayout() {
 
   return (
     <View style={styles.root}>
-      <Tabs tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false, lazy: false }}>
+      <Tabs tabBar={(props) => <TabBar {...props} recurringDue={recurringDue} />} screenOptions={{ headerShown: false, lazy: false }}>
         {TAB_ORDER.map((name) => (
           <Tabs.Screen key={name} name={name} />
         ))}
@@ -160,6 +168,7 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   bar: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth },
   item: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  dot: { position: 'absolute', top: 0, right: -3, width: 8, height: 8, borderRadius: 4, backgroundColor: actionColors.expense },
   fab: {
     position: 'absolute',
     right: 18,
