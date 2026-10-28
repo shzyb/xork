@@ -78,7 +78,7 @@ export default function RecurringDetail() {
           </Text>
           <View style={styles.tag}>
             <Text style={styles.tagText}>
-              {FREQUENCY_LABEL[item.freq]}{item.active ? ` · next ${prettyDate(item.next_date).toLowerCase()}` : ' · paused'}
+              {FREQUENCY_LABEL[item.freq]}{item.active ? ` · next ${prettyDate(item.next_date)}` : ' · paused'}
             </Text>
           </View>
         </View>
