@@ -8,7 +8,7 @@ import type { NetWorthTrend } from '../types';
 import { niceTop } from './Charts';
 import { Text } from './Text';
 
-const TIP = 110; // width of the touch tooltip
+const TIP = 150; // width of the touch tooltip
 
 // Total balance through this period, one line up to today, with last period as a dashed line behind it. The library only
 // draws from zero, so when the balance goes below zero both lines are shifted up by `base` and the axis labels take it off again.
@@ -84,7 +84,7 @@ export function NetWorthChart({ trend, month, elapsed, width, height, hidden }: 
           hidePointer2: true,
           pointerStripColor: colors.ink3,
           pointerLabelWidth: TIP,
-          pointerLabelHeight: 48,
+          pointerLabelHeight: 64,
           autoAdjustPointerLabelPosition: false,
           shiftPointerLabelY: TIP / 2 - 4,
           pointerLabelComponent: (_items: unknown, _secondary: unknown, index: number) => {
@@ -94,7 +94,12 @@ export function NetWorthChart({ trend, month, elapsed, width, height, hidden }: 
             return (
               <View style={[styles.tooltip, { backgroundColor: colors.btnBg, width: TIP, marginLeft: offset }]}>
                 <Text style={{ color: colors.btnFg, fontWeight: '700', fontSize: 12.5 }}>Day {index + 1}</Text>
-                <Text style={{ color: colors.btnFg, fontSize: 12.5 }}>{index < series.length ? money(series[index]) : 'Not yet'}</Text>
+                <Text style={{ color: colors.btnFg, fontSize: 12.5 }}>
+                  {`This month  ${index < series.length ? money(series[index]) : 'Not yet'}`}
+                </Text>
+                <Text style={{ color: colors.btnFg, opacity: 0.7, fontSize: 12.5 }}>
+                  {`Last month  ${index < previous.length ? money(previous[index]) : '—'}`}
+                </Text>
               </View>
             );
           },
