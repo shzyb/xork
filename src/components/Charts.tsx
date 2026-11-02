@@ -370,20 +370,18 @@ export function SplitBars({ income, expense, previous, width }: {
 
   return (
     <View style={{ width }}>
-      <Text style={{ color: colors.ink2, fontSize: 13 }}>Income</Text>
+      <Text style={{ color: colors.ink2, fontSize: 14 }}>Income</Text>
       <Text style={[styles.incomeAmount, { color: colors.ink }]} numberOfLines={1}>{formatMoney(income)}</Text>
       <View style={styles.columns}>
         <SplitColumn
           title="Expense"
           share={income > 0 ? shareOf(expense) : undefined}
-          color={colors.neg}
           amount={formatMoney(expense)}
           change={hasPrevious ? expense - previous.out_minor : undefined}
         />
         <SplitColumn
           title="Saved"
           share={income > 0 ? shareOf(saved) : undefined}
-          color={colors.pos}
           amount={formatMoney(saved)}
           change={hasPrevious ? saved - previousSaved : undefined}
         />
@@ -392,6 +390,7 @@ export function SplitBars({ income, expense, previous, width }: {
         {spentPart > 0 && <Segment id="stripesExpense" width={spentPart} color={colors.neg} />}
         {savedPart > 0 && <Segment id="stripesSaved" width={savedPart} color={colors.pos} />}
       </View>
+      {hasPrevious && <Text style={{ color: colors.ink2, fontSize: 13, marginTop: 8 }}>Changes are vs last period</Text>}
     </View>
   );
 }
@@ -413,10 +412,9 @@ function Segment({ id, width, color }: { id: string; width: number; color: strin
 }
 
 // One column: the name, the amount, and the change since the period before (an arrow and how much) with its share.
-function SplitColumn({ title, share, color, amount, change }: {
+function SplitColumn({ title, share, amount, change }: {
   title: string;
   share?: string;
-  color: string;
   amount: string;
   change?: number;
 }) {
@@ -425,10 +423,7 @@ function SplitColumn({ title, share, color, amount, change }: {
   const ChangeIcon = up ? TrendingUp : TrendingDown;
   return (
     <View style={styles.column}>
-      <View style={styles.columnHead}>
-        <View style={[styles.dot, { backgroundColor: color }]} />
-        <Text style={{ color: colors.ink2, fontSize: 14 }} numberOfLines={1}>{title}</Text>
-      </View>
+      <Text style={{ color: colors.ink2, fontSize: 14 }} numberOfLines={1}>{title}</Text>
       <Text style={[styles.columnAmount, { color: colors.ink }]} numberOfLines={1}>{amount}</Text>
       {(change !== undefined || share !== undefined) && (
         <View style={styles.change}>
@@ -441,7 +436,6 @@ function SplitColumn({ title, share, color, amount, change }: {
           {share !== undefined && <Text style={{ color: colors.ink2, fontSize: 13, fontWeight: '600' }}>({share})</Text>}
         </View>
       )}
-      {change !== undefined && <Text style={{ color: colors.ink2, fontSize: 13 }}>vs last period</Text>}
     </View>
   );
 }
@@ -454,8 +448,6 @@ const styles = StyleSheet.create({
   incomeAmount: { fontSize: 30, fontWeight: '800', letterSpacing: -1, marginTop: 2 },
   columns: { flexDirection: 'row', columnGap: spacing.lg, marginTop: spacing.lg },
   column: { flex: 1, gap: 4 },
-  columnHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  dot: { width: 8, height: 8, borderRadius: 4 },
   columnAmount: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
   change: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   bar: { height: 14, borderRadius: 7, overflow: 'hidden', flexDirection: 'row', marginTop: spacing.lg },
