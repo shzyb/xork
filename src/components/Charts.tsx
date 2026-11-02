@@ -442,7 +442,7 @@ function SplitColumn({ title, share, color, amount, change, upIsBad }: {
               {change === 0 ? 'No change' : formatMoney(Math.abs(change))}
             </Text>
           )}
-          {share !== undefined && <Text style={{ color: colors.ink2, fontSize: 13, fontWeight: '600' }}>{share}</Text>}
+          {share !== undefined && <Text style={{ color, fontSize: 13, fontWeight: '600' }}>({share})</Text>}
         </View>
       )}
       {change !== undefined && <Text style={{ color: colors.ink2, fontSize: 13 }}>vs last period</Text>}
