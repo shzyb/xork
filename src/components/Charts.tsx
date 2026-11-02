@@ -148,9 +148,10 @@ export function CashFlowChart({ monthly, selected, width }: {
   const colors = useColors();
   const [touched, setTouched] = useState<number | null>(null);
   const chartWidth = width - 56;
-  const barWidth = 14;
   const gap = 4;
   const group = chartWidth / monthly.length;
+  // Each month is a pair of bars. Twelve months are narrower than six, so the pairs still fit side by side.
+  const barWidth = Math.max(4, Math.min(14, Math.floor((group - gap) / 2.6)));
   const between = group - (barWidth * 2 + gap);
   const biggest = Math.max(...monthly.flatMap((m) => [m.in_minor, m.out_minor]));
   // No money yet: keep the empty plane (axis and month labels) with no bars and no touch tooltip.
