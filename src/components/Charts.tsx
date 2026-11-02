@@ -431,9 +431,12 @@ function SplitColumn({ title, share, color, amount, change, upIsBad }: {
     <View style={styles.column}>
       <View style={styles.columnHead}>
         <View style={[styles.dot, { backgroundColor: color }]} />
-        <Text style={{ color: colors.ink2, fontSize: 14 }} numberOfLines={1}>{share ? `${title} · ${share}` : title}</Text>
+        <Text style={{ color: colors.ink2, fontSize: 14 }} numberOfLines={1}>{title}</Text>
       </View>
-      <Text style={[styles.columnAmount, { color: colors.ink }]} numberOfLines={1}>{amount}</Text>
+      <View style={styles.amountRow}>
+        <Text style={[styles.columnAmount, { color: colors.ink }]} numberOfLines={1}>{amount}</Text>
+        {share !== undefined && <Text style={{ color: colors.ink2, fontSize: 14, fontWeight: '600' }}>{share}</Text>}
+      </View>
       {change !== undefined && (
         <View style={styles.change}>
           {change !== 0 && <ChangeIcon color={changeColor} size={14} strokeWidth={2.4} />}
@@ -457,7 +460,8 @@ const styles = StyleSheet.create({
   column: { flex: 1, gap: 4 },
   columnHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dot: { width: 8, height: 8, borderRadius: 4 },
-  columnAmount: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
+  amountRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+  columnAmount: { flexShrink: 1, fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
   change: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   bar: { height: 14, borderRadius: 7, overflow: 'hidden', flexDirection: 'row', marginTop: spacing.lg },
   tipArea: { position: 'absolute', top: 0, left: 0, right: 0, height: PLOT, justifyContent: 'flex-end' },
