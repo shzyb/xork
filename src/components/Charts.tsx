@@ -450,7 +450,7 @@ const styles = StyleSheet.create({
   column: { flex: 1, gap: 4 },
   columnAmount: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
   change: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  bar: { height: 14, borderRadius: 4, overflow: 'hidden', flexDirection: 'row', gap: 4, marginTop: spacing.lg },
+  bar: { height: 24, borderRadius: 4, overflow: 'hidden', flexDirection: 'row', gap: 4, marginTop: spacing.lg },
   tipArea: { position: 'absolute', top: 0, left: 0, right: 0, height: PLOT, justifyContent: 'flex-end' },
   panelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 });
