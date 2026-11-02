@@ -386,7 +386,7 @@ export function SplitBars({ income, expense, previous, width }: {
           change={hasPrevious ? saved - previousSaved : undefined}
         />
       </View>
-      <View style={[styles.bar, { backgroundColor: colors.fill2 }]}>
+      <View style={styles.bar}>
         {spentPart > 0 && <Segment id="stripesExpense" width={spentPart} color={colors.neg} />}
         {savedPart > 0 && <Segment id="stripesSaved" width={savedPart} color={colors.pos} />}
       </View>
