@@ -177,7 +177,7 @@ export function CashFlowChart({ monthly, selected, width }: {
   });
 
   return (
-    <View style={styles.chartBox}>
+    <View style={[styles.chartBox, { marginTop: -10 }]}>  {/* the library leaves 10pt above the bars, and this chart has no legend for it */}
       <BarChart
         data={bars}
         barWidth={barWidth}
