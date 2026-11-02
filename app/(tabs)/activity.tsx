@@ -110,54 +110,54 @@ export default function Activity() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
-      <FadeScrollView fadeTop={false} stickyHeaderIndices={[0]} keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, rows?.length === 0 && styles.contentEmpty, rows?.length === 0 && { paddingBottom: tabBarHeight + insets.bottom }]}>
-        <View style={{ backgroundColor: colors.bg }}>
-          <Text style={[styles.title, { color: colors.ink }]}>Activity</Text>
+      <View style={[styles.header, { backgroundColor: colors.bg }]}>
+        <Text style={[styles.title, { color: colors.ink }]}>Activity</Text>
 
-          <View style={[styles.filters, { backgroundColor: colors.bg }]}>
-            <View style={[styles.search, { backgroundColor: colors.fill }]}>
-              <Search color={colors.ink2} size={18} />
-              <TextInput
-                value={search}
-                onChangeText={(text) => change({ search: text })}
-                placeholder="Search"
-                placeholderTextColor={colors.ink3}
-                accessibilityLabel="Search"
-                returnKeyType="search"
-                style={[styles.searchInput, { color: colors.ink }]}
-              />
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} keyboardShouldPersistTaps="handled">
-              {chipsOn && (
-                <PressableScale
-                  accessibilityRole="button"
-                  onPress={() => { setFilter({ ...NO_FILTER }); setLimit(PAGE); }}
-                  style={[styles.chip, { backgroundColor: colors.fill }]}
-                >
-                  <Text style={[styles.chipText, { color: colors.ink }]}>Clear</Text>
-                </PressableScale>
-              )}
-              {chips.map((c) => (
-                <PressableScale
-                  key={c.key}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: c.on }}
-                  onPress={() => setPicker(c.key)}
-                  style={[styles.chip, { backgroundColor: c.on ? colors.btnBg : colors.fill }]}
-                >
-                  <Text style={[styles.chipText, { color: c.on ? colors.btnFg : colors.ink }]} numberOfLines={1}>{c.label}</Text>
-                  {c.on ? (
-                    <PressableScale accessibilityRole="button" accessibilityLabel="Remove filter" onPress={c.clear} hitSlop={10} style={styles.chipX}>
-                      <X color={colors.btnFg} size={11} strokeWidth={3} />
-                    </PressableScale>
-                  ) : (
-                    <ChevronDown color={colors.ink2} size={15} strokeWidth={2.2} />
-                  )}
-                </PressableScale>
-              ))}
-            </ScrollView>
+        <View style={[styles.filters, { backgroundColor: colors.bg }]}>
+          <View style={[styles.search, { backgroundColor: colors.fill }]}>
+            <Search color={colors.ink2} size={18} />
+            <TextInput
+              value={search}
+              onChangeText={(text) => change({ search: text })}
+              placeholder="Search"
+              placeholderTextColor={colors.ink3}
+              accessibilityLabel="Search"
+              returnKeyType="search"
+              style={[styles.searchInput, { color: colors.ink }]}
+            />
           </View>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} keyboardShouldPersistTaps="handled">
+            {chipsOn && (
+              <PressableScale
+                accessibilityRole="button"
+                onPress={() => { setFilter({ ...NO_FILTER }); setLimit(PAGE); }}
+                style={[styles.chip, { backgroundColor: colors.fill }]}
+              >
+                <Text style={[styles.chipText, { color: colors.ink }]}>Clear</Text>
+              </PressableScale>
+            )}
+            {chips.map((c) => (
+              <PressableScale
+                key={c.key}
+                accessibilityRole="button"
+                accessibilityState={{ selected: c.on }}
+                onPress={() => setPicker(c.key)}
+                style={[styles.chip, { backgroundColor: c.on ? colors.btnBg : colors.fill }]}
+              >
+                <Text style={[styles.chipText, { color: c.on ? colors.btnFg : colors.ink }]} numberOfLines={1}>{c.label}</Text>
+                {c.on ? (
+                  <PressableScale accessibilityRole="button" accessibilityLabel="Remove filter" onPress={c.clear} hitSlop={10} style={styles.chipX}>
+                    <X color={colors.btnFg} size={11} strokeWidth={3} />
+                  </PressableScale>
+                ) : (
+                  <ChevronDown color={colors.ink2} size={15} strokeWidth={2.2} />
+                )}
+              </PressableScale>
+            ))}
+          </ScrollView>
         </View>
+      </View>
+      <FadeScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={[styles.content, rows?.length === 0 && styles.contentEmpty, rows?.length === 0 && { paddingBottom: tabBarHeight + insets.bottom }]}>
 
         <View style={rows?.length === 0 ? styles.fill : undefined}>
           {!rows || !totals ? <RowBones count={8} /> : (rows.length === 0 ? (
@@ -198,6 +198,7 @@ export default function Activity() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  header: { paddingHorizontal: spacing.xl },
   content: { paddingHorizontal: spacing.xl, paddingBottom: fabClearance },
   contentEmpty: { flexGrow: 1 },
   fill: { flex: 1 },
