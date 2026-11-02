@@ -147,7 +147,7 @@ export function CashFlowChart({ monthly, selected, width }: {
 }) {
   const colors = useColors();
   const [touched, setTouched] = useState<number | null>(null);
-  const chartWidth = width - 56;
+  const chartWidth = width; // no y-axis labels here, so the bars use the full width
   const gap = 4;
   const group = chartWidth / monthly.length;
   // Each month is a pair of bars. Twelve months are narrower than six, so the pairs still fit side by side.
@@ -192,7 +192,8 @@ export function CashFlowChart({ monthly, selected, width }: {
         xAxisThickness={0}
         rulesColor={colors.line}
         yAxisTextStyle={{ color: colors.ink3, fontSize: 11, fontFamily: 'OpenRunde-Regular' }}
-        yAxisLabelWidth={44}
+        hideYAxisText
+        yAxisLabelWidth={0}
         formatYLabel={(label) => compactMoney(Number(label) * 100)}
         disableScroll
       />
@@ -202,6 +203,7 @@ export function CashFlowChart({ monthly, selected, width }: {
           barHeight={(((touched % 2 ? monthly[touched >> 1].out_minor : monthly[touched >> 1].in_minor) / 100) / top) * PLOT}
           lines={3}
           chartWidth={chartWidth}
+          axis={0}
         >
           <Text style={{ color: colors.btnFg, fontWeight: '700', fontSize: 12.5 }}>{monthName(monthly[touched >> 1].month)}</Text>
           <TipRow color={colors.pos} label="Income" value={formatMoney(monthly[touched >> 1].in_minor)} />
@@ -290,6 +292,7 @@ export function DailyCategoryChart({ byDay, categories, month, today, width }: {
           barHeight={(Math.min(totals[touched], top * 100) / (top * 100)) * PLOT}
           lines={2 + parts[touched].length}
           chartWidth={chartWidth}
+          axis={44}
         >
           <Text style={{ color: colors.btnFg, fontWeight: '700', fontSize: 12.5 }}>
             {prettyDate(`${month}-${String(touched + 1).padStart(2, '0')}`)}
@@ -308,15 +311,16 @@ export function DailyCategoryChart({ byDay, categories, month, today, width }: {
 // The popup for a touched bar, on the chart like the one on Home's line chart. It sits just above the bar, centred on it
 // and kept inside the chart. `x` is the bar's centre across the chart (without the y-axis labels), `barHeight` how tall
 // the bar is, and `lines` how many lines the popup has, so a tall bar can't push it off the top of the chart.
-function ChartTip({ x, barHeight, lines, chartWidth, children }: {
+function ChartTip({ x, barHeight, lines, chartWidth, axis, children }: {
   x: number;
   barHeight: number;
   lines: number;
   chartWidth: number;
+  axis: number; // the y-axis label width to the left of the plot: 0 when a chart has none
   children: ReactNode;
 }) {
   const colors = useColors();
-  const left = 44 + Math.min(Math.max(4, x - BAR_TIP / 2), chartWidth - BAR_TIP - 4); // 44 = the y-axis labels
+  const left = axis + Math.min(Math.max(4, x - BAR_TIP / 2), chartWidth - BAR_TIP - 4);
   const above = Math.min(barHeight + 6, Math.max(0, PLOT - (lines * 17 + 12)));
   return (
     <View pointerEvents="none" style={[styles.tipArea, { paddingBottom: above }]}>
