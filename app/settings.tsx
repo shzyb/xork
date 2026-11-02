@@ -34,7 +34,7 @@ const confirm = (title: string, message: string, action: string) =>
     ),
   );
 
-// Settings, in three groups: how the money works, how the app looks, and the data. Delete sits apart at the bottom.
+// Settings, in groups: general, preferences, and your data.
 export default function Settings() {
   const colors = useColors();
   const router = useRouter();
@@ -129,7 +129,7 @@ export default function Settings() {
       </PressableScale>
       <Text style={[styles.title, { color: colors.ink }]}>Settings</Text>
       <FadeScrollView style={styles.flex} contentContainerStyle={styles.content}>
-        <ListHeading>Money</ListHeading>
+        <ListHeading>General</ListHeading>
         <ActionRow
           Icon={CalendarDays}
           title="Payday"
@@ -149,7 +149,7 @@ export default function Settings() {
           onPress={() => router.push('/categories')}
         />
 
-        <ListHeading>Look</ListHeading>
+        <ListHeading>Preferences</ListHeading>
         <ActionRow
           Icon={SunMoon}
           title="Appearance"
@@ -172,6 +172,13 @@ export default function Settings() {
           disabled={busy !== null}
           onPress={importBackup}
         />
+        <ActionRow
+          Icon={Trash2}
+          title="Delete all data"
+          subtitle="Start again with an empty app"
+          danger
+          onPress={deleteEverything}
+        />
 
         {__DEV__ && (
           <>
@@ -186,15 +193,6 @@ export default function Settings() {
           </>
         )}
 
-        <View style={styles.danger}>
-          <ActionRow
-            Icon={Trash2}
-            title="Delete all data"
-            subtitle="Start again with an empty app"
-            danger
-            onPress={deleteEverything}
-          />
-        </View>
 
         {message !== '' && <Text style={[styles.message, { color: colors.ink }]}>{message}</Text>}
         <Text style={[styles.note, { color: colors.ink2 }]}>
@@ -245,7 +243,6 @@ const styles = StyleSheet.create({
   back: { width: 44, height: 44, marginLeft: -10, marginTop: spacing.sm, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: fontSize.screen, fontWeight: '800', marginBottom: spacing.sm },
   content: { paddingBottom: spacing.xxl },
-  danger: { marginTop: spacing.xl },
   message: { fontSize: 14.5, fontWeight: '600', marginTop: 10 },
   note: { fontSize: 13.5, lineHeight: 20, marginTop: 16 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 68 },
