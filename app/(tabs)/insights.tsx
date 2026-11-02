@@ -10,6 +10,7 @@ import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { ListHeading } from '../../src/components/ListHeading';
 import { PickerSheet } from '../../src/components/PickerSheet';
 import { PressableScale } from '../../src/components/PressableScale';
+import { Segmented } from '../../src/components/Segmented';
 import { Text } from '../../src/components/Text';
 import { currentPeriodKey, getEarliestMonth, getInsights, getYearInsights, periodDates } from '../../src/db';
 import { monthLabel, shiftMonth, shortRange, today } from '../../src/dates';
@@ -68,22 +69,11 @@ export default function Insights() {
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
       <View style={[styles.header, { backgroundColor: colors.bg }]}>
         <Text style={[styles.title, { color: colors.ink }]}>Insights</Text>
-        <View style={[styles.segment, { backgroundColor: colors.fill }]}>
-          {(['month', 'year'] as const).map((s) => {
-            const on = scope === s;
-            return (
-              <PressableScale
-                key={s}
-                accessibilityRole="button"
-                accessibilityState={{ selected: on }}
-                onPress={() => switchScope(s)}
-                style={[styles.segmentItem, on && { backgroundColor: colors.ink }]}
-              >
-                <Text style={[styles.segmentText, { color: on ? colors.bg : colors.ink2 }]}>{s === 'month' ? 'Month' : 'Year'}</Text>
-              </PressableScale>
-            );
-          })}
-        </View>
+        <Segmented
+          options={[{ value: 'month', label: 'Month' }, { value: 'year', label: 'Year' }]}
+          value={scope}
+          onChange={switchScope}
+        />
 
         <View style={styles.periodRow}>
           <PressableScale
@@ -244,9 +234,6 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: spacing.xl },
   content: { paddingHorizontal: spacing.xl, paddingBottom: fabClearance },
   title: { fontSize: fontSize.screen, fontWeight: '800', marginTop: spacing.md },
-  segment: { flexDirection: 'row', borderRadius: 22, padding: 3, marginTop: spacing.md },
-  segmentItem: { flex: 1, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
-  segmentText: { fontSize: 14.5, fontWeight: '600' },
   periodRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md, marginBottom: spacing.sm },
   arrow: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   periodName: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
