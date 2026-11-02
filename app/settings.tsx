@@ -3,19 +3,19 @@ import { FadeScrollView } from '../src/components/FadeScrollView';
 import { File, Paths } from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
-import { CalendarDays, ChevronRight, Download, FlaskConical, Globe, SunMoon, Tag, Trash2, Upload } from 'lucide-react-native';
+import { CalendarDays, ChevronLeft, ChevronRight, Download, FlaskConical, Globe, SunMoon, Tag, Trash2, Upload } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { ListHeading } from '../src/components/ListHeading';
 import { PressableScale } from '../src/components/PressableScale';
 import { parseBackup } from '../src/backup';
-import { Sheet } from '../src/components/Sheet';
-import { SheetHeader } from '../src/components/SheetHeader';
-import { deleteAllData, exportAll, getPayday, getSetting, replaceAllData } from '../src/db';
-import { ordinalDay, today } from '../src/dates';
+import { deleteAllData, exportAll, getPayday, getSetting, replaceAllData, setLastBackup } from '../src/db';
+import { fullDate, ordinalDay, today } from '../src/dates';
 import { buildDemoBackup } from '../src/demoData';
 import { currencyOf } from '../src/money';
-import { sheet, spacing } from '../src/theme';
+import { fontSize, spacing, useColors } from '../src/theme';
 import { THEME_OPTIONS } from '../src/types';
 import type { Payday } from '../src/types';
 import { useData } from '../src/useData';
@@ -34,11 +34,14 @@ const confirm = (title: string, message: string, action: string) =>
     ),
   );
 
+// Settings, in three groups: how the money works, how the app looks, and the data. Delete sits apart at the bottom.
 export default function Settings() {
+  const colors = useColors();
   const router = useRouter();
   const currencyCode = useData(() => getSetting('currency'));
   const themeSetting = useData(() => getSetting('theme'));
   const payday = useData(getPayday);
+  const lastBackup = useData(() => getSetting('last_backup'));
   const [busy, setBusy] = useState<'export' | 'import' | 'demo' | null>(null);
   const [message, setMessage] = useState('');
 
@@ -54,6 +57,7 @@ export default function Settings() {
       file.create({ overwrite: true });
       file.write(JSON.stringify(await exportAll()));
       await Sharing.shareAsync(file.uri, { mimeType: 'application/json', dialogTitle: 'Save your Dimedog backup' });
+      await setLastBackup(today());
     } catch {
       setMessage('Could not export. Try again.');
     } finally {
@@ -119,41 +123,45 @@ export default function Settings() {
   }
 
   return (
-    <Sheet onClose={() => router.back()}>
-      <SheetHeader title="Settings" onClose={() => router.back()} />
-      <FadeScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-        <ActionRow
-          Icon={Tag}
-          title="Categories & budgets"
-          subtitle="Create categories, set monthly limits"
-          onPress={() => router.push('/categories')}
-          end={<ChevronRight color={sheet.ink3} size={20} />}
-        />
+    <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]}>
+      <PressableScale accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.back}>
+        <ChevronLeft color={colors.ink} size={26} />
+      </PressableScale>
+      <Text style={[styles.title, { color: colors.ink }]}>Settings</Text>
+      <FadeScrollView style={styles.flex} contentContainerStyle={styles.content}>
+        <ListHeading>Money</ListHeading>
         <ActionRow
           Icon={CalendarDays}
           title="Payday"
           subtitle={paydaySummary(payday)}
           onPress={() => router.push('/payday')}
-          end={<ChevronRight color={sheet.ink3} size={20} />}
         />
         <ActionRow
           Icon={Globe}
           title="Currency"
           subtitle={`${current.name} (${current.code})`}
           onPress={() => router.push('/currency')}
-          end={<ChevronRight color={sheet.ink3} size={20} />}
         />
+        <ActionRow
+          Icon={Tag}
+          title="Categories & budgets"
+          subtitle="Create categories, set monthly limits"
+          onPress={() => router.push('/categories')}
+        />
+
+        <ListHeading>Look</ListHeading>
         <ActionRow
           Icon={SunMoon}
           title="Appearance"
           subtitle={theme.label}
           onPress={() => router.push('/appearance')}
-          end={<ChevronRight color={sheet.ink3} size={20} />}
         />
+
+        <ListHeading>Your data</ListHeading>
         <ActionRow
           Icon={Download}
           title={busy === 'export' ? 'Exporting…' : 'Export backup'}
-          subtitle="Save all your data to a file"
+          subtitle={lastBackup ? `Last saved ${fullDate(lastBackup)}` : 'Save all your data to a file. None saved yet'}
           disabled={busy !== null}
           onPress={exportBackup}
         />
@@ -164,28 +172,36 @@ export default function Settings() {
           disabled={busy !== null}
           onPress={importBackup}
         />
+
         {__DEV__ && (
-          <ActionRow
-            Icon={FlaskConical}
-            title={busy === 'demo' ? 'Adding…' : 'Add 2 years of demo data'}
-            subtitle="Development only. Replaces everything"
-            disabled={busy !== null}
-            onPress={addDemoData}
-          />
+          <>
+            <ListHeading>Development</ListHeading>
+            <ActionRow
+              Icon={FlaskConical}
+              title={busy === 'demo' ? 'Adding…' : 'Add 2 years of demo data'}
+              subtitle="Replaces everything"
+              disabled={busy !== null}
+              onPress={addDemoData}
+            />
+          </>
         )}
-        <ActionRow
-          Icon={Trash2}
-          title="Delete all data"
-          subtitle="Start again with an empty app"
-          danger
-          onPress={deleteEverything}
-        />
-        {message !== '' && <Text style={styles.message}>{message}</Text>}
-        <Text style={styles.note}>
+
+        <View style={styles.danger}>
+          <ActionRow
+            Icon={Trash2}
+            title="Delete all data"
+            subtitle="Start again with an empty app"
+            danger
+            onPress={deleteEverything}
+          />
+        </View>
+
+        {message !== '' && <Text style={[styles.message, { color: colors.ink }]}>{message}</Text>}
+        <Text style={[styles.note, { color: colors.ink2 }]}>
           Your data lives only on this phone. Nothing is sent anywhere. Export a backup to keep it safe.
         </Text>
       </FadeScrollView>
-    </Sheet>
+    </SafeAreaView>
   );
 }
 
@@ -195,15 +211,15 @@ function paydaySummary(p: Payday | undefined): string {
   return p.salaryId === null ? 'Starts from a salary, not picked yet' : 'Starts from a salary transaction';
 }
 
-function ActionRow({ Icon, title, subtitle, onPress, end, disabled, danger }: {
+function ActionRow({ Icon, title, subtitle, onPress, disabled, danger }: {
   Icon: LucideIcon;
   title: string;
   subtitle: string;
   onPress: () => void;
-  end?: React.ReactNode;
   disabled?: boolean;
   danger?: boolean;
 }) {
+  const colors = useColors();
   return (
     <PressableScale
       accessibilityRole="button"
@@ -211,26 +227,30 @@ function ActionRow({ Icon, title, subtitle, onPress, end, disabled, danger }: {
       onPress={onPress}
       style={[styles.row, disabled && { opacity: 0.5 }]}
     >
-      <View style={styles.actionIcon}>
-        <Icon color={danger ? sheet.neg : sheet.ink} size={20} />
+      <View style={[styles.actionIcon, { backgroundColor: colors.fill }]}>
+        <Icon color={danger ? colors.neg : colors.ink} size={20} />
       </View>
       <View style={styles.main}>
-        <Text style={[styles.rowTitle, danger && { color: sheet.neg }]}>{title}</Text>
-        <Text style={styles.rowSub}>{subtitle}</Text>
+        <Text style={[styles.rowTitle, { color: danger ? colors.neg : colors.ink }]}>{title}</Text>
+        <Text style={[styles.rowSub, { color: colors.ink2 }]}>{subtitle}</Text>
       </View>
-      {end}
+      {!danger && <ChevronRight color={colors.ink3} size={20} />}
     </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { flexShrink: 1 },
+  screen: { flex: 1, paddingHorizontal: spacing.xl },
+  flex: { flex: 1 },
+  back: { width: 44, height: 44, marginLeft: -10, marginTop: spacing.sm, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: fontSize.screen, fontWeight: '800', marginBottom: spacing.sm },
   content: { paddingBottom: spacing.xxl },
-  message: { color: sheet.ink, fontSize: 14.5, fontWeight: '600', marginTop: 10 },
-  note: { color: sheet.ink2, fontSize: 13.5, lineHeight: 20, marginTop: 16 },
+  danger: { marginTop: spacing.xl },
+  message: { fontSize: 14.5, fontWeight: '600', marginTop: 10 },
+  note: { fontSize: 13.5, lineHeight: 20, marginTop: 16 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 68 },
   main: { flex: 1 },
-  rowTitle: { color: sheet.ink, fontSize: 16.5, fontWeight: '600' },
-  rowSub: { color: sheet.ink2, fontSize: 14 },
-  actionIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: sheet.card, alignItems: 'center', justifyContent: 'center' },
+  rowTitle: { fontSize: 16.5, fontWeight: '600' },
+  rowSub: { fontSize: 14 },
+  actionIcon: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 });

@@ -210,6 +210,11 @@ export async function setCurrency(code: string) {
   });
 }
 
+// The day of the last export, shown on the Export row in Settings.
+export async function setLastBackup(date: string) {
+  await write((handle) => handle.runAsync(UPSERT_SETTING, 'last_backup', date));
+}
+
 export async function setTheme(theme: ThemeSetting) {
   await write((handle) => handle.runAsync(UPSERT_SETTING, 'theme', theme));
 }
