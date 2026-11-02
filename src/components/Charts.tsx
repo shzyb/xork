@@ -395,17 +395,19 @@ export function SplitBars({ income, expense, previous, width }: {
   );
 }
 
+const BAR_HEIGHT = 24; // the split bar's height; the stripes are drawn to the same height
+
 // One coloured part of the bar, with thin diagonal stripes over it.
 function Segment({ id, width, color }: { id: string; width: number; color: string }) {
   return (
     <View style={{ flex: width, height: '100%', backgroundColor: color, borderRadius: 4, overflow: 'hidden' }}>
-      <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
+      <Svg width="100%" height={BAR_HEIGHT} style={StyleSheet.absoluteFill}>
         <Defs>
           <Pattern id={id} width={7} height={7} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
             <Rect width={3} height={7} fill="rgba(255,255,255,0.45)" />
           </Pattern>
         </Defs>
-        <Rect width="100%" height="100%" fill={`url(#${id})`} />
+        <Rect width="100%" height={BAR_HEIGHT} fill={`url(#${id})`} />
       </Svg>
     </View>
   );
@@ -450,7 +452,7 @@ const styles = StyleSheet.create({
   column: { flex: 1, gap: 4 },
   columnAmount: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
   change: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  bar: { height: 24, borderRadius: 4, overflow: 'hidden', flexDirection: 'row', gap: 4, marginTop: spacing.lg },
+  bar: { height: BAR_HEIGHT, borderRadius: 4, overflow: 'hidden', flexDirection: 'row', gap: 4, marginTop: spacing.lg },
   tipArea: { position: 'absolute', top: 0, left: 0, right: 0, height: PLOT, justifyContent: 'flex-end' },
   panelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 });
