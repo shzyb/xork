@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { Animated, Easing, StyleSheet, useColorScheme, View } from 'react-native';
 import { PressableScale } from './PressableScale';
 import { spacing, useColors } from '../theme';
 import { Text } from './Text';
@@ -15,6 +15,8 @@ export function Segmented<T extends string>({ options, value, onChange }: {
   onChange: (value: T) => void;
 }) {
   const colors = useColors();
+  // In dark mode the chosen option sits on the lighter grey, as the Add transaction tabs do.
+  const dark = useColorScheme() === 'dark';
   const [width, setWidth] = useState(0);
   const index = Math.max(0, options.findIndex((o) => o.value === value));
   const cell = width > 0 ? (width - PAD * 2 - GAP * (options.length - 1)) / options.length : 0;
@@ -30,7 +32,7 @@ export function Segmented<T extends string>({ options, value, onChange }: {
         <Animated.View
           style={[styles.pill, {
             width: cell,
-            backgroundColor: colors.bg,
+            backgroundColor: dark ? colors.fill2 : colors.bg,
             transform: [{ translateX: slide.interpolate({ inputRange: [0, options.length - 1], outputRange: [0, (options.length - 1) * (cell + GAP)] }) }],
           }]}
         />
