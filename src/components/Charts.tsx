@@ -177,7 +177,9 @@ export function CashFlowChart({ monthly, selected, width }: {
   });
 
   return (
-    <View style={[styles.chartBox, { marginTop: -10 }]}>  {/* the library leaves 10pt above the bars, and this chart has no legend for it */}
+    <View style={styles.chartBox}>
+      {/* the library leaves 10pt of empty space above the bars: pull the bars and tooltip up into it */}
+      <View style={{ marginTop: -10 }}>
       <BarChart
         data={bars}
         barWidth={barWidth}
@@ -210,6 +212,7 @@ export function CashFlowChart({ monthly, selected, width }: {
           <TipRow color={colors.neg} label="Expense" value={formatMoney(monthly[touched >> 1].out_minor)} />
         </ChartTip>
       )}
+      </View>
     </View>
   );
 }
