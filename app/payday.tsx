@@ -75,9 +75,11 @@ function PaydayForm({ saved, salaries }: { saved: Payday; salaries: TransactionR
                   accessibilityLabel={`Month starts on the ${ordinalDay(day)}`}
                   accessibilityState={{ selected: day === startDay }}
                   onPress={() => { setStartDay(day); setError(''); }}
-                  style={[styles.day, { backgroundColor: day === startDay ? colors.ink : colors.fill }]}
+                  style={styles.daySlot}
                 >
-                  <Text style={[styles.dayText, { color: day === startDay ? colors.bg : colors.ink }]}>{day}</Text>
+                  <View style={[styles.day, { backgroundColor: day === startDay ? colors.ink : colors.fill }]}>
+                    <Text style={[styles.dayText, { color: day === startDay ? colors.bg : colors.ink }]}>{day}</Text>
+                  </View>
                 </PressableScale>
               ))}
             </View>
@@ -150,8 +152,9 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: 13.5, fontWeight: '600' },
   fieldValue: { fontSize: 22, fontWeight: '700' },
   hint: { fontSize: 13.5, lineHeight: 19 },
-  days: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  day: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  days: { flexDirection: 'row', flexWrap: 'wrap' },
+  daySlot: { width: '14.28%', height: 52, alignItems: 'center' },
+  day: { width: '100%', maxWidth: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   dayText: { width: '100%', fontSize: 15, lineHeight: 15, fontWeight: '600', textAlign: 'center', textAlignVertical: 'center', includeFontPadding: false },
   row: { flexDirection: 'row', alignItems: 'center', minHeight: 56 },
   rowMain: { flex: 1 },
