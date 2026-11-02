@@ -411,16 +411,23 @@ const BAR_HEIGHT = 24; // the split bar's height; the stripes are drawn to the s
 
 // One coloured part of the bar, with thin diagonal stripes over it.
 function Segment({ id, width, color }: { id: string; width: number; color: string }) {
+  // The stripes are drawn to the measured width of the part, so they reach its right edge.
+  const [size, setSize] = useState(0);
   return (
-    <View style={{ flex: width, height: '100%', backgroundColor: color, borderRadius: 4, overflow: 'hidden' }}>
-      <Svg width="100%" height={BAR_HEIGHT} style={StyleSheet.absoluteFill}>
-        <Defs>
-          <Pattern id={id} width={7} height={7} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
-            <Rect width={3} height={7} fill="rgba(255,255,255,0.45)" />
-          </Pattern>
-        </Defs>
-        <Rect width="100%" height={BAR_HEIGHT} fill={`url(#${id})`} />
-      </Svg>
+    <View
+      onLayout={(e) => setSize(e.nativeEvent.layout.width)}
+      style={{ flex: width, height: '100%', backgroundColor: color, borderRadius: 4, overflow: 'hidden' }}
+    >
+      {size > 0 && (
+        <Svg width={size} height={BAR_HEIGHT} style={StyleSheet.absoluteFill}>
+          <Defs>
+            <Pattern id={id} width={7} height={7} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <Rect width={3} height={7} fill="rgba(255,255,255,0.25)" />
+            </Pattern>
+          </Defs>
+          <Rect width={size} height={BAR_HEIGHT} fill={`url(#${id})`} />
+        </Svg>
+      )}
     </View>
   );
 }
