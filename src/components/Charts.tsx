@@ -156,7 +156,8 @@ export function CashFlowChart({ monthly, selected, width }: {
   const biggest = Math.max(...monthly.flatMap((m) => [m.in_minor, m.out_minor]));
   // No money yet: keep the empty plane (axis and month labels) with no bars and no touch tooltip.
   const empty = biggest === 0;
-  const top = niceTop(empty ? 10000 : biggest);
+  // The top of the chart is the tallest bar, not a rounded number above it, so no empty band is left over the bars.
+  const top = empty ? 100 : biggest / 100;
 
   const bars = monthly.flatMap((m, i) => {
     const on = m.month === selected;
