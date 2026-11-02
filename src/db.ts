@@ -5,7 +5,7 @@ import { ICON_NAMES, toEmoji } from './emoji';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, SCHEMA } from './seed';
 import { BACKUP_VERSION } from './backup';
 import type { Backup } from './backup';
-import type { Account, Category, CategorySpend, DaySpend, InsightsData, MonthTotals, NetWorthTrend, Recurring, RecurringRow, Transaction, ThemeSetting, TransactionFilter, TransactionRow } from './types';
+import type { Account, Category, CategorySpend, DaySpend, InsightsData, MonthTotals, NetWorthTrend, Payday, Recurring, RecurringRow, Transaction, ThemeSetting, TransactionFilter, TransactionRow } from './types';
 
 // The small part of expo-sqlite that we use, so tests can pass a fake.
 export type Db = {
@@ -52,6 +52,7 @@ async function migrate(handle: Db) {
   if (version < 4) await migrateToV4(handle);
   if (version < 5) await migrateToV5(handle);
   if (version < 6) await migrateToV6(handle);
+  if (version < 7) await migrateToV7(handle);
 }
 
 // The default categories and the "Cash" account. Used for a new database and after "Delete all data".
@@ -121,6 +122,15 @@ async function migrateToV6(handle: Db) {
   });
 }
 
+// Salary transactions and recurring items can be marked as salary, which sets when a pay period starts.
+async function migrateToV7(handle: Db) {
+  await handle.withTransactionAsync(async () => {
+    await handle.execAsync('ALTER TABLE transactions ADD COLUMN is_salary INTEGER NOT NULL DEFAULT 0');
+    await handle.execAsync('ALTER TABLE recurring ADD COLUMN is_salary INTEGER NOT NULL DEFAULT 0');
+    await handle.execAsync('PRAGMA user_version = 7');
+  });
+}
+
 export async function openDb(handle?: Db) {
   // A new connection per app session. expo-sqlite otherwise reuses one native connection across JS reloads
   // (Expo Go, Fast Refresh) and closes it when the old session's object is released, which crashes the next query.
@@ -147,6 +157,34 @@ export async function setCurrency(code: string) {
 
 export async function setTheme(theme: ThemeSetting) {
   await write((handle) => handle.runAsync(UPSERT_SETTING, 'theme', theme));
+}
+
+// Settings keys: payday_mode ('start' when unset), payday_start_day (1 when unset), payday_salary_id.
+export async function getPayday(): Promise<Payday> {
+  if ((await getSetting('payday_mode')) === 'salary') {
+    const salaryId = await getSetting('payday_salary_id');
+    return { mode: 'salary', salaryId: salaryId === null ? null : Number(salaryId) };
+  }
+  return { mode: 'start', startDay: Number((await getSetting('payday_start_day')) ?? 1) };
+}
+
+export async function setPayday(p: Payday) {
+  await write((handle) =>
+    handle.withTransactionAsync(async () => {
+      if (p.mode === 'start') {
+        await handle.runAsync(UPSERT_SETTING, 'payday_mode', 'start');
+        await handle.runAsync(UPSERT_SETTING, 'payday_start_day', String(p.startDay));
+      } else {
+        await handle.runAsync(UPSERT_SETTING, 'payday_mode', 'salary');
+        if (p.salaryId !== null) await handle.runAsync(UPSERT_SETTING, 'payday_salary_id', String(p.salaryId));
+      }
+    }),
+  );
+}
+
+// Income marked as salary, newest first. The Payday form picks the one a period starts from.
+export async function getSalaryTransactions(): Promise<TransactionRow[]> {
+  return db!.getAllAsync(`${TX_SELECT} ${TX_FROM} WHERE t.type = 'income' AND t.is_salary = 1 ORDER BY t.date DESC, t.id DESC`);
 }
 
 export async function setHideBalances(on: boolean) {

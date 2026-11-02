@@ -54,6 +54,10 @@ export type Transaction = {
   created_at: string;
 };
 
+// How a period is worked out. 'start' uses a fixed day of the month; 'salary' starts each period from a salary
+// transaction (null until one is picked, which falls back to calendar months).
+export type Payday = { mode: 'start'; startDay: number } | { mode: 'salary'; salaryId: number | null };
+
 export type Frequency = 'weekly' | 'monthly' | 'quarterly' | 'yearly';
 
 export type Recurring = {

@@ -106,6 +106,12 @@ export function monthName(month: string): string {
   return format(parseISO(month + '-01'), 'MMMM');
 }
 
+// 1 -> "1st", 22 -> "22nd", 31 -> "31st".
+export function ordinalDay(n: number): string {
+  const suffix = n % 10 === 1 && n !== 11 ? 'st' : n % 10 === 2 && n !== 12 ? 'nd' : n % 10 === 3 && n !== 13 ? 'rd' : 'th';
+  return `${n}${suffix}`;
+}
+
 // The date a card payment is due in `month`; a due day of 31 becomes the 28th in February.
 export function dueDateIn(month: string, dueDay: number): string {
   return month + '-' + String(Math.min(dueDay, getDaysInMonth(parseISO(month + '-01')))).padStart(2, '0');

@@ -12,7 +12,7 @@ import { useData } from '../src/useData';
 SplashScreen.preventAutoHideAsync();
 
 // Floating trays: a transparent modal with no router animation. The Sheet component fades the dim and slides the tray.
-const TRAYS = ['add-menu', 'settings', 'currency', 'transaction/[id]', 'recurring/detail/[id]'];
+const TRAYS = ['add-menu', 'settings', 'currency', 'payday', 'transaction/[id]', 'recurring/detail/[id]'];
 const TRAY_OPTIONS = { presentation: 'transparentModal', animation: 'none', contentStyle: { backgroundColor: 'transparent' } } as const;
 
 export default function RootLayout() {

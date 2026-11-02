@@ -3,7 +3,7 @@ import { FadeScrollView } from '../src/components/FadeScrollView';
 import { File, Paths } from 'expo-file-system';
 import { useRouter } from 'expo-router';
 import * as Sharing from 'expo-sharing';
-import { ChevronRight, Download, FlaskConical, Globe, SunMoon, Tag, Trash2, Upload } from 'lucide-react-native';
+import { CalendarDays, ChevronRight, Download, FlaskConical, Globe, SunMoon, Tag, Trash2, Upload } from 'lucide-react-native';
 import type { LucideIcon } from 'lucide-react-native';
 import { useState } from 'react';
 import { Alert, StyleSheet, View } from 'react-native';
@@ -11,12 +11,13 @@ import { PressableScale } from '../src/components/PressableScale';
 import { parseBackup } from '../src/backup';
 import { Sheet } from '../src/components/Sheet';
 import { SheetHeader } from '../src/components/SheetHeader';
-import { deleteAllData, exportAll, getSetting, replaceAllData } from '../src/db';
-import { today } from '../src/dates';
+import { deleteAllData, exportAll, getPayday, getSetting, replaceAllData } from '../src/db';
+import { ordinalDay, today } from '../src/dates';
 import { buildDemoBackup } from '../src/demoData';
 import { currencyOf } from '../src/money';
 import { sheet, spacing } from '../src/theme';
 import { THEME_OPTIONS } from '../src/types';
+import type { Payday } from '../src/types';
 import { useData } from '../src/useData';
 import { Text } from '../src/components/Text';
 
@@ -37,6 +38,7 @@ export default function Settings() {
   const router = useRouter();
   const currencyCode = useData(() => getSetting('currency'));
   const themeSetting = useData(() => getSetting('theme'));
+  const payday = useData(getPayday);
   const [busy, setBusy] = useState<'export' | 'import' | 'demo' | null>(null);
   const [message, setMessage] = useState('');
 
@@ -128,6 +130,13 @@ export default function Settings() {
           end={<ChevronRight color={sheet.ink3} size={20} />}
         />
         <ActionRow
+          Icon={CalendarDays}
+          title="Payday"
+          subtitle={paydaySummary(payday)}
+          onPress={() => router.push('/payday')}
+          end={<ChevronRight color={sheet.ink3} size={20} />}
+        />
+        <ActionRow
           Icon={Globe}
           title="Currency"
           subtitle={`${current.name} (${current.code})`}
@@ -178,6 +187,12 @@ export default function Settings() {
       </FadeScrollView>
     </Sheet>
   );
+}
+
+function paydaySummary(p: Payday | undefined): string {
+  if (!p) return '';
+  if (p.mode === 'start') return `Month starts on the ${ordinalDay(p.startDay)}`;
+  return p.salaryId === null ? 'Starts from a salary, not picked yet' : 'Starts from a salary transaction';
 }
 
 function ActionRow({ Icon, title, subtitle, onPress, end, disabled, danger }: {
