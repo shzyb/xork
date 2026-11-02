@@ -379,7 +379,6 @@ export function SplitBars({ income, expense, previous, width }: {
           color={colors.neg}
           amount={formatMoney(expense)}
           change={hasPrevious ? expense - previous.out_minor : undefined}
-          upIsBad
         />
         <SplitColumn
           title="Saved"
@@ -413,19 +412,16 @@ function Segment({ id, width, color }: { id: string; width: number; color: strin
   );
 }
 
-// One column: the name and share, the amount, and the change since the period before (an arrow and how much).
-// `upIsBad` colours a rise red, as for expense; otherwise a rise is green, as for saved.
-function SplitColumn({ title, share, color, amount, change, upIsBad }: {
+// One column: the name, the amount, and the change since the period before (an arrow and how much) with its share.
+function SplitColumn({ title, share, color, amount, change }: {
   title: string;
   share?: string;
   color: string;
   amount: string;
   change?: number;
-  upIsBad?: boolean;
 }) {
   const colors = useColors();
   const up = change !== undefined && change > 0;
-  const changeColor = change === undefined || change === 0 ? colors.ink2 : (up !== Boolean(upIsBad) ? colors.pos : colors.neg);
   const ChangeIcon = up ? TrendingUp : TrendingDown;
   return (
     <View style={styles.column}>
@@ -436,13 +432,13 @@ function SplitColumn({ title, share, color, amount, change, upIsBad }: {
       <Text style={[styles.columnAmount, { color: colors.ink }]} numberOfLines={1}>{amount}</Text>
       {(change !== undefined || share !== undefined) && (
         <View style={styles.change}>
-          {change !== undefined && change !== 0 && <ChangeIcon color={changeColor} size={14} strokeWidth={2.4} />}
+          {change !== undefined && change !== 0 && <ChangeIcon color={colors.ink2} size={14} strokeWidth={2.4} />}
           {change !== undefined && (
-            <Text style={{ color: changeColor, fontSize: 13, fontWeight: '600' }} numberOfLines={1}>
+            <Text style={{ color: colors.ink2, fontSize: 13, fontWeight: '600' }} numberOfLines={1}>
               {change === 0 ? 'No change' : formatMoney(Math.abs(change))}
             </Text>
           )}
-          {share !== undefined && <Text style={{ color, fontSize: 13, fontWeight: '600' }}>({share})</Text>}
+          {share !== undefined && <Text style={{ color: colors.ink2, fontSize: 13, fontWeight: '600' }}>({share})</Text>}
         </View>
       )}
       {change !== undefined && <Text style={{ color: colors.ink2, fontSize: 13 }}>vs last period</Text>}
