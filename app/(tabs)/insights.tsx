@@ -218,10 +218,8 @@ function Total({ label, value, share, size, half }: { label: string; value: stri
   return (
     <View style={[styles.total, half && styles.half]}>
       <Text style={{ color: colors.ink2, fontSize: 13 }}>{label}</Text>
-      <View style={styles.valueRow}>
-        <Text style={[styles.totalValue, { color: colors.ink, fontSize: size }]} numberOfLines={1}>{value}</Text>
-        {share !== undefined && <Text style={{ color: colors.ink2, fontSize: 14, fontWeight: '600' }}>{share}</Text>}
-      </View>
+      <Text style={[styles.totalValue, { color: colors.ink, fontSize: size }]} numberOfLines={1}>{value}</Text>
+      {share !== undefined && <Text style={{ color: colors.ink2, fontSize: 14, fontWeight: '600' }}>{share} of income</Text>}
     </View>
   );
 }
@@ -237,8 +235,7 @@ const styles = StyleSheet.create({
   totals: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 12, rowGap: spacing.lg, marginTop: spacing.lg },
   total: { width: '100%', gap: 2 },
   half: { width: '47%', flexGrow: 1 },
-  valueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
-  totalValue: { fontWeight: '800', letterSpacing: -0.5, flexShrink: 1 },
+  totalValue: { fontWeight: '800', letterSpacing: -0.5 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 60 },
   main: { flex: 1 },
   end: { alignItems: 'flex-end', maxWidth: '45%' },
