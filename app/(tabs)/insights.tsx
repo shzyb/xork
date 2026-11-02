@@ -91,9 +91,9 @@ export default function Insights() {
             accessibilityLabel={scope === 'month' ? 'Previous month' : 'Previous year'}
             disabled={!canGoBack}
             onPress={() => step(-1)}
-            style={[styles.arrow, !canGoBack && { opacity: 0.3 }]}
+            style={styles.arrow}
           >
-            <ChevronLeft color={colors.ink} size={24} />
+            <ChevronLeft color={canGoBack ? colors.ink : colors.ink3} size={24} />
           </PressableScale>
           <PressableScale
             accessibilityRole="button"
@@ -110,9 +110,9 @@ export default function Insights() {
             accessibilityLabel={scope === 'month' ? 'Next month' : 'Next year'}
             disabled={!canGoForward}
             onPress={() => step(1)}
-            style={[styles.arrow, !canGoForward && { opacity: 0.3 }]}
+            style={styles.arrow}
           >
-            <ChevronRight color={colors.ink} size={24} />
+            <ChevronRight color={canGoForward ? colors.ink : colors.ink3} size={24} />
           </PressableScale>
         </View>
 
