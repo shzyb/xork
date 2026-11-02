@@ -11,6 +11,7 @@ import { CategoryGrid } from '../src/components/CategoryGrid';
 import { DateButton } from '../src/components/DateButton';
 import { Keypad } from '../src/components/Keypad';
 import { NoteRow } from '../src/components/NoteRow';
+import { SalaryRow } from '../src/components/SalaryRow';
 import { TypeSwitch } from '../src/components/TypeSwitch';
 import { addTransaction, checkCreditLimit, getAccountsWithBalance, getCategories, getTransaction, isOverLimit, updateTransaction } from '../src/db';
 import { today } from '../src/dates';
@@ -55,6 +56,7 @@ function AddForm({ accounts, categories, editing, startType }: {
   const [error, setError] = useState('');
   const [picker, setPicker] = useState<'from' | 'to' | null>(null);
   const [noteOpen, setNoteOpen] = useState(false);
+  const [salary, setSalary] = useState(editing?.is_salary === 1);
   const keypadOpacity = useRef(new Animated.Value(1)).current;
 
   // The keyboard slides over the keypad while the note is open, so the keypad just fades; nothing moves.
@@ -63,6 +65,9 @@ function AddForm({ accounts, categories, editing, startType }: {
     if (isReduceMotion()) keypadOpacity.setValue(to);
     else Animated.timing(keypadOpacity, { toValue: to, duration: noteOpen ? 150 : 200, easing: Easing.bezier(0.23, 1, 0.32, 1), useNativeDriver: true }).start();
   }, [noteOpen, keypadOpacity]);
+
+  const salaryCategoryId = categories.find((c) => c.kind === 'income' && c.name === 'Salary')?.id ?? null;
+  const salaryPicked = type === 'income' && categoryId !== null && categoryId === salaryCategoryId;
 
   const fromId = fromSel ?? accounts[0].id;
   const toId = toSel ?? accounts.find((a) => a.id !== fromId)?.id ?? fromId;
@@ -75,6 +80,7 @@ function AddForm({ accounts, categories, editing, startType }: {
   function switchType(next: TransactionType) {
     setType(next);
     setCategoryId(null);
+    setSalary(false);
     setError('');
   }
 
@@ -107,6 +113,7 @@ function AddForm({ accounts, categories, editing, startType }: {
     category_id: type === 'transfer' ? null : categoryId,
     note: type === 'transfer' ? (editing?.type === 'transfer' ? editing.note : '') : note.trim(), // a move has no note; an old one is kept
     date,
+    is_salary: salaryPicked && salary ? 1 : 0,
   });
 
   async function save() {
@@ -196,8 +203,9 @@ function AddForm({ accounts, categories, editing, startType }: {
           />
         )}
         {type !== 'transfer' && (
-          <CategoryGrid categories={kindCategories} selectedId={categoryId} onSelect={(id) => { setCategoryId(id); setError(''); }} />
+          <CategoryGrid categories={kindCategories} selectedId={categoryId} onSelect={(id) => { setCategoryId(id); setSalary(id === salaryCategoryId); setError(''); }} />
         )}
+        {salaryPicked && <SalaryRow value={salary} onValueChange={setSalary} />}
         <Animated.View pointerEvents={noteOpen ? 'none' : 'auto'} style={{ opacity: keypadOpacity }}>
           <Keypad onKey={pressKey} decimals={decimals} />
         </Animated.View>

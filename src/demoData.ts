@@ -64,7 +64,7 @@ export function buildDemoBackup(currency: string, todayStr: string): Backup {
 
   const monthly = (id: number, name: string, units: number, anchor_day: number): Recurring => ({
     id, name, type: 'expense', amount_minor: money(units), account_id: BANK, category_id: cat(name === 'Netflix' ? 'Subscriptions' : name),
-    freq: 'monthly', anchor_day, next_date: start, active: 1,
+    freq: 'monthly', anchor_day, next_date: start, active: 1, is_salary: 0,
   });
   const recurring = [monthly(1, 'Rent', 900, 1), monthly(2, 'Internet', 40, 5), monthly(3, 'Mobile', 15, 8), monthly(4, 'Netflix', 12, 12)];
   const lastLogged: Record<number, string> = {};
@@ -73,7 +73,7 @@ export function buildDemoBackup(currency: string, todayStr: string): Backup {
   const add = (date: string, type: Transaction['type'], amount: number, account_id: number, more: Partial<Transaction> = {}) => {
     transactions.push({
       id: transactions.length + 1, type, amount_minor: amount, account_id, to_account_id: null, category_id: null,
-      note: '', date, recurring_id: null, created_at: `${date}T12:00:00.000Z`, ...more,
+      note: '', date, recurring_id: null, is_salary: 0, created_at: `${date}T12:00:00.000Z`, ...more,
     });
     balance[account_id] += type === 'income' ? amount : -amount;
     if (more.to_account_id) balance[more.to_account_id] += amount;

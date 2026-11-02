@@ -13,6 +13,7 @@ import { Chip } from '../../src/components/Chip';
 import { CategoryGrid } from '../../src/components/CategoryGrid';
 import { DateChips } from '../../src/components/DateChips';
 import { Field } from '../../src/components/Field';
+import { SalaryRow } from '../../src/components/SalaryRow';
 import { SheetHeader } from '../../src/components/SheetHeader';
 import {
   addRecurring, deleteRecurring, getAccountsWithBalance, getCategories, getRecurringItem, updateRecurring,
@@ -51,11 +52,14 @@ function RecurringForm({ editing, accounts, categories }: {
   const [date, setDate] = useState(editing?.next_date ?? tomorrow());
   const [categoryId, setCategoryId] = useState<number | null>(editing?.category_id ?? null);
   const [active, setActive] = useState(editing ? editing.active === 1 : true);
+  const [salary, setSalary] = useState(editing?.is_salary === 1);
   const [picking, setPicking] = useState(false);
   const [error, setError] = useState('');
 
   const account = accounts.find((a) => a.id === accountId) ?? accounts[0];
   const accountLabel = type === 'income' ? 'Into' : 'From';
+  const salaryCategoryId = categories.find((c) => c.kind === 'income' && c.name === 'Salary')?.id ?? null;
+  const salaryPicked = type === 'income' && categoryId !== null && categoryId === salaryCategoryId;
 
   async function save() {
     if (name.trim() === '') return setError('Enter a name.');
@@ -72,6 +76,7 @@ function RecurringForm({ editing, accounts, categories }: {
       anchor_day: Number(date.slice(8, 10)),
       next_date: date,
       active: active ? 1 : 0,
+      is_salary: salaryPicked && salary ? 1 : 0,
     };
     try {
       if (editing) await updateRecurring(editing.id, item);
@@ -113,7 +118,7 @@ function RecurringForm({ editing, accounts, categories }: {
                 key={key}
                 accessibilityRole="button"
                 accessibilityState={{ selected: type === key }}
-                onPress={() => { setType(key); setCategoryId(null); }}
+                onPress={() => { setType(key); setCategoryId(null); setSalary(false); }}
                 style={[styles.segmentItem, type === key && { backgroundColor: sheet.card2 }]}
               >
                 <Text style={[styles.segmentText, type === key && { color: sheet.ink }]}>{label}</Text>
@@ -153,7 +158,8 @@ function RecurringForm({ editing, accounts, categories }: {
             presets={[{ label: 'Today', date: today() }, { label: 'Tomorrow', date: tomorrow() }]}
           />
           <Text style={styles.label}>Category</Text>
-          <CategoryGrid categories={categories.filter((c) => c.kind === type)} selectedId={categoryId} onSelect={(id) => { setCategoryId(id); setError(''); }} />
+          <CategoryGrid categories={categories.filter((c) => c.kind === type)} selectedId={categoryId} onSelect={(id) => { setCategoryId(id); setSalary(id === salaryCategoryId); setError(''); }} />
+          {salaryPicked && <SalaryRow value={salary} onValueChange={setSalary} />}
           <View style={styles.activeRow}>
             <View style={styles.activeText}>
               <Text style={styles.activeTitle}>Active</Text>

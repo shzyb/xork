@@ -17,13 +17,13 @@ const valid = (): Backup => ({
     { id: 4, name: 'Other income', kind: 'income', icon: 'sparkle', color: '#64748B', budget_minor: null, is_default: 1, sort_order: 0 },
   ],
   recurring: [
-    { id: 1, name: 'Rent', type: 'expense', amount_minor: 8500000, account_id: 2, category_id: 1, freq: 'monthly', anchor_day: 1, next_date: '2026-10-01', active: 1 },
+    { id: 1, name: 'Rent', type: 'expense', amount_minor: 8500000, account_id: 2, category_id: 1, freq: 'monthly', anchor_day: 1, next_date: '2026-10-01', active: 1, is_salary: 0 },
   ],
   transactions: [
-    { id: 1, type: 'expense', amount_minor: 45000, account_id: 1, to_account_id: null, category_id: 1, note: 'Lunch', date: '2026-09-30', recurring_id: null, created_at: 'x' },
-    { id: 2, type: 'income', amount_minor: 20000000, account_id: 2, to_account_id: null, category_id: 3, note: '', date: '2026-09-01', recurring_id: null, created_at: 'x' },
-    { id: 3, type: 'transfer', amount_minor: 100000, account_id: 2, to_account_id: 1, category_id: null, note: '', date: '2026-09-02', recurring_id: null, created_at: 'x' },
-    { id: 4, type: 'expense', amount_minor: 8500000, account_id: 2, to_account_id: null, category_id: 1, note: 'Rent', date: '2026-09-01', recurring_id: 1, created_at: 'x' },
+    { id: 1, type: 'expense', amount_minor: 45000, account_id: 1, to_account_id: null, category_id: 1, note: 'Lunch', date: '2026-09-30', recurring_id: null, is_salary: 0, created_at: 'x' },
+    { id: 2, type: 'income', amount_minor: 20000000, account_id: 2, to_account_id: null, category_id: 3, note: '', date: '2026-09-01', recurring_id: null, is_salary: 0, created_at: 'x' },
+    { id: 3, type: 'transfer', amount_minor: 100000, account_id: 2, to_account_id: 1, category_id: null, note: '', date: '2026-09-02', recurring_id: null, is_salary: 0, created_at: 'x' },
+    { id: 4, type: 'expense', amount_minor: 8500000, account_id: 2, to_account_id: null, category_id: 1, note: 'Rent', date: '2026-09-01', recurring_id: 1, is_salary: 0, created_at: 'x' },
   ],
 });
 

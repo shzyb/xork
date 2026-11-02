@@ -51,6 +51,7 @@ export type Transaction = {
   note: string;
   date: string;
   recurring_id: number | null;
+  is_salary: number; // 1 when this income starts a pay period (Payday: salary mode)
   created_at: string;
 };
 
@@ -71,6 +72,7 @@ export type Recurring = {
   anchor_day: number;
   next_date: string;
   active: number;
+  is_salary: number;
 };
 
 export type TransactionRow = Transaction & {

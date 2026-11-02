@@ -208,7 +208,7 @@ export async function isOnboarded(): Promise<boolean> {
 
 export type NewTransaction = Pick<
   Transaction,
-  'type' | 'amount_minor' | 'account_id' | 'to_account_id' | 'category_id' | 'note' | 'date'
+  'type' | 'amount_minor' | 'account_id' | 'to_account_id' | 'category_id' | 'note' | 'date' | 'is_salary'
 >;
 
 export const isOverLimit = (e: unknown): e is Error => e instanceof Error && e.name === 'OverLimit';
@@ -256,9 +256,9 @@ export async function addTransaction(t: NewTransaction) {
   await checkCreditLimit(t);
   await write((handle) =>
     handle.runAsync(
-      `INSERT INTO transactions (type, amount_minor, account_id, to_account_id, category_id, note, date, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      t.type, t.amount_minor, t.account_id, t.to_account_id, t.category_id, t.note, t.date,
+      `INSERT INTO transactions (type, amount_minor, account_id, to_account_id, category_id, note, date, is_salary, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      t.type, t.amount_minor, t.account_id, t.to_account_id, t.category_id, t.note, t.date, t.is_salary,
       new Date().toISOString(),
     ),
   );
@@ -373,8 +373,8 @@ export async function updateTransaction(id: number, t: NewTransaction) {
   await write((handle) =>
     handle.runAsync(
       `UPDATE transactions SET type = ?, amount_minor = ?, account_id = ?, to_account_id = ?,
-              category_id = ?, note = ?, date = ? WHERE id = ?`,
-      t.type, t.amount_minor, t.account_id, t.to_account_id, t.category_id, t.note, t.date, id,
+              category_id = ?, note = ?, date = ?, is_salary = ? WHERE id = ?`,
+      t.type, t.amount_minor, t.account_id, t.to_account_id, t.category_id, t.note, t.date, t.is_salary, id,
     ),
   );
 }
@@ -489,7 +489,7 @@ export async function deleteCategory(id: number) {
 
 export type NewRecurring = Pick<
   Recurring,
-  'name' | 'type' | 'amount_minor' | 'account_id' | 'category_id' | 'freq' | 'anchor_day' | 'next_date' | 'active'
+  'name' | 'type' | 'amount_minor' | 'account_id' | 'category_id' | 'freq' | 'anchor_day' | 'next_date' | 'active' | 'is_salary'
 >;
 
 // How many active items are due on the given day but not logged yet. The Recurring tab shows a dot for tomorrow.
@@ -526,9 +526,9 @@ export async function getRecurringItem(id: number): Promise<Recurring | null> {
 // One transaction for a recurring item on the given date.
 async function insertOccurrence(handle: Db, item: Recurring, date: string) {
   await handle.runAsync(
-    `INSERT INTO transactions (type, amount_minor, account_id, to_account_id, category_id, note, date, recurring_id, created_at)
-     VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?)`,
-    item.type, item.amount_minor, item.account_id, item.category_id, item.name, date, item.id,
+    `INSERT INTO transactions (type, amount_minor, account_id, to_account_id, category_id, note, date, recurring_id, is_salary, created_at)
+     VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?)`,
+    item.type, item.amount_minor, item.account_id, item.category_id, item.name, date, item.id, item.is_salary,
     new Date().toISOString(),
   );
 }
@@ -557,15 +557,15 @@ export async function logDueRecurring() {
   await write((handle) => handle.withTransactionAsync(() => logDue(handle)));
 }
 
-const INSERT_RECURRING = `INSERT INTO recurring (name, type, amount_minor, account_id, category_id, freq, anchor_day, next_date, active)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+const INSERT_RECURRING = `INSERT INTO recurring (name, type, amount_minor, account_id, category_id, freq, anchor_day, next_date, active, is_salary)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
 export async function addRecurring(r: NewRecurring) {
   await write((handle) =>
     handle.withTransactionAsync(async () => {
       await handle.runAsync(
         INSERT_RECURRING,
-        r.name, r.type, r.amount_minor, r.account_id, r.category_id, r.freq, r.anchor_day, r.next_date, r.active,
+        r.name, r.type, r.amount_minor, r.account_id, r.category_id, r.freq, r.anchor_day, r.next_date, r.active, r.is_salary,
       );
       await logDue(handle);
     }),
@@ -577,8 +577,8 @@ export async function updateRecurring(id: number, r: NewRecurring) {
     handle.withTransactionAsync(async () => {
       await handle.runAsync(
         `UPDATE recurring SET name = ?, type = ?, amount_minor = ?, account_id = ?, category_id = ?, freq = ?,
-                anchor_day = ?, next_date = ?, active = ? WHERE id = ?`,
-        r.name, r.type, r.amount_minor, r.account_id, r.category_id, r.freq, r.anchor_day, r.next_date, r.active, id,
+                anchor_day = ?, next_date = ?, active = ?, is_salary = ? WHERE id = ?`,
+        r.name, r.type, r.amount_minor, r.account_id, r.category_id, r.freq, r.anchor_day, r.next_date, r.active, r.is_salary, id,
       );
       await logDue(handle);
     }),

@@ -73,6 +73,7 @@ const LUNCH = {
   category_id: 2,
   note: 'Lunch',
   date: '2026-09-30',
+  is_salary: 0,
 };
 
 describe('addTransaction', () => {
@@ -87,7 +88,7 @@ describe('addTransaction', () => {
 
     expect(db.runAsync).toHaveBeenCalledWith(
       expect.stringContaining('INSERT INTO transactions'),
-      'expense', 45000, 1, null, 2, 'Lunch', '2026-09-30', expect.any(String),
+      'expense', 45000, 1, null, 2, 'Lunch', '2026-09-30', 0, expect.any(String),
     );
     expect(getVersion()).toBe(before + 1);
     expect(listener).toHaveBeenCalledTimes(1);
@@ -109,7 +110,7 @@ describe('addTransaction', () => {
 });
 
 describe.each([
-  ['updateTransaction', () => updateTransaction(7, LUNCH), 'UPDATE transactions', ['expense', 45000, 1, null, 2, 'Lunch', '2026-09-30', 7]],
+  ['updateTransaction', () => updateTransaction(7, LUNCH), 'UPDATE transactions', ['expense', 45000, 1, null, 2, 'Lunch', '2026-09-30', 0, 7]],
   ['deleteTransaction', () => deleteTransaction(7), 'DELETE FROM transactions', [7]],
 ])('%s', (_name, run, sql, params) => {
   it('runs the statement, bumps version and calls listeners', async () => {
@@ -306,7 +307,7 @@ describe('deleteCategory', () => {
 
 const RENT = {
   name: 'Rent', type: 'expense' as const, amount_minor: 8500000, account_id: 1, category_id: 5,
-  freq: 'monthly' as const, anchor_day: 31, next_date: '2026-10-31', active: 1,
+  freq: 'monthly' as const, anchor_day: 31, next_date: '2026-10-31', active: 1, is_salary: 0,
 };
 
 describe('logDueRecurring', () => {
@@ -504,7 +505,7 @@ const BACKUP = {
   ],
   recurring: [],
   transactions: [
-    { id: 1, type: 'expense' as const, amount_minor: 45000, account_id: 1, to_account_id: null, category_id: 1, note: 'Lunch', date: '2026-09-30', recurring_id: null, created_at: 'x' },
+    { id: 1, type: 'expense' as const, amount_minor: 45000, account_id: 1, to_account_id: null, category_id: 1, note: 'Lunch', date: '2026-09-30', recurring_id: null, is_salary: 0, created_at: 'x' },
   ],
 };
 
@@ -699,7 +700,7 @@ describe('credit card limit', () => {
   // A card with a 10,000.00 limit and 9,000.00 owed.
   const card = { name: 'Visa', type: 'credit', limit_minor: 1000000, balance_minor: -900000 };
   const spend = (amount_minor: number, account_id = 1) => ({
-    type: 'expense' as const, amount_minor, account_id, to_account_id: null, category_id: 1, note: '', date: '2026-10-01',
+    type: 'expense' as const, amount_minor, account_id, to_account_id: null, category_id: 1, note: '', date: '2026-10-01', is_salary: 0,
   });
 
   // Opens a database, then queues what the limit check will read: the old transaction (when editing) and the card.
@@ -729,7 +730,7 @@ describe('credit card limit', () => {
   it('allows an expense that stays within the limit', async () => {
     const db = await open([card]);
     await addTransaction(spend(100000));
-    expect(db.runAsync).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO transactions'), 'expense', 100000, 1, null, 1, '', '2026-10-01', expect.any(String));
+    expect(db.runAsync).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO transactions'), 'expense', 100000, 1, null, 1, '', '2026-10-01', 0, expect.any(String));
   });
 
   it('says the card is at its limit when nothing is left', async () => {
@@ -740,14 +741,14 @@ describe('credit card limit', () => {
   it('allows a payment into the card and a refund', async () => {
     const bank = { name: 'Bank', type: 'debit', limit_minor: null, balance_minor: 500000 };
     const db = await open([bank, { ...card, balance_minor: -1000000 }]);
-    await addTransaction({ type: 'transfer', amount_minor: 50000, account_id: 2, to_account_id: 1, category_id: null, note: '', date: '2026-10-01' });
-    expect(db.runAsync).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO transactions'), 'transfer', 50000, 2, 1, null, '', '2026-10-01', expect.any(String));
+    await addTransaction({ type: 'transfer', amount_minor: 50000, account_id: 2, to_account_id: 1, category_id: null, note: '', date: '2026-10-01', is_salary: 0 });
+    expect(db.runAsync).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO transactions'), 'transfer', 50000, 2, 1, null, '', '2026-10-01', 0, expect.any(String));
   });
 
   it('refuses a transfer out of a full card', async () => {
     await open([{ ...card, balance_minor: -1000000 }]);
     await expect(
-      addTransaction({ type: 'transfer', amount_minor: 100, account_id: 1, to_account_id: 2, category_id: null, note: '', date: '2026-10-01' }),
+      addTransaction({ type: 'transfer', amount_minor: 100, account_id: 1, to_account_id: 2, category_id: null, note: '', date: '2026-10-01', is_salary: 0 }),
     ).rejects.toThrow('Visa is at its limit');
   });
 
@@ -755,7 +756,7 @@ describe('credit card limit', () => {
     const old = { type: 'expense', amount_minor: 200000, account_id: 1, to_account_id: null };
     const db = await open([old, { ...card, balance_minor: -1100000 }]);
     await updateTransaction(5, spend(200000));
-    expect(db.runAsync).toHaveBeenCalledWith(expect.stringContaining('UPDATE transactions'), 'expense', 200000, 1, null, 1, '', '2026-10-01', 5);
+    expect(db.runAsync).toHaveBeenCalledWith(expect.stringContaining('UPDATE transactions'), 'expense', 200000, 1, null, 1, '', '2026-10-01', 0, 5);
   });
 
   it('refuses an edit that raises what is owed past the limit', async () => {
@@ -778,6 +779,17 @@ describe('getNetWorthTrend', () => {
     const trend = await getNetWorthTrend();
 
     expect(trend).toEqual({ startMinor: 100000, daily: [...moved, ...opened], prevPointMinor: 90000 });
+  });
+});
+
+describe('salary flag', () => {
+  it('saves a salary income with the flag set', async () => {
+    const db = fakeDb();
+    await openDb(db);
+
+    await addTransaction({ type: 'income', amount_minor: 500000, account_id: 1, to_account_id: null, category_id: 3, note: '', date: '2026-10-25', is_salary: 1 });
+
+    expect(db.runAsync).toHaveBeenCalledWith(expect.stringContaining('is_salary'), 'income', 500000, 1, null, 3, '', '2026-10-25', 1, expect.any(String));
   });
 });
 
