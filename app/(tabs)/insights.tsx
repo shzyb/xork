@@ -122,6 +122,9 @@ function Body({ data, month, contentWidth, expanded, onToggleExpanded }: {
   const expenseText = formatMoney(out);
   const savedText = formatMoney(saved);
   const longest = Math.max(incomeText.length, expenseText.length, savedText.length);
+  // Expense and saved as a share of income. No income means no share to show.
+  const expenseShare = summary.in_minor > 0 ? percent(out, summary.in_minor) : undefined;
+  const savedShare = summary.in_minor > 0 ? percent(saved, summary.in_minor) : undefined;
   const size = longest <= 12 ? 26 : longest <= 15 ? 22 : 18;
 
   const grouped = spending.length > TOP_COUNT;
@@ -149,8 +152,8 @@ function Body({ data, month, contentWidth, expanded, onToggleExpanded }: {
     <>
       <View style={styles.totals}>
         <Total label="Income" value={incomeText} size={size} half />
-        <Total label="Expense" value={expenseText} size={size} half />
-        <Total label="Saved" value={savedText} size={size} />
+        <Total label="Expense" value={expenseText} share={expenseShare} size={size} half />
+        <Total label="Saved" value={savedText} share={savedShare} size={size} />
       </View>
 
       <CashFlowChart monthly={data.monthly} selected={month} width={contentWidth} />
@@ -209,12 +212,16 @@ function Loading() {
   );
 }
 
-function Total({ label, value, size, half }: { label: string; value: string; size: number; half?: boolean }) {
+// `share` is a small percentage shown beside the value, e.g. "60%" of income.
+function Total({ label, value, share, size, half }: { label: string; value: string; share?: string; size: number; half?: boolean }) {
   const colors = useColors();
   return (
     <View style={[styles.total, half && styles.half]}>
       <Text style={{ color: colors.ink2, fontSize: 13 }}>{label}</Text>
-      <Text style={[styles.totalValue, { color: colors.ink, fontSize: size }]} numberOfLines={1}>{value}</Text>
+      <View style={styles.valueRow}>
+        <Text style={[styles.totalValue, { color: colors.ink, fontSize: size }]} numberOfLines={1}>{value}</Text>
+        {share !== undefined && <Text style={{ color: colors.ink2, fontSize: 14, fontWeight: '600' }}>{share}</Text>}
+      </View>
     </View>
   );
 }
@@ -230,7 +237,8 @@ const styles = StyleSheet.create({
   totals: { flexDirection: 'row', flexWrap: 'wrap', columnGap: 12, rowGap: spacing.lg, marginTop: spacing.lg },
   total: { width: '100%', gap: 2 },
   half: { width: '47%', flexGrow: 1 },
-  totalValue: { fontWeight: '800', letterSpacing: -0.5 },
+  valueRow: { flexDirection: 'row', alignItems: 'baseline', gap: 6 },
+  totalValue: { fontWeight: '800', letterSpacing: -0.5, flexShrink: 1 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 60 },
   main: { flex: 1 },
   end: { alignItems: 'flex-end', maxWidth: '45%' },
