@@ -123,14 +123,6 @@ export default function Insights() {
               <EmptyState Icon={Receipt} title="No expenses this month" text="Enter a transaction for this month to see it here." />
             ) : (
               <>
-                <ListHeading>Top categories</ListHeading>
-                <CategoryList
-                  rows={monthData.spending}
-                  out={monthData.summary.out_minor}
-                  expanded={expanded}
-                  onToggle={() => setExpanded((e) => !e)}
-                  onOpen={(id) => router.push({ pathname: '/category-activity', params: { id: String(id), month } })}
-                />
                 <ListHeading>When it went</ListHeading>
                 <DailyCategoryChart
                   byDay={monthData.byDay}
@@ -138,6 +130,14 @@ export default function Insights() {
                   month={month}
                   today={month === current ? Number(today().slice(8)) : null}
                   width={contentWidth}
+                />
+                <ListHeading>Top categories</ListHeading>
+                <CategoryList
+                  rows={monthData.spending}
+                  out={monthData.summary.out_minor}
+                  expanded={expanded}
+                  onToggle={() => setExpanded((e) => !e)}
+                  onOpen={(id) => router.push({ pathname: '/category-activity', params: { id: String(id), month } })}
                 />
               </>
             )}
