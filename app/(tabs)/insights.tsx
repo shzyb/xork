@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CashFlowChart, DailyCategoryChart, SplitBars } from '../../src/components/Charts';
+import { CategoryIcon } from '../../src/components/CategoryIcon';
 import { EmptyState } from '../../src/components/EmptyState';
 import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { ListHeading } from '../../src/components/ListHeading';
@@ -122,7 +123,7 @@ export default function Insights() {
               <EmptyState Icon={Receipt} title="No expenses this month" text="Enter a transaction for this month to see it here." />
             ) : (
               <>
-                <ListHeading>Where it went</ListHeading>
+                <ListHeading>Top categories</ListHeading>
                 <CategoryList
                   rows={monthData.spending}
                   out={monthData.summary.out_minor}
@@ -152,7 +153,7 @@ export default function Insights() {
               <EmptyState Icon={Receipt} title="No expenses this year" text="Enter a transaction in this year to see it here." />
             ) : (
               <>
-                <ListHeading>Where it went this year</ListHeading>
+                <ListHeading>Top categories</ListHeading>
                 <CategoryList
                   rows={yearData.spending}
                   out={yearData.summary.out_minor}
@@ -182,8 +183,8 @@ export default function Insights() {
   );
 }
 
-// The categories, biggest first, each with its amount, its share of spending and a thin bar for that share.
-// The first few show; "Show all" opens the rest. Tapping a row opens its transactions, when `onOpen` is given.
+// The top categories, biggest first, as rows with the icon, a count or "Over budget", the amount and its share of spending.
+// The first few show; "Show more" opens the rest. Tapping a row opens its transactions, when `onOpen` is given.
 function CategoryList({ rows, out, expanded, onToggle, onOpen }: {
   rows: CategorySpend[];
   out: number;
@@ -193,40 +194,42 @@ function CategoryList({ rows, out, expanded, onToggle, onOpen }: {
 }) {
   const colors = useColors();
   const grouped = rows.length > TOP_COUNT;
-  const shown = expanded || !grouped ? rows : rows.slice(0, TOP_COUNT);
+  const top = grouped ? rows.slice(0, TOP_COUNT) : rows;
+  const rest = grouped ? rows.slice(TOP_COUNT) : [];
+  const spendingRow = (c: CategorySpend) => (
+    <PressableScale
+      key={c.id}
+      accessibilityRole="button"
+      accessibilityLabel={`${c.name} transactions`}
+      disabled={!onOpen}
+      onPress={() => onOpen?.(c.id)}
+      style={styles.row}
+    >
+      <CategoryIcon name={c.icon} color={c.color} size={36} />
+      <View style={styles.main}>
+        <Text style={[styles.rowTitle, { color: colors.ink }]} numberOfLines={1}>{c.name}</Text>
+        {c.budget_minor !== null && c.total_minor > c.budget_minor
+          ? <Text style={{ color: colors.neg, fontSize: 14 }}>Over budget</Text>
+          : <Text style={{ color: colors.ink2, fontSize: 14 }}>{c.count} {c.count === 1 ? 'transaction' : 'transactions'}</Text>}
+      </View>
+      <View style={styles.end}>
+        <Text style={[styles.rowTitle, { color: colors.ink }]}>{formatMoney(c.total_minor)}</Text>
+        <Text style={{ color: colors.ink2, fontSize: 14, marginTop: 2 }}>{percent(c.total_minor, out)}</Text>
+      </View>
+    </PressableScale>
+  );
   return (
     <>
-      {shown.map((c) => {
-        const over = c.budget_minor !== null && c.total_minor > c.budget_minor;
-        const share = out > 0 ? c.total_minor / out : 0;
-        return (
-          <PressableScale
-            key={c.id}
-            accessibilityRole="button"
-            accessibilityLabel={`${c.name}: ${formatMoney(c.total_minor)}`}
-            disabled={!onOpen}
-            onPress={() => onOpen?.(c.id)}
-            style={styles.category}
-          >
-            <View style={styles.categoryTop}>
-              <Text style={[styles.rowTitle, { color: colors.ink }]} numberOfLines={1}>{c.name}</Text>
-              <Text style={{ color: colors.ink2, fontSize: 14 }}>{`${formatMoney(c.total_minor)} · ${percent(c.total_minor, out)}`}</Text>
-            </View>
-            <View style={[styles.mini, { backgroundColor: colors.fill }]}>
-              <View style={{ width: `${share * 100}%`, height: '100%', borderRadius: 3, backgroundColor: over ? colors.neg : colors.ink }} />
-            </View>
-            {over && <Text style={{ color: colors.neg, fontSize: 13, marginTop: 4 }}>Over budget</Text>}
-          </PressableScale>
-        );
-      })}
+      {top.map((c) => spendingRow(c))}
+      {expanded && rest.map((c) => spendingRow(c))}
       {grouped && (
         <PressableScale
           accessibilityRole="button"
-          accessibilityLabel={expanded ? 'Show fewer categories' : `Show all ${rows.length} categories`}
+          accessibilityLabel={expanded ? 'Show fewer categories' : `Show ${rest.length} more categories`}
           onPress={onToggle}
           style={[styles.more, { backgroundColor: colors.fill }]}
         >
-          <Text style={{ color: colors.ink, fontSize: 14, fontWeight: '600' }}>{expanded ? 'Show fewer' : `Show all ${rows.length} categories`}</Text>
+          <Text style={{ color: colors.ink, fontSize: 14, fontWeight: '600' }}>{expanded ? 'Show less' : 'Show more'}</Text>
         </PressableScale>
       )}
     </>
@@ -244,10 +247,10 @@ const styles = StyleSheet.create({
   arrow: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
   periodName: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center' },
   periodTitle: { fontSize: 17, fontWeight: '600' },
-  category: { gap: 6, paddingVertical: 10 },
-  categoryTop: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 10 },
-  rowTitle: { flexShrink: 1, fontSize: 16.5, fontWeight: '600' },
-  mini: { height: 6, borderRadius: 3, overflow: 'hidden' },
+  row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 60 },
+  main: { flex: 1 },
+  end: { alignItems: 'flex-end', maxWidth: '45%' },
+  rowTitle: { fontSize: 16.5, fontWeight: '600' },
   more: { alignSelf: 'center', minHeight: 44, paddingHorizontal: 20, borderRadius: 22, alignItems: 'center', justifyContent: 'center', marginVertical: spacing.sm },
   foot: { fontSize: 12.5, lineHeight: 19, marginTop: 26 },
 });
