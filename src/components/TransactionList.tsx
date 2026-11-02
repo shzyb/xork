@@ -1,5 +1,5 @@
 import { useRouter } from 'expo-router';
-import { ArrowLeftRight } from 'lucide-react-native';
+import { ArrowLeftRight, Check } from 'lucide-react-native';
 import { StyleSheet, View } from 'react-native';
 import { PressableScale } from './PressableScale';
 import { prettyDate } from '../dates';
@@ -19,14 +19,15 @@ export function TransactionList({ rows }: { rows: TransactionRow[] }) {
           {(i === 0 || rows[i - 1].date !== t.date) && (
             <ListHeading>{prettyDate(t.date)}</ListHeading>
           )}
-          <Line t={t} />
+          <TransactionLine t={t} />
         </View>
       ))}
     </View>
   );
 }
 
-function Line({ t }: { t: TransactionRow }) {
+// One transaction as a row. Tapping opens its detail sheet, unless `onPress` says otherwise (e.g. picking it). `selected` ticks it.
+export function TransactionLine({ t, onPress, selected }: { t: TransactionRow; onPress?: () => void; selected?: boolean }) {
   const colors = useColors();
   const router = useRouter();
   const income = t.type === 'income';
@@ -40,7 +41,7 @@ function Line({ t }: { t: TransactionRow }) {
   return (
     <PressableScale
       accessibilityRole="button"
-      onPress={() => router.push(`/transaction/${t.id}`)}
+      onPress={onPress ?? (() => router.push(`/transaction/${t.id}`))}
       style={styles.row}
     >
       {transfer ? (
@@ -61,6 +62,7 @@ function Line({ t }: { t: TransactionRow }) {
       <Text style={[styles.amount, { color: income ? colors.pos : colors.ink }]}>
         {income ? '+ ' : ''}{formatMoney(t.amount_minor)}
       </Text>
+      {selected && <Check color={colors.pos} size={20} strokeWidth={2.6} />}
     </PressableScale>
   );
 }

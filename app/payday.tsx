@@ -1,10 +1,11 @@
 import { useRouter } from 'expo-router';
-import { Check, ChevronLeft } from 'lucide-react-native';
+import { ChevronLeft } from 'lucide-react-native';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FadeScrollView } from '../src/components/FadeScrollView';
 import { PressableScale } from '../src/components/PressableScale';
+import { TransactionLine } from '../src/components/TransactionList';
 import { Button } from '../src/components/Button';
 import { Text } from '../src/components/Text';
 import { getPayday, getSalaryTransactions, setPayday } from '../src/db';
@@ -95,24 +96,9 @@ function PaydayForm({ saved, salaries }: { saved: Payday; salaries: TransactionR
               <Text style={[styles.hint, { color: colors.ink2 }]}>Tap to select another income transaction to use for calculation.</Text>
             </View>
             {salaries.length === 0 && <Text style={[styles.hint, { color: colors.ink2 }]}>No salary transactions yet.</Text>}
-            {salaries.map((s) => {
-              const on = s.id === salaryId;
-              return (
-                <PressableScale
-                  key={s.id}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: on }}
-                  onPress={() => { setSalaryId(s.id); setError(''); }}
-                  style={styles.row}
-                >
-                  <View style={styles.rowMain}>
-                    <Text style={[styles.rowTitle, { color: colors.ink }]}>{fullDate(s.date)}</Text>
-                    <Text style={[styles.hint, { color: colors.ink2 }]}>{formatMoney(s.amount_minor)}</Text>
-                  </View>
-                  {on && <Check color={colors.pos} size={20} strokeWidth={2.6} />}
-                </PressableScale>
-              );
-            })}
+            {salaries.map((s) => (
+              <TransactionLine key={s.id} t={s} selected={s.id === salaryId} onPress={() => { setSalaryId(s.id); setError(''); }} />
+            ))}
           </>
         )}
         {error !== '' && <Text style={[styles.error, { color: colors.neg }]}>{error}</Text>}
@@ -156,9 +142,6 @@ const styles = StyleSheet.create({
   daySlot: { width: '14.28%', height: 52, alignItems: 'center' },
   day: { width: '100%', maxWidth: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   dayText: { width: '100%', fontSize: 15, lineHeight: 15, fontWeight: '600', textAlign: 'center', textAlignVertical: 'center', includeFontPadding: false },
-  row: { flexDirection: 'row', alignItems: 'center', minHeight: 56 },
-  rowMain: { flex: 1 },
-  rowTitle: { fontSize: 16, fontWeight: '600' },
   error: { fontSize: 14.5, fontWeight: '600', textAlign: 'center' },
   footer: { paddingTop: 10, paddingBottom: spacing.lg },
 });
