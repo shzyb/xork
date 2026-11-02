@@ -66,7 +66,7 @@ export default function Insights() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
-      <FadeScrollView contentContainerStyle={styles.content}>
+      <View style={[styles.header, { backgroundColor: colors.bg }]}>
         <Text style={[styles.title, { color: colors.ink }]}>Insights</Text>
         <View style={[styles.segment, { backgroundColor: colors.fill }]}>
           {(['month', 'year'] as const).map((s) => {
@@ -116,6 +116,8 @@ export default function Insights() {
           </PressableScale>
         </View>
 
+      </View>
+      <FadeScrollView contentContainerStyle={styles.content}>
         {scope === 'month' && monthData && (
           <>
             <SplitBars income={monthData.summary.in_minor} expense={monthData.summary.out_minor} previous={monthData.previous} comparedTo="last period" width={contentWidth} />
@@ -239,6 +241,7 @@ function CategoryList({ rows, out, expanded, onToggle, onOpen }: {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  header: { paddingHorizontal: spacing.xl },
   content: { paddingHorizontal: spacing.xl, paddingBottom: fabClearance },
   title: { fontSize: fontSize.screen, fontWeight: '800', marginTop: spacing.md },
   segment: { flexDirection: 'row', borderRadius: 22, padding: 3, marginTop: spacing.md },
