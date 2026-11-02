@@ -1,4 +1,4 @@
-import { getInsights, getPayday, setPayday, getCategories, getNetWorthTrend, reorderCategories, getRecurringActivity, logRecurringNow, setRecurringActive, skipRecurring, deleteAllData, exportAll, NO_FILTER, replaceAllData, addAccount, addCategory, addRecurring, deleteRecurring, logDueRecurring, updateRecurring, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, setHideBalances, setTheme, updateAccount, updateCategory, updateTransaction } from '../db';
+import { getInsights, getYearInsights, getPayday, setPayday, getCategories, getNetWorthTrend, reorderCategories, getRecurringActivity, logRecurringNow, setRecurringActive, skipRecurring, deleteAllData, exportAll, NO_FILTER, replaceAllData, addAccount, addCategory, addRecurring, deleteRecurring, logDueRecurring, updateRecurring, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, setHideBalances, setTheme, updateAccount, updateCategory, updateTransaction } from '../db';
 import { formatMoney } from '../money';
 
 function fakeDb(overrides: Partial<Db> = {}): Db {
@@ -836,6 +836,16 @@ describe('payday settings', () => {
     expect(getVersion()).toBe(before);
     expect(listener).not.toHaveBeenCalled();
     off();
+  });
+});
+
+describe('getYearInsights', () => {
+  it('has twelve months and the year before, for the changes', async () => {
+    await openDb(fakeDb({ getFirstAsync: jest.fn().mockResolvedValue({ in_minor: 100, out_minor: 40, user_version: 7 }) }));
+    const data = await getYearInsights('2026');
+    expect(data.monthly).toHaveLength(12);
+    expect(data.monthly[0].month).toBe('2026-01');
+    expect(data.previous).toMatchObject({ in_minor: 100, out_minor: 40 });
   });
 });
 

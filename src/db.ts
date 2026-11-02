@@ -1,12 +1,12 @@
 import { openDatabaseAsync } from 'expo-sqlite';
-import { dayOfPeriod, firstOnOrAfter, keyRanges, lastMonths, nextOccurrence, periodBounds, periodDayCount, periodOf, shiftDays, today } from './dates';
+import { dayOfPeriod, firstOnOrAfter, keyRanges, nextOccurrence, periodBounds, periodDayCount, periodOf, shiftDays, today } from './dates';
 import type { DayRange, PayCalendar } from './dates';
 import { formatMoney, setAppCurrency } from './money';
 import { ICON_NAMES, toEmoji } from './emoji';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, SCHEMA } from './seed';
 import { BACKUP_VERSION } from './backup';
 import type { Backup } from './backup';
-import type { Account, Category, CategorySpend, DaySpend, InsightsData, MonthTotals, NetWorthTrend, Payday, Recurring, RecurringRow, Transaction, ThemeSetting, TransactionFilter, TransactionRow } from './types';
+import type { Account, Category, CategorySpend, DaySpend, InsightsData, MonthTotals, NetWorthTrend, Payday, Recurring, RecurringRow, Transaction, ThemeSetting, TransactionFilter, TransactionRow, YearInsights } from './types';
 
 // The small part of expo-sqlite that we use, so tests can pass a fake.
 export type Db = {
@@ -337,7 +337,12 @@ export async function getCategories(): Promise<Category[]> {
 
 // Transfers are not income or spending, so they are left out.
 export async function getMonthSummary(month: string): Promise<{ in_minor: number; out_minor: number }> {
-  const r = inRanges(keyRanges(month, cal));
+  return rangesSummary(keyRanges(month, cal));
+}
+
+// Money in and out across some ranges of days.
+async function rangesSummary(ranges: DayRange[]): Promise<{ in_minor: number; out_minor: number }> {
+  const r = inRanges(ranges);
   const row = await db!.getFirstAsync<{ in_minor: number; out_minor: number }>(
     `SELECT COALESCE(SUM(CASE WHEN type = 'income' THEN amount_minor END), 0) AS in_minor,
             COALESCE(SUM(CASE WHEN type = 'expense' THEN amount_minor END), 0) AS out_minor
@@ -650,7 +655,11 @@ export async function deleteRecurring(id: number) {
 
 // Spending (or income) per category for a period, biggest first.
 export async function getTotalsByCategory(kind: 'expense' | 'income', month: string): Promise<CategorySpend[]> {
-  const r = inRanges(keyRanges(month, cal), 't.date');
+  return categoryTotals(kind, keyRanges(month, cal));
+}
+
+async function categoryTotals(kind: 'expense' | 'income', ranges: DayRange[]): Promise<CategorySpend[]> {
+  const r = inRanges(ranges, 't.date');
   return db!.getAllAsync(
     `SELECT c.id, c.name, c.icon, c.color, c.budget_minor, SUM(t.amount_minor) AS total_minor, COUNT(*) AS count
      FROM transactions t JOIN categories c ON c.id = t.category_id
@@ -732,10 +741,21 @@ export async function getNetWorthTrend(): Promise<NetWorthTrend> {
 }
 
 // Money in and out for the six months ending at `endMonth`. Months with nothing are zero.
-async function getMonthlyTotals(endMonth: string): Promise<MonthTotals[]> {
-  const totals: MonthTotals[] = [];
-  for (const month of lastMonths(endMonth, 6)) totals.push({ month, ...(await getMonthSummary(month)) });
-  return totals;
+// A year is its twelve periods named January to December, so its totals match the months in the month view.
+export async function getYearInsights(year: string): Promise<YearInsights> {
+  const keys = yearKeys(year);
+  const monthly: MonthTotals[] = [];
+  for (const key of keys) monthly.push({ month: key, ...(await getMonthSummary(key)) });
+  return {
+    summary: await rangesSummary(keys.flatMap((k) => keyRanges(k, cal))),
+    previous: await rangesSummary(yearKeys(String(Number(year) - 1)).flatMap((k) => keyRanges(k, cal))),
+    spending: await categoryTotals('expense', keys.flatMap((k) => keyRanges(k, cal))),
+    monthly,
+  };
+}
+
+function yearKeys(year: string): string[] {
+  return Array.from({ length: 12 }, (_, i) => `${year}-${String(i + 1).padStart(2, '0')}`);
 }
 
 // One call per screen load. Queries run one after another on purpose (see useData).
@@ -746,7 +766,6 @@ export async function getInsights(month: string): Promise<InsightsData> {
     summary: await getMonthSummary(month),
     previous: await getMonthSummary(previousKey),
     spending: await getTotalsByCategory('expense', month),
-    monthly: await getMonthlyTotals(currentPeriodKey()),
     byDay: await db!.getAllAsync(
       `SELECT CAST(julianday(date) - julianday(?) AS INTEGER) + 1 AS day, category_id, SUM(amount_minor) AS total_minor
        FROM transactions WHERE type = 'expense' AND ${r.sql} GROUP BY date, category_id`,

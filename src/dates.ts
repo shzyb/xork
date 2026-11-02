@@ -242,3 +242,8 @@ export function periodDayCount(key: string, cal: PayCalendar): number {
 export function dayOfPeriod(date: string, cal: PayCalendar): number {
   return differenceInCalendarDays(parseISO(date), parseISO(periodOf(date, cal).start)) + 1;
 }
+
+// "28 Oct – 27 Nov": the days a period covers.
+export function shortRange(range: DayRange): string {
+  return `${format(parseISO(range.start), 'd MMM')} – ${format(parseISO(range.end), 'd MMM')}`;
+}

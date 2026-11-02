@@ -9,7 +9,7 @@ import { periodDays } from '../db';
 import { dayParts, runningTotal } from '../insights';
 import { compactMoney, formatMoney } from '../money';
 import { spacing, useColors } from '../theme';
-import type { CategorySpend, DaySpend, InsightsData } from '../types';
+import type { CategorySpend, DaySpend, InsightsData, MonthTotals } from '../types';
 import { Text } from './Text';
 
 // The top of the y-axis for a biggest value in minor units: rounded up so the three sections get round numbers.
@@ -141,7 +141,7 @@ export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed,
 // Money in (green) and out (red) for the last six months. The colours say which is which, so there is no legend.
 // The selected month is highlighted. Touching a bar shows that month's income and expense under the chart; it doesn't change the month.
 export function CashFlowChart({ monthly, selected, width }: {
-  monthly: InsightsData['monthly'];
+  monthly: MonthTotals[];
   selected: string;
   width: number;
 }) {
@@ -354,10 +354,11 @@ export function LegendItem({ color, label, dashed }: { color: string; label: str
 
 // Income as one bar: the red part is what was spent and the green part what was saved, both striped.
 // Above it, expense and saved each show their amount, their share of income and the change since the period before.
-export function SplitBars({ income, expense, previous, width }: {
+export function SplitBars({ income, expense, previous, comparedTo, width }: {
   income: number;
   expense: number;
   previous: { in_minor: number; out_minor: number };
+  comparedTo: 'last period' | 'last year';
   width: number;
 }) {
   const colors = useColors();
@@ -390,7 +391,9 @@ export function SplitBars({ income, expense, previous, width }: {
         {spentPart > 0 && <Segment id="stripesExpense" width={spentPart} color={colors.neg} />}
         {savedPart > 0 && <Segment id="stripesSaved" width={savedPart} color={colors.pos} />}
       </View>
-      {hasPrevious && <Text style={{ color: colors.ink2, fontSize: 13, marginTop: 8 }}>Changes are vs last period</Text>}
+      <Text style={{ color: colors.ink2, fontSize: 13, marginTop: 8 }}>
+        {income > 0 ? `Changes are vs ${comparedTo}. Saved is income minus spending.` : 'No income in this period yet.'}
+      </Text>
     </View>
   );
 }

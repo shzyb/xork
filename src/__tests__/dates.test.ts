@@ -1,4 +1,4 @@
-import { currentMonth, dayOfPeriod, daysInMonth, dueDateIn, keyRanges, monthGrid, occurrencesBetween, firstOnOrAfter, fullDate, lastMonths, monthName, monthShort, periodBounds, periodDayCount, periodOf, salaryPeriod, startDayPeriod, tomorrow, upcomingOccurrences, monthLabel, monthRange, nextOccurrence, prettyDate, shiftMonth, today, yesterday } from '../dates';
+import { shortRange, currentMonth, dayOfPeriod, daysInMonth, dueDateIn, keyRanges, monthGrid, occurrencesBetween, firstOnOrAfter, fullDate, lastMonths, monthName, monthShort, periodBounds, periodDayCount, periodOf, salaryPeriod, startDayPeriod, tomorrow, upcomingOccurrences, monthLabel, monthRange, nextOccurrence, prettyDate, shiftMonth, today, yesterday } from '../dates';
 
 describe('today', () => {
   it('is a local YYYY-MM-DD string', () => {
@@ -246,5 +246,11 @@ describe('pay periods for totals', () => {
     const cal = { startDay: 1, starts: ['2026-10-20'] };
     expect(keyRanges('2026-12', cal)).toEqual([]);
     expect(periodBounds('2026-12', cal)).toEqual({ start: '2026-12-01', end: '2026-12-31' });
+  });
+});
+
+describe('shortRange', () => {
+  it('writes the days a period covers', () => {
+    expect(shortRange({ start: '2026-10-28', end: '2026-11-27' })).toBe('28 Oct – 27 Nov');
   });
 });

@@ -121,8 +121,15 @@ export type NetWorthTrend = { startMinor: number; daily: DaySpend[]; prevPointMi
 export type InsightsData = {
   summary: { in_minor: number; out_minor: number };
   spending: CategorySpend[];
-  monthly: MonthTotals[]; // the six months ending now, for the chart
   byDay: { day: number; category_id: number; total_minor: number }[]; // expenses per day and category
   earliestMonth: string | null; // the month of the oldest transaction, for the month picker
   previous: { in_minor: number; out_minor: number }; // the period before this one, for the changes
+};
+
+// Everything the Insights year view shows: the twelve periods named for the year, January first.
+export type YearInsights = {
+  summary: { in_minor: number; out_minor: number };
+  previous: { in_minor: number; out_minor: number }; // the year before
+  spending: CategorySpend[];
+  monthly: MonthTotals[];
 };
