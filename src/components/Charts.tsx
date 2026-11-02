@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { BarChart, LineChart } from 'react-native-gifted-charts';
+import { BarChart, LineChart, PieChart } from 'react-native-gifted-charts';
 import { monthName, monthShort, prettyDate } from '../dates';
 import { periodDays } from '../db';
 import { dayParts, runningTotal } from '../insights';
@@ -350,11 +350,71 @@ export function LegendItem({ color, label, dashed }: { color: string; label: str
   );
 }
 
+// Income as a half circle. The whole arc is income: the red part is what was spent and the green part what was saved.
+// Tap a part to see its share. The amounts are listed under the chart.
+export function IncomeSplit({ income, expense, width }: { income: number; expense: number; width: number }) {
+  const colors = useColors();
+  const [touched, setTouched] = useState<number | null>(null);
+  const saved = income - expense;
+  const radius = Math.min(width / 2 - 8, 130);
+  // Spending more than income fills the arc with expense. No income yet leaves an empty grey arc.
+  const parts = [
+    { label: 'Expense', amount: expense, color: colors.neg, value: Math.min(expense, income) },
+    { label: 'Saved', amount: saved, color: colors.pos, value: Math.max(saved, 0) },
+  ].filter((p) => p.value > 0);
+  const slices = income > 0 ? parts : [{ label: '', amount: 0, color: colors.fill2, value: 1 }];
+  const shareOf = (amount: number) => `${Math.round((amount / income) * 100)}%`;
+  const picked = touched !== null && income > 0 ? parts[touched] : null;
+
+  return (
+    <View>
+      <View style={[styles.arc, { height: radius + 12 }]}>
+        <PieChart
+          data={slices.map(({ value, color }) => ({ value, color }))}
+          semiCircle
+          donut
+          radius={radius}
+          innerRadius={radius - 28}
+          focusOnPress
+          selectedIndex={touched ?? undefined}
+          onPress={(_item: unknown, index: number) => setTouched(touched === index ? null : index)}
+        />
+        {picked && (
+          <View pointerEvents="none" style={styles.arcTipWrap}>
+            <View style={[styles.tooltip, { backgroundColor: colors.btnBg }]}>
+              <Text style={{ color: colors.btnFg, fontWeight: '700', fontSize: 14 }}>{`${picked.label} ${shareOf(picked.amount)}`}</Text>
+            </View>
+          </View>
+        )}
+      </View>
+      <SplitRow color={null} label="Income" amount={formatMoney(income)} />
+      <SplitRow color={colors.neg} label="Expense" amount={formatMoney(expense)} share={income > 0 ? shareOf(expense) : undefined} />
+      <SplitRow color={colors.pos} label="Saved" amount={formatMoney(saved)} share={income > 0 ? shareOf(saved) : undefined} />
+    </View>
+  );
+}
+
+function SplitRow({ color, label, amount, share }: { color: string | null; label: string; amount: string; share?: string }) {
+  const colors = useColors();
+  return (
+    <View style={styles.splitRow}>
+      <View style={[styles.dot, { backgroundColor: color ?? 'transparent' }]} />
+      <Text style={{ color: colors.ink2, fontSize: 15, flex: 1 }}>{label}</Text>
+      <Text style={{ color: colors.ink, fontSize: 15, fontWeight: '600' }} numberOfLines={1}>{amount}</Text>
+      <Text style={{ color: colors.ink2, fontSize: 14, fontWeight: '600', width: 48, textAlign: 'right' }}>{share ?? ''}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   chartBox: { marginTop: spacing.lg },
   legend: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 14, marginTop: spacing.sm },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   tooltip: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, gap: 1 },
+  arc: { alignItems: 'center', justifyContent: 'flex-start', marginTop: spacing.lg },
+  arcTipWrap: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center' },
+  splitRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 40 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
   tipArea: { position: 'absolute', top: 0, left: 0, right: 0, height: PLOT, justifyContent: 'flex-end' },
   panelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 });
