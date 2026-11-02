@@ -35,7 +35,7 @@ export default function Home() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
-      <FadeScrollView contentContainerStyle={styles.content}>
+      <View style={[styles.pinned, { backgroundColor: colors.bg }]}>
         <View style={styles.topbar}>
           <Text style={[styles.brand, { color: colors.ink }]}>Home</Text>
           <View style={styles.actions}>
@@ -47,6 +47,8 @@ export default function Home() {
             </PressableScale>
           </View>
         </View>
+      </View>
+      <FadeScrollView contentContainerStyle={styles.content}>
 
         <HomeHero spend={hideOnOpen === undefined ? undefined : spend} hidden={hidden} />
 
@@ -69,6 +71,7 @@ export default function Home() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  pinned: { paddingHorizontal: spacing.xl },
   content: { paddingHorizontal: spacing.xl, paddingBottom: fabClearance },
   topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md },
   brand: { fontSize: fontSize.screen, fontWeight: '800' },

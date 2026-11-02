@@ -150,13 +150,15 @@ export default function Recurring() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
-      <FadeScrollView contentContainerStyle={styles.content}>
+      <View style={[styles.pinned, { backgroundColor: colors.bg }]}>
         <View style={styles.topbar}>
           <Text style={[styles.screenTitle, { color: colors.ink }]}>Recurring</Text>
           <PressableScale accessibilityRole="button" accessibilityLabel="Add recurring item" onPress={openNew} style={styles.iconButton}>
             <Plus color={colors.ink} size={24} />
           </PressableScale>
         </View>
+      </View>
+      <FadeScrollView contentContainerStyle={styles.content}>
 
         <Segmented
           options={[{ value: 'upcoming', label: 'Upcoming' }, { value: 'all', label: 'All Recurring' }]}
@@ -223,6 +225,7 @@ export default function Recurring() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  pinned: { paddingHorizontal: spacing.xl },
   content: { paddingHorizontal: spacing.xl, paddingBottom: fabClearance },
   topbar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.md },
   screenTitle: { fontSize: fontSize.screen, fontWeight: '800' },

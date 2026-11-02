@@ -33,10 +33,12 @@ export default function Accounts() {
 
   return (
     <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]} edges={['top']}>
-      <FadeScrollView contentContainerStyle={styles.content}>
+      <View style={[styles.pinned, { backgroundColor: colors.bg }]}>
         <View style={styles.header}>
           <Text style={[styles.title, { color: colors.ink }]}>Accounts</Text>
         </View>
+      </View>
+      <FadeScrollView contentContainerStyle={styles.content}>
         {!accounts || !trend ? (
           <View style={styles.hero}>
             <Bone width={190} height={fontSize.big - 8} radius={14} style={{ alignSelf: 'center' }} />
@@ -99,6 +101,7 @@ export default function Accounts() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  pinned: { paddingHorizontal: spacing.xl },
   content: { paddingHorizontal: spacing.xl, paddingBottom: fabClearance },
   // Same 44px row as the Home title, with 2px more gap above the balance than Home.
   header: { height: 44, marginTop: spacing.md, justifyContent: 'center' },
