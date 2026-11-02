@@ -148,7 +148,15 @@ function RecurringForm({ editing, accounts, categories }: {
           <Text style={styles.label}>Frequency</Text>
           <View style={styles.chips}>
             {(['weekly', 'monthly', 'quarterly', 'yearly'] as const).map((key) => (
-              <Chip key={key} label={FREQUENCY_LABEL[key]} on={freq === key} onPress={() => setFreq(key)} />
+              <PressableScale
+                key={key}
+                accessibilityRole="button"
+                accessibilityState={{ selected: freq === key }}
+                onPress={() => setFreq(key)}
+                style={[styles.frequency, { backgroundColor: freq === key ? sheet.btnBg : sheet.card }]}
+              >
+                <Text style={[styles.frequencyText, { color: freq === key ? sheet.btnFg : sheet.ink2 }]} numberOfLines={1}>{FREQUENCY_LABEL[key]}</Text>
+              </PressableScale>
             ))}
           </View>
           <Text style={styles.label}>{editing ? 'Next date' : 'First date'}</Text>
@@ -200,7 +208,9 @@ const styles = StyleSheet.create({
   segmentItem: { flex: 1, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   segmentText: { color: sheet.ink2, fontSize: 14.5, fontWeight: '600' },
   label: { color: sheet.ink2, fontSize: 14, fontWeight: '600', marginTop: 20, marginBottom: 8 },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  chips: { flexDirection: 'row', gap: 6 },
+  frequency: { flex: 1, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  frequencyText: { fontSize: 14, fontWeight: '600' },
   dropdown: { flexDirection: 'row', alignItems: 'center', gap: 10, height: 50, paddingHorizontal: 14, borderRadius: 16, backgroundColor: sheet.card },
   dropdownName: { flex: 1, color: sheet.ink, fontSize: 16, fontWeight: '600' },
   dropdownBalance: { color: sheet.ink2, fontSize: 14.5 },
