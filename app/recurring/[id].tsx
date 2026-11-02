@@ -9,7 +9,6 @@ import { Toggle } from '../../src/components/Toggle';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AccountDot, AccountPicker } from '../../src/components/AccountButton';
 import { Button } from '../../src/components/Button';
-import { Chip } from '../../src/components/Chip';
 import { CategoryGrid } from '../../src/components/CategoryGrid';
 import { DateChips } from '../../src/components/DateChips';
 import { Field } from '../../src/components/Field';
