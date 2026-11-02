@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
   hint: { fontSize: 13.5, lineHeight: 19 },
   days: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 8 },
   day: { width: '14.28%', aspectRatio: 1, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
-  dayText: { fontSize: 15, fontWeight: '600' },
+  dayText: { fontSize: 15, fontWeight: '600', textAlign: 'center', includeFontPadding: false, textAlignVertical: 'center' },
   row: { flexDirection: 'row', alignItems: 'center', minHeight: 56 },
   rowMain: { flex: 1 },
   rowTitle: { fontSize: 16, fontWeight: '600' },
