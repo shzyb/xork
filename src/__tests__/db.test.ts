@@ -1,4 +1,4 @@
-import { getPayday, setPayday, getCategories, getNetWorthTrend, reorderCategories, getRecurringActivity, logRecurringNow, setRecurringActive, skipRecurring, deleteAllData, exportAll, NO_FILTER, replaceAllData, addAccount, addCategory, addRecurring, deleteRecurring, logDueRecurring, updateRecurring, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, setHideBalances, setTheme, updateAccount, updateCategory, updateTransaction } from '../db';
+import { getInsights, getPayday, setPayday, getCategories, getNetWorthTrend, reorderCategories, getRecurringActivity, logRecurringNow, setRecurringActive, skipRecurring, deleteAllData, exportAll, NO_FILTER, replaceAllData, addAccount, addCategory, addRecurring, deleteRecurring, logDueRecurring, updateRecurring, addTransaction, buildFilter, completeWelcome, Db, deleteAccount, deleteCategory, deleteTransaction, getVersion, openDb, setCurrency, subscribe, setHideBalances, setTheme, updateAccount, updateCategory, updateTransaction } from '../db';
 import { formatMoney } from '../money';
 
 function fakeDb(overrides: Partial<Db> = {}): Db {
@@ -836,5 +836,14 @@ describe('payday settings', () => {
     expect(getVersion()).toBe(before);
     expect(listener).not.toHaveBeenCalled();
     off();
+  });
+});
+
+describe('getInsights', () => {
+  it('includes the period before, for the changes shown on Insights', async () => {
+    await openDb(fakeDb({ getFirstAsync: jest.fn().mockResolvedValue({ in_minor: 100, out_minor: 40, user_version: 7 }) }));
+    const data = await getInsights('2026-10');
+    expect(data.previous).toMatchObject({ in_minor: 100, out_minor: 40 });
+    expect(data.summary).toMatchObject({ in_minor: 100, out_minor: 40 });
   });
 });
