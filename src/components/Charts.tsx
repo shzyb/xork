@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { BarChart, LineChart, PieChart } from 'react-native-gifted-charts';
+import { BarChart, LineChart } from 'react-native-gifted-charts';
+import { TrendingDown, TrendingUp } from 'lucide-react-native';
+import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 import { monthName, monthShort, prettyDate } from '../dates';
 import { periodDays } from '../db';
 import { dayParts, runningTotal } from '../insights';
@@ -350,58 +352,97 @@ export function LegendItem({ color, label, dashed }: { color: string; label: str
   );
 }
 
-// Income as a half circle. The whole arc is income: the red part is what was spent and the green part what was saved.
-// Tap a part to see its share. The amounts are listed under the chart.
-export function IncomeSplit({ income, expense, width }: { income: number; expense: number; width: number }) {
+// Income as one bar: the red part is what was spent and the green part what was saved, both striped.
+// Above it, expense and saved each show their amount, their share of income and the change since the period before.
+export function SplitBars({ income, expense, previous, width }: {
+  income: number;
+  expense: number;
+  previous: { in_minor: number; out_minor: number };
+  width: number;
+}) {
   const colors = useColors();
-  const [touched, setTouched] = useState<number | null>(null);
   const saved = income - expense;
-  const radius = Math.min(width / 2 - 8, 130);
-  // Spending more than income fills the arc with expense. No income yet leaves an empty grey arc.
-  const parts = [
-    { label: 'Expense', amount: expense, color: colors.neg, value: Math.min(expense, income) },
-    { label: 'Saved', amount: saved, color: colors.pos, value: Math.max(saved, 0) },
-  ].filter((p) => p.value > 0);
-  const slices = income > 0 ? parts : [{ label: '', amount: 0, color: colors.fill2, value: 1 }];
+  const spentPart = income > 0 ? Math.min(expense, income) / income : 0;
+  const savedPart = income > 0 ? Math.max(saved, 0) / income : 0;
   const shareOf = (amount: number) => `${Math.round((amount / income) * 100)}%`;
-  const picked = touched !== null && income > 0 ? parts[touched] : null;
+  const hasPrevious = previous.in_minor > 0 || previous.out_minor > 0;
+  const previousSaved = previous.in_minor - previous.out_minor;
 
   return (
-    <View>
-      <View style={[styles.arc, { height: radius + 12 }]}>
-        <PieChart
-          data={slices.map(({ value, color }) => ({ value, color }))}
-          semiCircle
-          donut
-          radius={radius}
-          innerRadius={radius - 28}
-          focusOnPress
-          selectedIndex={touched ?? undefined}
-          onPress={(_item: unknown, index: number) => setTouched(touched === index ? null : index)}
+    <View style={{ width }}>
+      <Text style={{ color: colors.ink2, fontSize: 13 }}>Income</Text>
+      <Text style={[styles.incomeAmount, { color: colors.ink }]} numberOfLines={1}>{formatMoney(income)}</Text>
+      <View style={styles.columns}>
+        <SplitColumn
+          title="Expense"
+          share={income > 0 ? shareOf(expense) : undefined}
+          color={colors.neg}
+          amount={formatMoney(expense)}
+          change={hasPrevious ? expense - previous.out_minor : undefined}
+          upIsBad
         />
-        {picked && (
-          <View pointerEvents="none" style={styles.arcTipWrap}>
-            <View style={[styles.tooltip, { backgroundColor: colors.btnBg }]}>
-              <Text style={{ color: colors.btnFg, fontWeight: '700', fontSize: 14 }}>{`${picked.label} ${shareOf(picked.amount)}`}</Text>
-            </View>
-          </View>
-        )}
+        <SplitColumn
+          title="Saved"
+          share={income > 0 ? shareOf(saved) : undefined}
+          color={colors.pos}
+          amount={formatMoney(saved)}
+          change={hasPrevious ? saved - previousSaved : undefined}
+        />
       </View>
-      <SplitRow color={null} label="Income" amount={formatMoney(income)} />
-      <SplitRow color={colors.neg} label="Expense" amount={formatMoney(expense)} share={income > 0 ? shareOf(expense) : undefined} />
-      <SplitRow color={colors.pos} label="Saved" amount={formatMoney(saved)} share={income > 0 ? shareOf(saved) : undefined} />
+      <View style={[styles.bar, { backgroundColor: colors.fill2 }]}>
+        {spentPart > 0 && <Segment id="stripesExpense" width={spentPart} color={colors.neg} />}
+        {savedPart > 0 && <Segment id="stripesSaved" width={savedPart} color={colors.pos} />}
+      </View>
     </View>
   );
 }
 
-function SplitRow({ color, label, amount, share }: { color: string | null; label: string; amount: string; share?: string }) {
-  const colors = useColors();
+// One coloured part of the bar, with thin diagonal stripes over it.
+function Segment({ id, width, color }: { id: string; width: number; color: string }) {
   return (
-    <View style={styles.splitRow}>
-      <View style={[styles.dot, { backgroundColor: color ?? 'transparent' }]} />
-      <Text style={{ color: colors.ink2, fontSize: 15, flex: 1 }}>{label}</Text>
-      <Text style={{ color: colors.ink, fontSize: 15, fontWeight: '600' }} numberOfLines={1}>{amount}</Text>
-      <Text style={{ color: colors.ink2, fontSize: 14, fontWeight: '600', width: 48, textAlign: 'right' }}>{share ?? ''}</Text>
+    <View style={{ width: `${width * 100}%`, height: '100%', backgroundColor: color, overflow: 'hidden' }}>
+      <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
+        <Defs>
+          <Pattern id={id} width={7} height={7} patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+            <Rect width={3} height={7} fill="rgba(255,255,255,0.45)" />
+          </Pattern>
+        </Defs>
+        <Rect width="100%" height="100%" fill={`url(#${id})`} />
+      </Svg>
+    </View>
+  );
+}
+
+// One column: the name and share, the amount, and the change since the period before (an arrow and how much).
+// `upIsBad` colours a rise red, as for expense; otherwise a rise is green, as for saved.
+function SplitColumn({ title, share, color, amount, change, upIsBad }: {
+  title: string;
+  share?: string;
+  color: string;
+  amount: string;
+  change?: number;
+  upIsBad?: boolean;
+}) {
+  const colors = useColors();
+  const up = change !== undefined && change > 0;
+  const changeColor = change === undefined || change === 0 ? colors.ink2 : (up !== Boolean(upIsBad) ? colors.pos : colors.neg);
+  const ChangeIcon = up ? TrendingUp : TrendingDown;
+  return (
+    <View style={styles.column}>
+      <View style={styles.columnHead}>
+        <View style={[styles.dot, { backgroundColor: color }]} />
+        <Text style={{ color: colors.ink2, fontSize: 14 }} numberOfLines={1}>{share ? `${title} · ${share}` : title}</Text>
+      </View>
+      <Text style={[styles.columnAmount, { color: colors.ink }]} numberOfLines={1}>{amount}</Text>
+      {change !== undefined && (
+        <View style={styles.change}>
+          {change !== 0 && <ChangeIcon color={changeColor} size={14} strokeWidth={2.4} />}
+          <Text style={{ color: changeColor, fontSize: 13, fontWeight: '600' }} numberOfLines={1}>
+            {change === 0 ? 'No change' : formatMoney(Math.abs(change))}
+          </Text>
+        </View>
+      )}
+      {change !== undefined && <Text style={{ color: colors.ink2, fontSize: 13 }}>vs last period</Text>}
     </View>
   );
 }
@@ -411,10 +452,14 @@ const styles = StyleSheet.create({
   legend: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 14, marginTop: spacing.sm },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   tooltip: { borderRadius: 12, paddingHorizontal: 10, paddingVertical: 6, gap: 1 },
-  arc: { alignItems: 'center', justifyContent: 'flex-start', marginTop: spacing.lg },
-  arcTipWrap: { position: 'absolute', left: 0, right: 0, bottom: 0, alignItems: 'center' },
-  splitRow: { flexDirection: 'row', alignItems: 'center', gap: 10, minHeight: 40 },
+  incomeAmount: { fontSize: 30, fontWeight: '800', letterSpacing: -1, marginTop: 2 },
+  columns: { flexDirection: 'row', columnGap: spacing.lg, marginTop: spacing.lg },
+  column: { flex: 1, gap: 4 },
+  columnHead: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   dot: { width: 8, height: 8, borderRadius: 4 },
+  columnAmount: { fontSize: 22, fontWeight: '800', letterSpacing: -0.5 },
+  change: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  bar: { height: 14, borderRadius: 7, overflow: 'hidden', flexDirection: 'row', marginTop: spacing.lg },
   tipArea: { position: 'absolute', top: 0, left: 0, right: 0, height: PLOT, justifyContent: 'flex-end' },
   panelRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
 });

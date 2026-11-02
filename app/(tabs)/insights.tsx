@@ -4,7 +4,7 @@ import { useCallback, useState } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CategoryIcon } from '../../src/components/CategoryIcon';
-import { CashFlowChart, DailyCategoryChart, IncomeSplit } from '../../src/components/Charts';
+import { CashFlowChart, DailyCategoryChart, SplitBars } from '../../src/components/Charts';
 import { EmptyState } from '../../src/components/EmptyState';
 import { FadeScrollView } from '../../src/components/FadeScrollView';
 import { ListHeading } from '../../src/components/ListHeading';
@@ -139,7 +139,7 @@ function Body({ data, month, contentWidth, expanded, onToggleExpanded }: {
 
   return (
     <>
-      <IncomeSplit income={summary.in_minor} expense={out} width={contentWidth} />
+      <SplitBars income={summary.in_minor} expense={out} previous={data.previous} width={contentWidth} />
 
       <CashFlowChart monthly={data.monthly} selected={month} width={contentWidth} />
 

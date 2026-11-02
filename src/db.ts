@@ -741,8 +741,10 @@ async function getMonthlyTotals(endMonth: string): Promise<MonthTotals[]> {
 // One call per screen load. Queries run one after another on purpose (see useData).
 export async function getInsights(month: string): Promise<InsightsData> {
   const r = inRanges(keyRanges(month, cal));
+  const previousKey = periodOf(shiftDays(periodDates(month).start, -1), cal).key;
   return {
     summary: await getMonthSummary(month),
+    previous: await getMonthSummary(previousKey),
     spending: await getTotalsByCategory('expense', month),
     monthly: await getMonthlyTotals(currentPeriodKey()),
     byDay: await db!.getAllAsync(

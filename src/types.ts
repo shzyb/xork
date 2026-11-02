@@ -124,4 +124,5 @@ export type InsightsData = {
   monthly: MonthTotals[]; // the six months ending now, for the chart
   byDay: { day: number; category_id: number; total_minor: number }[]; // expenses per day and category
   earliestMonth: string | null; // the month of the oldest transaction, for the month picker
+  previous: { in_minor: number; out_minor: number }; // the period before this one, for the changes
 };
