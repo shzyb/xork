@@ -123,7 +123,7 @@ export default function Insights() {
               <EmptyState Icon={Receipt} title="No expenses this month" text="Enter a transaction for this month to see it here." />
             ) : (
               <>
-                <ListHeading>When it went</ListHeading>
+                <ListHeading>Daily expense</ListHeading>
                 <DailyCategoryChart
                   byDay={monthData.byDay}
                   categories={monthData.spending}
