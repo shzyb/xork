@@ -10,8 +10,9 @@ import { Text } from './Text';
 
 const TIP = 110; // width of the touch tooltip
 
-// Total balance through this month, one line up to today. The library only draws from zero, so when the balance
-// goes below zero the line is shifted up by `base` and the axis labels take it off again. Touch and drag to read a day.
+// Total balance through this period, one line up to today, with last period as a dashed line behind it. The library only
+// draws from zero, so when the balance goes below zero both lines are shifted up by `base` and the axis labels take it off again.
+// Touch and drag to read a day.
 export function NetWorthChart({ trend, month, elapsed, width, height, hidden }: {
   trend: NetWorthTrend;
   month: string;
@@ -22,17 +23,20 @@ export function NetWorthChart({ trend, month, elapsed, width, height, hidden }: 
 }) {
   const colors = useColors();
   const money = (minor: number) => (hidden ? '••••••' : formatMoney(minor));
-  const days = periodDays(month);
+  // The axis spans the longer of the two periods, so last period's dashed line fits.
+  const days = Math.max(periodDays(month), trend.prevDays);
   // Reaches the last day with a transaction, so one dated ahead of today still draws.
   const lastDay = Math.max(elapsed, ...trend.daily.map((d) => d.day));
   const series = netWorthSeries(trend.startMinor, trend.daily, lastDay);
+  const previous = netWorthSeries(trend.prevStartMinor, trend.prevDaily, trend.prevDays);
 
   // No balances yet: keep the empty plane (grid, axis and day labels) but draw no line, dots or touch tooltip.
   const empty = series.every((v) => v === 0);
+  const previousEmpty = previous.every((v) => v === 0);
 
   // The axis always includes zero, so the labels start at 0 (or go below it when the balance does).
-  const low = Math.min(0, ...series);
-  const high = Math.max(0, ...series);
+  const low = Math.min(0, ...series, ...previous);
+  const high = Math.max(0, ...series, ...previous);
   const stepMinor = (niceTop(Math.max(high - low, 10000)) / 3) * 100;
   const base = Math.floor(low / stepMinor) * stepMinor;
   const top = niceTop(Math.max(high - base, stepMinor));
@@ -44,12 +48,17 @@ export function NetWorthChart({ trend, month, elapsed, width, height, hidden }: 
   return (
     <View style={styles.chartBox}>
       <LineChart
-        data={series.map((value, i) => ({ value: (value - base) / 100, hideDataPoint: i !== series.length - 1 }))}
-        color1={empty ? 'transparent' : colors.ink}
-        thickness1={3}
-        hideDataPoints={empty}
-        dataPointsColor1={colors.ink}
-        dataPointsRadius1={5}
+        data={previous.map((value) => ({ value: (value - base) / 100 }))}
+        data2={series.map((value, i) => ({ value: (value - base) / 100, hideDataPoint: i !== series.length - 1 }))}
+        color1={previousEmpty ? 'transparent' : colors.ink3}
+        thickness1={2}
+        strokeDashArray1={[6, 5]}
+        hideDataPoints1
+        color2={empty ? 'transparent' : colors.ink}
+        thickness2={3}
+        hideDataPoints2={empty}
+        dataPointsColor2={colors.ink}
+        dataPointsRadius2={5}
         width={chartWidth}
         height={height}
         initialSpacing={edge}
@@ -72,6 +81,7 @@ export function NetWorthChart({ trend, month, elapsed, width, height, hidden }: 
         disableScroll
         pointerConfig={empty ? undefined : {
           hidePointer1: true,
+          hidePointer2: true,
           pointerStripColor: colors.ink3,
           pointerLabelWidth: TIP,
           pointerLabelHeight: 48,
@@ -84,7 +94,7 @@ export function NetWorthChart({ trend, month, elapsed, width, height, hidden }: 
             return (
               <View style={[styles.tooltip, { backgroundColor: colors.btnBg, width: TIP, marginLeft: offset }]}>
                 <Text style={{ color: colors.btnFg, fontWeight: '700', fontSize: 12.5 }}>Day {index + 1}</Text>
-                <Text style={{ color: colors.btnFg, fontSize: 12.5 }}>{money(series[Math.min(index, series.length - 1)])}</Text>
+                <Text style={{ color: colors.btnFg, fontSize: 12.5 }}>{index < series.length ? money(series[index]) : 'Not yet'}</Text>
               </View>
             );
           },

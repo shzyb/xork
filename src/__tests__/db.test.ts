@@ -776,12 +776,13 @@ describe('getNetWorthTrend', () => {
     const getAllAsync = jest.fn().mockResolvedValue([]);
     const handle = fakeDb({ getAllAsync });
     await openDb(handle);
-    getAllAsync.mockReset().mockResolvedValueOnce(moved).mockResolvedValueOnce(opened);
-    (handle.getFirstAsync as jest.Mock).mockReset().mockResolvedValueOnce({ total: 100000 }).mockResolvedValueOnce({ total: 90000 });
+    // Money moved comes from transactions, opening balances from accounts; the trend asks for both periods.
+    getAllAsync.mockReset().mockImplementation(async (sql: string) => (sql.includes('FROM accounts') ? opened : moved));
+    (handle.getFirstAsync as jest.Mock).mockReset().mockResolvedValue({ total: 90000 });
 
     const trend = await getNetWorthTrend();
 
-    expect(trend).toEqual({ startMinor: 100000, daily: [...moved, ...opened], prevPointMinor: 90000 });
+    expect(trend).toMatchObject({ startMinor: 90000, daily: [...moved, ...opened], prevStartMinor: 90000, prevDaily: [...moved, ...opened], prevPointMinor: 90000 });
   });
 });
 

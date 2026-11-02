@@ -116,7 +116,15 @@ export type MonthTotals = { month: string; in_minor: number; out_minor: number }
 export type DaySpend = { day: number; total_minor: number };
 
 // Home's net worth chart: the balance before this month, each day's income minus expenses, and the balance on this date last month.
-export type NetWorthTrend = { startMinor: number; daily: DaySpend[]; prevPointMinor: number };
+// `prev…` is the period before: its starting balance, its daily changes, how many days it has, and the balance on the same day.
+export type NetWorthTrend = {
+  startMinor: number;
+  daily: DaySpend[];
+  prevStartMinor: number;
+  prevDaily: DaySpend[];
+  prevDays: number;
+  prevPointMinor: number;
+};
 
 // Everything the Insights screen shows for one month.
 export type InsightsData = {

@@ -735,12 +735,9 @@ async function getDailyNet(month: string): Promise<DaySpend[]> {
 // For the net worth chart on Home: the balance before this month, each day's change this month (income minus
 // expenses, and the opening balance of an account on the day it was added), and the balance on the same date last month.
 // So the line is zero until the first account or transaction, then steps up.
-export async function getNetWorthTrend(): Promise<NetWorthTrend> {
-  const month = currentPeriodKey();
+// Each day's change in a period: money moved, plus the opening balance of any account added that day.
+async function dailyChanges(month: string): Promise<DaySpend[]> {
   const { start } = periodDates(month);
-  const dayBefore = shiftDays(start, -1);
-  const prev = periodOf(dayBefore, cal).key;
-  const startMinor = await getNetWorthOn(dayBefore);
   const moved = await getDailyNet(month);
   const r = inRanges(keyRanges(month, cal), ADDED);
   const opened = await db!.getAllAsync<DaySpend>(
@@ -748,10 +745,23 @@ export async function getNetWorthTrend(): Promise<NetWorthTrend> {
      FROM accounts WHERE ${r.sql} GROUP BY ${ADDED}`,
     start, ...r.params,
   );
+  return [...moved, ...opened];
+}
+
+export async function getNetWorthTrend(): Promise<NetWorthTrend> {
+  const month = currentPeriodKey();
+  const dayBefore = shiftDays(periodDates(month).start, -1);
+  const prev = periodOf(dayBefore, cal).key;
   // The same day of last period, or its last day if last period was shorter.
   const prevDate = shiftDays(periodDates(prev).start, Math.min(periodElapsed(), periodDays(prev)) - 1);
-  const prevPointMinor = await getNetWorthOn(prevDate);
-  return { startMinor, daily: [...moved, ...opened], prevPointMinor };
+  return {
+    startMinor: await getNetWorthOn(dayBefore),
+    daily: await dailyChanges(month),
+    prevStartMinor: await getNetWorthOn(shiftDays(periodDates(prev).start, -1)),
+    prevDaily: await dailyChanges(prev),
+    prevDays: periodDays(prev),
+    prevPointMinor: await getNetWorthOn(prevDate),
+  };
 }
 
 // Money in and out for the six months ending at `endMonth`. Months with nothing are zero.
