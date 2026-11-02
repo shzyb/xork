@@ -147,7 +147,7 @@ export default function Insights() {
         {scope === 'year' && yearData && (
           <>
             <SplitBars income={yearData.summary.in_minor} expense={yearData.summary.out_minor} previous={yearData.previous} comparedTo="last year" width={contentWidth} />
-            <ListHeading>By month</ListHeading>
+            <ListHeading>Cashflow</ListHeading>
             <CashFlowChart monthly={yearData.monthly} selected="" width={contentWidth} />
             {yearData.spending.length === 0 ? (
               <EmptyState Icon={Receipt} title="No expenses this year" text="Enter a transaction in this year to see it here." />
