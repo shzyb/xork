@@ -167,7 +167,7 @@ export function CashFlowChart({ monthly, selected, width }: {
         frontColor: colors.pos,
         opacity: on ? 1 : 0.35,
         spacing: gap,
-        label: monthShort(m.month),
+        label: monthShort(m.month)[0], // one letter per month
         labelWidth: group,
         labelTextStyle: { color: on ? colors.ink : colors.ink3, fontSize: 11, fontFamily: 'OpenRunde-Regular', textAlign: 'center' as const, marginLeft: -(group - barWidth * 2 - gap) / 2 },
         onPress: press(i * 2),
