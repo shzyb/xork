@@ -132,3 +132,36 @@ export function firstOnOrAfter(freq: Frequency, anchorDay: number, date: string,
   while (next < from) next = nextOccurrence(freq, anchorDay, next);
   return next;
 }
+
+// A pay period is the days from `start` to `end`, both included. It is named by the month it ends in.
+export type PayPeriod = { start: string; end: string; key: string };
+
+// The period from `start` up to the day before `nextStart`.
+function periodBetween(start: string, nextStart: string): PayPeriod {
+  const end = format(subDays(parseISO(nextStart), 1), DAY);
+  return { start, end, key: end.slice(0, 7) };
+}
+
+// The period `date` falls in when the month starts on `startDay` (1 is the calendar month).
+// Paid on the 25th: 25 May - 24 Jun is named June.
+export function startDayPeriod(date: string, startDay: number): PayPeriod {
+  const month = date.slice(0, 7);
+  let start = dueDateIn(month, startDay);
+  if (date < start) start = dueDateIn(shiftMonth(month, -1), startDay);
+  return periodBetween(start, dueDateIn(shiftMonth(start.slice(0, 7), 1), startDay));
+}
+
+const OPEN_END = '9999-12-31';
+
+// The period `date` falls in when each salary starts a new one. `salaryDates` is sorted oldest first.
+// Null before the first salary. The newest period stays open until the next salary is recorded, so
+// nothing dated after a late salary is lost; its name assumes the next salary lands on the same day of the month.
+export function salaryPeriod(date: string, salaryDates: string[]): PayPeriod | null {
+  let i = -1;
+  while (i + 1 < salaryDates.length && salaryDates[i + 1] <= date) i++;
+  if (i < 0) return null;
+  const start = salaryDates[i];
+  if (i + 1 < salaryDates.length) return periodBetween(start, salaryDates[i + 1]);
+  const projected = dueDateIn(shiftMonth(start.slice(0, 7), 1), Number(start.slice(8)));
+  return { start, end: OPEN_END, key: periodBetween(start, projected).key };
+}

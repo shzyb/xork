@@ -1,4 +1,4 @@
-import { currentMonth, daysInMonth, dueDateIn, monthGrid, occurrencesBetween, firstOnOrAfter, fullDate, lastMonths, monthName, monthShort, tomorrow, upcomingOccurrences, monthLabel, monthRange, nextOccurrence, prettyDate, shiftMonth, today, yesterday } from '../dates';
+import { currentMonth, daysInMonth, dueDateIn, monthGrid, occurrencesBetween, firstOnOrAfter, fullDate, lastMonths, monthName, monthShort, salaryPeriod, startDayPeriod, tomorrow, upcomingOccurrences, monthLabel, monthRange, nextOccurrence, prettyDate, shiftMonth, today, yesterday } from '../dates';
 
 describe('today', () => {
   it('is a local YYYY-MM-DD string', () => {
@@ -119,6 +119,46 @@ describe('upcomingOccurrences', () => {
       30,
     );
     expect(found).toEqual([]);
+  });
+});
+
+describe('pay periods, start-day mode', () => {
+  it('is the calendar month when the month starts on the 1st, leap years included', () => {
+    expect(startDayPeriod('2026-05-10', 1)).toEqual({ start: '2026-05-01', end: '2026-05-31', key: '2026-05' });
+    expect(startDayPeriod('2028-02-29', 1)).toEqual({ start: '2028-02-01', end: '2028-02-29', key: '2028-02' });
+  });
+
+  it('names a period by the month it ends in', () => {
+    expect(startDayPeriod('2026-05-10', 25)).toEqual({ start: '2026-04-25', end: '2026-05-24', key: '2026-05' });
+    expect(startDayPeriod('2026-05-25', 25)).toEqual({ start: '2026-05-25', end: '2026-06-24', key: '2026-06' });
+    expect(startDayPeriod('2026-06-24', 25).key).toBe('2026-06');
+  });
+
+  it('clamps a start day of 31 in short months', () => {
+    expect(startDayPeriod('2026-02-27', 31)).toEqual({ start: '2026-01-31', end: '2026-02-27', key: '2026-02' });
+    expect(startDayPeriod('2026-02-28', 31)).toEqual({ start: '2026-02-28', end: '2026-03-30', key: '2026-03' });
+  });
+});
+
+describe('pay periods, salary mode', () => {
+  const salaries = ['2026-03-25', '2026-05-25', '2026-06-27'];
+
+  it('has no period before the first salary', () => {
+    expect(salaryPeriod('2026-03-24', salaries)).toBeNull();
+  });
+
+  it('runs from one salary up to the day before the next', () => {
+    expect(salaryPeriod('2026-04-10', salaries)).toEqual({ start: '2026-03-25', end: '2026-05-24', key: '2026-05' });
+  });
+
+  it('starts a new period on the salary day', () => {
+    expect(salaryPeriod('2026-05-25', salaries)?.start).toBe('2026-05-25');
+    expect(salaryPeriod('2026-06-26', salaries)).toEqual({ start: '2026-05-25', end: '2026-06-26', key: '2026-06' });
+  });
+
+  it('keeps the newest period open, named for where the next salary is expected', () => {
+    expect(salaryPeriod('2026-06-27', salaries)).toEqual({ start: '2026-06-27', end: '9999-12-31', key: '2026-07' });
+    expect(salaryPeriod('2026-09-01', salaries)?.start).toBe('2026-06-27');
   });
 });
 
