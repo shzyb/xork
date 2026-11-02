@@ -1,5 +1,6 @@
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
-import { currentMonth, shiftMonth, today } from '../dates';
+import { shiftMonth } from '../dates';
+import { currentPeriodKey, periodElapsed } from '../db';
 import { formatMoney } from '../money';
 import { fontSize, spacing, useColors } from '../theme';
 import type { DaySpend } from '../types';
@@ -25,8 +26,8 @@ export function HomeHero({ spend, hidden }: { spend: { daily: DaySpend[]; prevDa
     );
   }
 
-  const month = currentMonth();
-  const elapsed = Number(today().slice(8));
+  const month = currentPeriodKey();
+  const elapsed = periodElapsed();
   const mask = (minor: number) => (hidden ? '••••••' : formatMoney(minor));
   const amount = sum(spend.daily);
   const lastMonthSoFar = sum(spend.prevDaily.filter((d) => d.day <= elapsed));

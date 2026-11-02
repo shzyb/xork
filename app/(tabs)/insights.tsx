@@ -12,8 +12,8 @@ import { PickerSheet } from '../../src/components/PickerSheet';
 import { PressableScale } from '../../src/components/PressableScale';
 import { Bone, RowBones } from '../../src/components/Skeleton';
 import { Text } from '../../src/components/Text';
-import { getInsights } from '../../src/db';
-import { currentMonth, monthLabel, shiftMonth, today } from '../../src/dates';
+import { currentPeriodKey, getInsights } from '../../src/db';
+import { monthLabel, shiftMonth, today } from '../../src/dates';
 import { formatMoney } from '../../src/money';
 import { fabClearance, fontSize, spacing, useColors } from '../../src/theme';
 import type { InsightsData } from '../../src/types';
@@ -29,7 +29,7 @@ function percent(part: number, total: number) {
 export default function Insights() {
   const colors = useColors();
   const { width } = useWindowDimensions();
-  const [month, setMonth] = useState(currentMonth());
+  const [month, setMonth] = useState(currentPeriodKey());
   const data = useData(() => getInsights(month), [month]);
   const [expanded, setExpanded] = useState(false);
   const [picking, setPicking] = useState(false);
@@ -39,9 +39,9 @@ export default function Insights() {
 
   const selectMonth = (m: string) => { setExpanded(false); setMonth(m); };
   const canGoBack = !!data?.earliestMonth && month > data.earliestMonth;
-  const canGoForward = month < currentMonth();
+  const canGoForward = month < currentPeriodKey();
   // Every month from this one back to the first transaction, newest first.
-  const months = [currentMonth()];
+  const months = [currentPeriodKey()];
   while (data?.earliestMonth && shiftMonth(months[months.length - 1], -1) >= data.earliestMonth) {
     months.push(shiftMonth(months[months.length - 1], -1));
   }
@@ -115,7 +115,7 @@ function Body({ data, month, contentWidth, expanded, onToggleExpanded }: {
   const { summary, spending } = data;
   const out = summary.out_minor;
   const saved = summary.in_minor - out;
-  const isCurrent = month === currentMonth();
+  const isCurrent = month === currentPeriodKey();
 
   // The three amounts share one font size, small enough for the longest of them to fit in half the width.
   const incomeText = formatMoney(summary.in_minor);

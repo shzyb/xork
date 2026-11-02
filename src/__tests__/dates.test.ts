@@ -1,4 +1,4 @@
-import { currentMonth, daysInMonth, dueDateIn, monthGrid, occurrencesBetween, firstOnOrAfter, fullDate, lastMonths, monthName, monthShort, salaryPeriod, startDayPeriod, tomorrow, upcomingOccurrences, monthLabel, monthRange, nextOccurrence, prettyDate, shiftMonth, today, yesterday } from '../dates';
+import { currentMonth, dayOfPeriod, daysInMonth, dueDateIn, keyRanges, monthGrid, occurrencesBetween, firstOnOrAfter, fullDate, lastMonths, monthName, monthShort, periodBounds, periodDayCount, periodOf, salaryPeriod, startDayPeriod, tomorrow, upcomingOccurrences, monthLabel, monthRange, nextOccurrence, prettyDate, shiftMonth, today, yesterday } from '../dates';
 
 describe('today', () => {
   it('is a local YYYY-MM-DD string', () => {
@@ -212,5 +212,39 @@ describe('Recurring calendar helpers', () => {
     const item = { id: 1, freq: 'monthly' as const, anchor_day: 31, next_date: '2026-01-31', active: 1 };
     const found = occurrencesBetween([item], '2026-02-01', '2026-02-28');
     expect(found.map((f) => f.date)).toEqual(['2026-02-28']);
+  });
+});
+
+describe('pay periods for totals', () => {
+  it('a start day of 28 puts 30 Oct in the November period, 28 Oct to 27 Nov', () => {
+    const cal = { startDay: 28, starts: null };
+    expect(periodOf('2026-10-30', cal)).toEqual({ start: '2026-10-28', end: '2026-11-27', key: '2026-11' });
+    expect(keyRanges('2026-11', cal)).toEqual([{ start: '2026-10-28', end: '2026-11-27' }]);
+    expect(periodDayCount('2026-11', cal)).toBe(31);
+    expect(dayOfPeriod('2026-10-30', cal)).toBe(3);
+  });
+
+  it('a salary on 30 Oct runs its period on to the next salary, named for the projected month', () => {
+    const cal = { startDay: 1, starts: ['2026-10-30'] };
+    expect(keyRanges('2026-11', cal)).toEqual([{ start: '2026-10-30', end: '9999-12-31' }]);
+    expect(periodBounds('2026-11', cal)).toEqual({ start: '2026-10-30', end: '2026-11-29' });
+  });
+
+  it('before the first salary the calendar month is used, clipped at the salary', () => {
+    const cal = { startDay: 1, starts: ['2026-10-20', '2026-11-20'] };
+    expect(keyRanges('2026-10', cal)).toEqual([{ start: '2026-10-01', end: '2026-10-19' }]);
+    expect(keyRanges('2026-11', cal)).toEqual([{ start: '2026-10-20', end: '2026-11-19' }]);
+    expect(periodOf('2026-10-05', cal).key).toBe('2026-10');
+  });
+
+  it('two salaries in one month join into one range for that month', () => {
+    const cal = { startDay: 1, starts: ['2026-10-10', '2026-10-20'] };
+    expect(keyRanges('2026-10', cal)).toEqual([{ start: '2026-10-01', end: '2026-10-19' }]);
+  });
+
+  it('a month after the open period has no range yet, and its bounds fall back to the calendar month', () => {
+    const cal = { startDay: 1, starts: ['2026-10-20'] };
+    expect(keyRanges('2026-12', cal)).toEqual([]);
+    expect(periodBounds('2026-12', cal)).toEqual({ start: '2026-12-01', end: '2026-12-31' });
   });
 });

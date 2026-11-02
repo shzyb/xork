@@ -1,6 +1,6 @@
 import { StyleSheet, View } from 'react-native';
 import { LineChart } from 'react-native-gifted-charts';
-import { daysInMonth } from '../dates';
+import { periodDays } from '../db';
 import { netWorthSeries } from '../insights';
 import { compactMoney, formatMoney } from '../money';
 import { useColors } from '../theme';
@@ -22,7 +22,7 @@ export function NetWorthChart({ trend, month, elapsed, width, height, hidden }: 
 }) {
   const colors = useColors();
   const money = (minor: number) => (hidden ? '••••••' : formatMoney(minor));
-  const days = daysInMonth(month);
+  const days = periodDays(month);
   // Reaches the last day with a transaction, so one dated ahead of today still draws.
   const lastDay = Math.max(elapsed, ...trend.daily.map((d) => d.day));
   const series = netWorthSeries(trend.startMinor, trend.daily, lastDay);

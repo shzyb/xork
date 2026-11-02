@@ -1,5 +1,6 @@
 import { StyleSheet, View } from 'react-native';
-import { currentMonth, lastMonths, monthName, monthShort } from '../dates';
+import { lastMonths, monthName, monthShort } from '../dates';
+import { currentPeriodKey } from '../db';
 import { useColors } from '../theme';
 import { PressableScale } from './PressableScale';
 import { Text } from './Text';
@@ -13,9 +14,9 @@ export function MonthChips({ selected, earliest, onSelect }: {
   const colors = useColors();
   return (
     <View style={styles.chips}>
-      {lastMonths(currentMonth(), 6).map((m) => {
+      {lastMonths(currentPeriodKey(), 6).map((m) => {
         const on = m === selected;
-        const disabled = earliest === null ? m !== currentMonth() : m < earliest;
+        const disabled = earliest === null ? m !== currentPeriodKey() : m < earliest;
         return (
           <View key={m} style={[styles.chipHit, disabled && { opacity: 0.35 }]}>
             <PressableScale

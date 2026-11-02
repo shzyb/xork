@@ -1,4 +1,4 @@
-import { addDays, addMonths, format, getDaysInMonth, parseISO, subDays } from 'date-fns';
+import { addDays, addMonths, differenceInCalendarDays, format, getDaysInMonth, parseISO, subDays } from 'date-fns';
 import type { Frequency } from './types';
 
 const DAY = 'yyyy-MM-dd';
@@ -170,4 +170,75 @@ export function salaryPeriod(date: string, salaryDates: string[]): PayPeriod | n
   if (i + 1 < salaryDates.length) return periodBetween(start, salaryDates[i + 1]);
   const projected = dueDateIn(shiftMonth(start.slice(0, 7), 1), Number(start.slice(8)));
   return { start, end: OPEN_END, key: periodBetween(start, projected).key };
+}
+
+// How periods are cut. `starts` are the salary-mode period starts, oldest first; null means start-day mode.
+export type PayCalendar = { startDay: number; starts: string[] | null };
+
+export type DayRange = { start: string; end: string };
+
+export function shiftDays(date: string, days: number): string {
+  return format(addDays(parseISO(date), days), DAY);
+}
+
+// The period a date falls in. Before the first salary, salary mode uses calendar months.
+export function periodOf(date: string, cal: PayCalendar): PayPeriod {
+  if (cal.starts) return salaryPeriod(date, cal.starts) ?? startDayPeriod(date, 1);
+  return startDayPeriod(date, cal.startDay);
+}
+
+// Where the next salary is expected: the same day of the next month as this one.
+function projectedEnd(start: string): string {
+  return shiftDays(dueDateIn(shiftMonth(start.slice(0, 7), 1), Number(start.slice(8))), -1);
+}
+
+function mergeRanges(ranges: DayRange[]): DayRange[] {
+  const merged: DayRange[] = [];
+  for (const r of [...ranges].sort((a, b) => a.start.localeCompare(b.start))) {
+    const prev = merged[merged.length - 1];
+    if (prev && (prev.end === OPEN_END || r.start <= shiftDays(prev.end, 1))) {
+      if (r.end > prev.end) prev.end = r.end;
+    } else {
+      merged.push({ ...r });
+    }
+  }
+  return merged;
+}
+
+// The days that belong to period `key` (named by the month it ends in), as ranges. Usually one.
+// In salary mode the calendar month before the first salary is clipped at that salary.
+// The open period runs to OPEN_END, so queries also catch a late salary's spending.
+export function keyRanges(key: string, cal: PayCalendar): DayRange[] {
+  const { start: first, end: last } = monthRange(key);
+  const starts = cal.starts;
+  if (!starts) {
+    const p = startDayPeriod(first, cal.startDay);
+    return [{ start: p.start, end: p.end }];
+  }
+  const ranges: DayRange[] = [];
+  if (first < starts[0]) ranges.push({ start: first, end: last < starts[0] ? last : shiftDays(starts[0], -1) });
+  starts.forEach((start, i) => {
+    const end = i + 1 < starts.length ? shiftDays(starts[i + 1], -1) : OPEN_END;
+    const periodKey = (end === OPEN_END ? projectedEnd(start) : end).slice(0, 7);
+    if (periodKey === key) ranges.push({ start, end });
+  });
+  return mergeRanges(ranges);
+}
+
+// The first and last day of period `key`. The open period ends on its projected date.
+export function periodBounds(key: string, cal: PayCalendar): DayRange {
+  const ranges = keyRanges(key, cal);
+  if (ranges.length === 0) return monthRange(key);
+  const last = ranges[ranges.length - 1];
+  return { start: ranges[0].start, end: last.end === OPEN_END ? projectedEnd(last.start) : last.end };
+}
+
+export function periodDayCount(key: string, cal: PayCalendar): number {
+  const { start, end } = periodBounds(key, cal);
+  return differenceInCalendarDays(parseISO(end), parseISO(start)) + 1;
+}
+
+// Which day of its period a date is: 1 on the first day.
+export function dayOfPeriod(date: string, cal: PayCalendar): number {
+  return differenceInCalendarDays(parseISO(date), parseISO(periodOf(date, cal).start)) + 1;
 }

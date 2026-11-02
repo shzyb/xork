@@ -9,8 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AccountDot } from '../../src/components/AccountButton';
 import { ChangeLine } from '../../src/components/ChangeLine';
 import { NetWorthChart } from '../../src/components/NetWorthChart';
-import { currentMonth, today } from '../../src/dates';
-import { getAccountsWithBalance, getNetWorthTrend, getSetting } from '../../src/db';
+import { currentPeriodKey, getAccountsWithBalance, getNetWorthTrend, getSetting, periodElapsed } from '../../src/db';
 import { formatMoney } from '../../src/money';
 import { fabClearance, fontSize, spacing, useColors } from '../../src/theme';
 import { ACCOUNT_TYPES } from '../../src/types';
@@ -27,7 +26,7 @@ export default function Accounts() {
   const total = accounts?.reduce((sum, a) => sum + a.balance_minor, 0) ?? 0;
   const mask = (minor: number) => (hidden ? '••••••' : formatMoney(minor));
   // This month so far against the same point last month.
-  const elapsed = Number(today().slice(8));
+  const elapsed = periodElapsed();
   const change = trend
     ? trend.startMinor + trend.daily.filter((d) => d.day <= elapsed).reduce((n, d) => n + d.total_minor, 0) - trend.prevPointMinor
     : 0;
@@ -50,7 +49,7 @@ export default function Accounts() {
             <View style={styles.change}>
               {change !== 0 && <ChangeLine up={change > 0} good={change > 0}>{`${mask(Math.abs(change))} vs last month`}</ChangeLine>}
             </View>
-            <NetWorthChart trend={trend} month={currentMonth()} elapsed={elapsed} width={width - spacing.xl * 2} height={120} hidden={hidden} />
+            <NetWorthChart trend={trend} month={currentPeriodKey()} elapsed={elapsed} width={width - spacing.xl * 2} height={120} hidden={hidden} />
           </View>
         )}
         <ListHeading>Your accounts</ListHeading>

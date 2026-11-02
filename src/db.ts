@@ -1,5 +1,6 @@
 import { openDatabaseAsync } from 'expo-sqlite';
-import { currentMonth, daysInMonth, firstOnOrAfter, lastMonths, monthRange, nextOccurrence, shiftMonth, today } from './dates';
+import { dayOfPeriod, firstOnOrAfter, keyRanges, lastMonths, nextOccurrence, periodBounds, periodDayCount, periodOf, shiftDays, today } from './dates';
+import type { DayRange, PayCalendar } from './dates';
 import { formatMoney, setAppCurrency } from './money';
 import { ICON_NAMES, toEmoji } from './emoji';
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES, SCHEMA } from './seed';
@@ -34,9 +35,62 @@ export function subscribe(listener: () => void) {
   };
 }
 
+// The pay calendar, kept in memory so the period helpers can stay synchronous. Loaded on open and after every write.
+let cal: PayCalendar = { startDay: 1, starts: null };
+
+async function refreshCalendar() {
+  const payday = await getPayday();
+  if (payday.mode === 'start') {
+    cal = { startDay: payday.startDay, starts: null };
+    return;
+  }
+  const picked = payday.salaryId === null ? null : await db!.getFirstAsync<{ date: string }>(
+    "SELECT date FROM transactions WHERE id = ? AND type = 'income' AND is_salary = 1", payday.salaryId,
+  );
+  if (!picked) {
+    cal = { startDay: 1, starts: null };
+    return;
+  }
+  // Each salary from the picked one on starts a period. Later salaries are picked up on the next write.
+  const rows = await db!.getAllAsync<{ date: string }>(
+    "SELECT DISTINCT date FROM transactions WHERE type = 'income' AND is_salary = 1 AND date >= ? ORDER BY date", picked.date,
+  );
+  cal = { startDay: 1, starts: rows.map((r) => r.date) };
+}
+
+// The period today is in, as its name (the month it ends in). Used for "this month" everywhere.
+export function currentPeriodKey(): string {
+  return periodOf(today(), cal).key;
+}
+
+// The first and last day of a period, for the period picker and the charts.
+export function periodDates(key: string): DayRange {
+  return periodBounds(key, cal);
+}
+
+// How many days a period has. Charts use this for their width.
+export function periodDays(key: string): number {
+  return periodDayCount(key, cal);
+}
+
+// How many days of the current period have passed, today included. Charts compare against this.
+export function periodElapsed(): number {
+  return dayOfPeriod(today(), cal);
+}
+
+// SQL for "the date is in one of these ranges". No ranges matches nothing.
+function inRanges(ranges: DayRange[], column = 'date'): { sql: string; params: string[] } {
+  if (ranges.length === 0) return { sql: '0', params: [] };
+  return {
+    sql: `(${ranges.map(() => `${column} BETWEEN ? AND ?`).join(' OR ')})`,
+    params: ranges.flatMap((r) => [r.start, r.end]),
+  };
+}
+
 // Every write goes through here: bump the version and tell listeners only after it succeeded.
 async function write<T>(task: (db: Db) => Promise<T>): Promise<T> {
   const result = await task(db!);
+  await refreshCalendar();
   version += 1;
   listeners.forEach((listener) => listener());
   return result;
@@ -138,6 +192,7 @@ export async function openDb(handle?: Db) {
   db = handle ?? (await openDatabaseAsync('hisaab.db', { useNewConnection: true }));
   kept.hisaabDb = db;
   await migrate(db);
+  await refreshCalendar();
   setAppCurrency((await getSetting('currency')) ?? 'USD');
 }
 
@@ -282,12 +337,12 @@ export async function getCategories(): Promise<Category[]> {
 
 // Transfers are not income or spending, so they are left out.
 export async function getMonthSummary(month: string): Promise<{ in_minor: number; out_minor: number }> {
-  const { start, end } = monthRange(month);
+  const r = inRanges(keyRanges(month, cal));
   const row = await db!.getFirstAsync<{ in_minor: number; out_minor: number }>(
     `SELECT COALESCE(SUM(CASE WHEN type = 'income' THEN amount_minor END), 0) AS in_minor,
             COALESCE(SUM(CASE WHEN type = 'expense' THEN amount_minor END), 0) AS out_minor
-     FROM transactions WHERE date BETWEEN ? AND ?`,
-    start, end,
+     FROM transactions WHERE ${r.sql}`,
+    ...r.params,
   );
   return row ?? { in_minor: 0, out_minor: 0 };
 }
@@ -311,9 +366,9 @@ export function buildFilter(filter: TransactionFilter): { where: string; params:
     params.push(filter.type);
   }
   if (filter.month) {
-    const { start, end } = monthRange(filter.month);
-    clauses.push('t.date BETWEEN ? AND ?');
-    params.push(start, end);
+    const r = inRanges(keyRanges(filter.month, cal), 't.date');
+    clauses.push(r.sql);
+    params.push(...r.params);
   }
   if (filter.categoryId !== null) {
     clauses.push('t.category_id = ?');
@@ -358,10 +413,8 @@ export async function getTransactionTotals(
 
 // The months that have at least one transaction, newest first, for the Month filter.
 export async function getTransactionMonths(): Promise<string[]> {
-  const rows = await db!.getAllAsync<{ month: string }>(
-    'SELECT DISTINCT substr(date, 1, 7) AS month FROM transactions ORDER BY month DESC',
-  );
-  return rows.map((r) => r.month);
+  const rows = await db!.getAllAsync<{ date: string }>('SELECT DISTINCT date FROM transactions');
+  return [...new Set(rows.map((r) => periodOf(r.date, cal).key))].sort().reverse();
 }
 
 export async function getTransaction(id: number): Promise<TransactionRow | null> {
@@ -391,13 +444,13 @@ export async function getAccount(id: number): Promise<Account | null> {
 
 // For the account detail sheet: how many transactions touch the account, and what it spent and received in `month`.
 export async function getAccountStats(id: number, month: string): Promise<{ count: number; spent_minor: number; in_minor: number }> {
-  const { start, end } = monthRange(month);
+  const r = inRanges(keyRanges(month, cal));
   const row = await db!.getFirstAsync<{ count: number; spent_minor: number; in_minor: number }>(
     `SELECT COUNT(*) AS count,
-       COALESCE(SUM(CASE WHEN type = 'expense' AND date BETWEEN ? AND ? THEN amount_minor END), 0) AS spent_minor,
-       COALESCE(SUM(CASE WHEN type = 'income' AND date BETWEEN ? AND ? THEN amount_minor END), 0) AS in_minor
+       COALESCE(SUM(CASE WHEN type = 'expense' AND ${r.sql} THEN amount_minor END), 0) AS spent_minor,
+       COALESCE(SUM(CASE WHEN type = 'income' AND ${r.sql} THEN amount_minor END), 0) AS in_minor
      FROM transactions WHERE account_id = ? OR to_account_id = ?`,
-    start, end, start, end, id, id,
+    ...r.params, ...r.params, id, id,
   );
   return row ?? { count: 0, spent_minor: 0, in_minor: 0 };
 }
@@ -512,10 +565,10 @@ export async function getRecurring(): Promise<RecurringRow[]> {
 
 // What recurring items have already logged in a month, for the Recurring calendar.
 export async function getMonthRecurringActivity(month: string): Promise<TransactionRow[]> {
-  const { start, end } = monthRange(month);
+  const r = inRanges(keyRanges(month, cal), 't.date');
   return db!.getAllAsync(
-    `${TX_SELECT} ${TX_FROM} WHERE t.recurring_id IS NOT NULL AND t.date BETWEEN ? AND ? ORDER BY t.date, t.id`,
-    start, end,
+    `${TX_SELECT} ${TX_FROM} WHERE t.recurring_id IS NOT NULL AND ${r.sql} ORDER BY t.date, t.id`,
+    ...r.params,
   );
 }
 
@@ -595,40 +648,39 @@ export async function deleteRecurring(id: number) {
   );
 }
 
-// Spending (or income) per category for a month, biggest first. `throughDay` stops at that day of the month.
-export async function getTotalsByCategory(kind: 'expense' | 'income', month: string, throughDay?: number): Promise<CategorySpend[]> {
-  const { start, end } = monthRange(month);
-  const last = throughDay ? `${month}-${String(throughDay).padStart(2, '0')}` : end;
+// Spending (or income) per category for a period, biggest first.
+export async function getTotalsByCategory(kind: 'expense' | 'income', month: string): Promise<CategorySpend[]> {
+  const r = inRanges(keyRanges(month, cal), 't.date');
   return db!.getAllAsync(
     `SELECT c.id, c.name, c.icon, c.color, c.budget_minor, SUM(t.amount_minor) AS total_minor, COUNT(*) AS count
      FROM transactions t JOIN categories c ON c.id = t.category_id
-     WHERE t.type = ? AND t.date BETWEEN ? AND ?
+     WHERE t.type = ? AND ${r.sql}
      GROUP BY c.id ORDER BY total_minor DESC`,
-    kind, start, last,
+    kind, ...r.params,
   );
 }
 
 // The month of the oldest transaction, or null when there are none.
 export async function getEarliestMonth(): Promise<string | null> {
-  const row = await db!.getFirstAsync<{ month: string | null }>('SELECT MIN(substr(date, 1, 7)) AS month FROM transactions');
-  return row?.month ?? null;
+  const row = await db!.getFirstAsync<{ date: string | null }>('SELECT MIN(date) AS date FROM transactions');
+  return row?.date ? periodOf(row.date, cal).key : null;
 }
 
+// Day 1 is the first day of the period, so periods of different lengths line up on the chart.
 async function getDailySpending(month: string): Promise<DaySpend[]> {
-  const { start, end } = monthRange(month);
+  const r = inRanges(keyRanges(month, cal));
   return db!.getAllAsync(
-    `SELECT CAST(substr(date, 9, 2) AS INTEGER) AS day, SUM(amount_minor) AS total_minor
-     FROM transactions WHERE type = 'expense' AND date BETWEEN ? AND ? GROUP BY date`,
-    start, end,
+    `SELECT CAST(julianday(date) - julianday(?) AS INTEGER) + 1 AS day, SUM(amount_minor) AS total_minor
+     FROM transactions WHERE type = 'expense' AND ${r.sql} GROUP BY date`,
+    periodDates(month).start, ...r.params,
   );
 }
 
-// Daily spending for this month and last, for the small chart on Home.
+// Daily spending for this period and the one before, for the small chart on Home.
 export async function getSpendTrend(): Promise<{ daily: DaySpend[]; prevDaily: DaySpend[] }> {
-  const month = currentMonth();
-  const daily = await getDailySpending(month);
-  const prevDaily = await getDailySpending(shiftMonth(month, -1));
-  return { daily, prevDaily };
+  const month = currentPeriodKey();
+  const prev = periodOf(shiftDays(periodDates(month).start, -1), cal).key;
+  return { daily: await getDailySpending(month), prevDaily: await getDailySpending(prev) };
 }
 
 // The local date an account was added (created_at is a UTC timestamp).
@@ -648,12 +700,12 @@ async function getNetWorthOn(date: string): Promise<number> {
 
 // Each day's income minus expenses in a month. Transfers are neither.
 async function getDailyNet(month: string): Promise<DaySpend[]> {
-  const { start, end } = monthRange(month);
+  const r = inRanges(keyRanges(month, cal));
   return db!.getAllAsync(
-    `SELECT CAST(substr(date, 9, 2) AS INTEGER) AS day,
+    `SELECT CAST(julianday(date) - julianday(?) AS INTEGER) + 1 AS day,
             SUM(CASE WHEN type = 'income' THEN amount_minor ELSE -amount_minor END) AS total_minor
-     FROM transactions WHERE type != 'transfer' AND date BETWEEN ? AND ? GROUP BY date`,
-    start, end,
+     FROM transactions WHERE type != 'transfer' AND ${r.sql} GROUP BY date`,
+    periodDates(month).start, ...r.params,
   );
 }
 
@@ -661,45 +713,42 @@ async function getDailyNet(month: string): Promise<DaySpend[]> {
 // expenses, and the opening balance of an account on the day it was added), and the balance on the same date last month.
 // So the line is zero until the first account or transaction, then steps up.
 export async function getNetWorthTrend(): Promise<NetWorthTrend> {
-  const month = currentMonth();
-  const prev = shiftMonth(month, -1);
-  const { start, end } = monthRange(month);
-  const dayOf = (m: string, day: number) => `${m}-${String(day).padStart(2, '0')}`;
-  const startMinor = await getNetWorthOn(dayOf(prev, daysInMonth(prev)));
+  const month = currentPeriodKey();
+  const { start } = periodDates(month);
+  const dayBefore = shiftDays(start, -1);
+  const prev = periodOf(dayBefore, cal).key;
+  const startMinor = await getNetWorthOn(dayBefore);
   const moved = await getDailyNet(month);
+  const r = inRanges(keyRanges(month, cal), ADDED);
   const opened = await db!.getAllAsync<DaySpend>(
-    `SELECT CAST(substr(${ADDED}, 9, 2) AS INTEGER) AS day, SUM(opening_minor) AS total_minor
-     FROM accounts WHERE ${ADDED} BETWEEN ? AND ? GROUP BY ${ADDED}`,
-    start, end,
+    `SELECT CAST(julianday(${ADDED}) - julianday(?) AS INTEGER) + 1 AS day, SUM(opening_minor) AS total_minor
+     FROM accounts WHERE ${r.sql} GROUP BY ${ADDED}`,
+    start, ...r.params,
   );
-  const prevPointMinor = await getNetWorthOn(dayOf(prev, Math.min(Number(today().slice(8)), daysInMonth(prev))));
+  // The same day of last period, or its last day if last period was shorter.
+  const prevDate = shiftDays(periodDates(prev).start, Math.min(periodElapsed(), periodDays(prev)) - 1);
+  const prevPointMinor = await getNetWorthOn(prevDate);
   return { startMinor, daily: [...moved, ...opened], prevPointMinor };
 }
 
 // Money in and out for the six months ending at `endMonth`. Months with nothing are zero.
 async function getMonthlyTotals(endMonth: string): Promise<MonthTotals[]> {
-  const months = lastMonths(endMonth, 6);
-  const rows = await db!.getAllAsync<MonthTotals>(
-    `SELECT substr(date, 1, 7) AS month,
-            COALESCE(SUM(CASE WHEN type = 'income' THEN amount_minor END), 0) AS in_minor,
-            COALESCE(SUM(CASE WHEN type = 'expense' THEN amount_minor END), 0) AS out_minor
-     FROM transactions WHERE date BETWEEN ? AND ? GROUP BY month`,
-    monthRange(months[0]).start, monthRange(endMonth).end,
-  );
-  return months.map((month) => rows.find((r) => r.month === month) ?? { month, in_minor: 0, out_minor: 0 });
+  const totals: MonthTotals[] = [];
+  for (const month of lastMonths(endMonth, 6)) totals.push({ month, ...(await getMonthSummary(month)) });
+  return totals;
 }
 
 // One call per screen load. Queries run one after another on purpose (see useData).
 export async function getInsights(month: string): Promise<InsightsData> {
-  const { start, end } = monthRange(month);
+  const r = inRanges(keyRanges(month, cal));
   return {
     summary: await getMonthSummary(month),
     spending: await getTotalsByCategory('expense', month),
-    monthly: await getMonthlyTotals(currentMonth()),
+    monthly: await getMonthlyTotals(currentPeriodKey()),
     byDay: await db!.getAllAsync(
-      `SELECT CAST(substr(date, 9, 2) AS INTEGER) AS day, category_id, SUM(amount_minor) AS total_minor
-       FROM transactions WHERE type = 'expense' AND date BETWEEN ? AND ? GROUP BY date, category_id`,
-      start, end,
+      `SELECT CAST(julianday(date) - julianday(?) AS INTEGER) + 1 AS day, category_id, SUM(amount_minor) AS total_minor
+       FROM transactions WHERE type = 'expense' AND ${r.sql} GROUP BY date, category_id`,
+      periodDates(month).start, ...r.params,
     ),
     earliestMonth: await getEarliestMonth(),
   };

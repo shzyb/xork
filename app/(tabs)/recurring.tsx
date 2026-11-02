@@ -11,9 +11,9 @@ import { PressableScale } from '../../src/components/PressableScale';
 import { RecurringRow } from '../../src/components/RecurringRow';
 import { Bone, RowBones } from '../../src/components/Skeleton';
 import { Text } from '../../src/components/Text';
-import { getAccountsWithBalance, getMonthRecurringActivity, getRecurring } from '../../src/db';
+import { currentPeriodKey, getAccountsWithBalance, getMonthRecurringActivity, getRecurring, periodDates } from '../../src/db';
 import {
-  currentMonth, dueDateIn, FREQUENCY_LABEL, monthGrid, monthLabel, monthRange, occurrencesBetween, prettyDate, shiftMonth, today,
+  currentMonth, dueDateIn, FREQUENCY_LABEL, monthGrid, monthLabel, occurrencesBetween, prettyDate, shiftMonth, today,
 } from '../../src/dates';
 import { formatMoney } from '../../src/money';
 import { actionColors, fabClearance, fontSize, spacing, useColors } from '../../src/theme';
@@ -33,7 +33,7 @@ export default function Recurring() {
   const colors = useColors();
   const router = useRouter();
   const [tab, setTab] = useState<'upcoming' | 'all'>('upcoming');
-  const [month, setMonth] = useState(currentMonth());
+  const [month, setMonth] = useState(currentPeriodKey());
   const [tabsWidth, setTabsWidth] = useState(0);
   // The highlight slides from Upcoming (0) to All Recurring (1) when the tab changes.
   const slide = useRef(new Animated.Value(0)).current;
@@ -49,7 +49,7 @@ export default function Recurring() {
   const cards = (accounts ?? []).filter((a) => a.type === 'credit' && a.due_day);
   const owed = (balance: number) => Math.max(0, -balance);
 
-  const { start, end } = monthRange(month);
+  const { start, end } = periodDates(month);
   const entries: Entry[] = [];
   for (const t of logged ?? []) {
     entries.push({

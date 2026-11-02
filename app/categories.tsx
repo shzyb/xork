@@ -7,8 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '../src/components/Button';
 import { CategoryIcon } from '../src/components/CategoryIcon';
 import { DragList } from '../src/components/DragList';
-import { getCategories, getTotalsByCategory, reorderCategories } from '../src/db';
-import { currentMonth } from '../src/dates';
+import { currentPeriodKey, getCategories, getTotalsByCategory, reorderCategories } from '../src/db';
 import { formatMoney } from '../src/money';
 import { fontSize, spacing, useColors } from '../src/theme';
 import type { Category, CategoryKind } from '../src/types';
@@ -25,8 +24,8 @@ export default function Categories() {
   const [kind, setKind] = useState<CategoryKind>('expense');
   const data = useData(async () => {
     const categories = await getCategories();
-    const spent = await getTotalsByCategory('expense', currentMonth());
-    const received = await getTotalsByCategory('income', currentMonth());
+    const spent = await getTotalsByCategory('expense', currentPeriodKey());
+    const received = await getTotalsByCategory('income', currentPeriodKey());
     return { categories, totals: new Map([...spent, ...received].map((c) => [c.id, c.total_minor])) };
   });
 

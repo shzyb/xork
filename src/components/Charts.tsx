@@ -2,7 +2,8 @@ import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { BarChart, LineChart } from 'react-native-gifted-charts';
-import { daysInMonth, monthName, monthShort, prettyDate } from '../dates';
+import { monthName, monthShort, prettyDate } from '../dates';
+import { periodDays } from '../db';
 import { dayParts, runningTotal } from '../insights';
 import { compactMoney, formatMoney } from '../money';
 import { spacing, useColors } from '../theme';
@@ -35,10 +36,10 @@ export function RunningTotalChart({ daily, prevDaily, month, prevMonth, elapsed,
 }) {
   const colors = useColors();
   const money = (minor: number) => (hidden ? '••••••' : formatMoney(minor));
-  const days = Math.max(daysInMonth(month), daysInMonth(prevMonth));
+  const days = Math.max(periodDays(month), periodDays(prevMonth));
   // Reaches the last day with spending, so a transaction dated ahead of today still draws.
   const lastDay = Math.max(elapsed ?? 0, ...daily.map((d) => d.day));
-  const current = runningTotal(daily, elapsed === undefined ? daysInMonth(month) : lastDay);
+  const current = runningTotal(daily, elapsed === undefined ? periodDays(month) : lastDay);
   // What was spent on one day of this month (not the running total), for the touch tooltip.
   const daySpend = (day: number) => daily.find((d) => d.day === day)?.total_minor ?? 0;
   const previous = runningTotal(prevDaily, days);
@@ -220,7 +221,7 @@ export function DailyCategoryChart({ byDay, categories, month, today, width }: {
 }) {
   const colors = useColors();
   const [touched, setTouched] = useState<number | null>(null);
-  const days = daysInMonth(month);
+  const days = periodDays(month);
   const parts = dayParts(byDay, days);
   const totals = parts.map((p) => p.reduce((sum, x) => sum + x.total_minor, 0));
   if (totals.every((t) => t === 0)) return null;

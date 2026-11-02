@@ -267,6 +267,8 @@ describe('deleteCategory', () => {
       .fn()
       .mockResolvedValueOnce({ user_version: 7 })
       .mockResolvedValueOnce(null) // currency setting during openDb
+      .mockResolvedValueOnce(null) // payday settings during openDb
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ kind: 'expense', is_default: 0 })
       .mockResolvedValueOnce({ id: 24 });
     const db = fakeDb({ getFirstAsync });
@@ -610,9 +612,10 @@ describe('buildFilter', () => {
     expect(buildFilter({ ...NO_FILTER, search: '  ' })).toEqual({ where: '', params: [] });
   });
 
-  it('filters by type and by the first and last day of the month', () => {
+  it('filters by type and by the first and last day of the month', async () => {
+    await openDb(fakeDb());
     const { where, params } = buildFilter({ ...NO_FILTER, type: 'expense', month: '2028-02' });
-    expect(where).toBe('WHERE t.type = ? AND t.date BETWEEN ? AND ?');
+    expect(where).toBe('WHERE t.type = ? AND (t.date BETWEEN ? AND ?)');
     expect(params).toEqual(['expense', '2028-02-01', '2028-02-29']);
   });
 

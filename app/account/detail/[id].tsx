@@ -10,8 +10,8 @@ import { PressableScale } from '../../../src/components/PressableScale';
 import { Bone, RowBones } from '../../../src/components/Skeleton';
 import { Text } from '../../../src/components/Text';
 import { TransactionList } from '../../../src/components/TransactionList';
-import { getAccountsWithBalance, getAccountStats, getEarliestMonth, getTransactions, NO_FILTER } from '../../../src/db';
-import { currentMonth, monthName, today } from '../../../src/dates';
+import { currentPeriodKey, getAccountsWithBalance, getAccountStats, getEarliestMonth, getTransactions, NO_FILTER } from '../../../src/db';
+import { monthName, today } from '../../../src/dates';
 import { creditStatus, dueText } from '../../../src/insights';
 import { formatMoney } from '../../../src/money';
 import { spacing, useColors } from '../../../src/theme';
@@ -22,13 +22,13 @@ export default function AccountDetail() {
   const colors = useColors();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [month, setMonth] = useState(currentMonth());
+  const [month, setMonth] = useState(currentPeriodKey());
   const data = useData(async () => {
     const account = (await getAccountsWithBalance()).find((a) => a.id === Number(id));
     if (!account) return null;
     return {
       account,
-      stats: await getAccountStats(account.id, currentMonth()),
+      stats: await getAccountStats(account.id, currentPeriodKey()),
       rows: await getTransactions({ ...NO_FILTER, accountId: account.id, month }, 1000),
       earliest: await getEarliestMonth(),
     };
@@ -62,7 +62,7 @@ export default function AccountDetail() {
   const credit = account.type === 'credit';
   const status = credit && account.limit_minor ? creditStatus(-account.balance_minor, account.limit_minor) : null;
   const tint = status?.state === 'warn' ? colors.warn : status && status.state !== 'ok' ? colors.neg : colors.ink2;
-  const thisMonth = monthName(currentMonth());
+  const thisMonth = monthName(currentPeriodKey());
 
   const details: [string, string][] = [];
   if (!credit) details.push(['Starting balance', formatMoney(account.opening_minor)]);
