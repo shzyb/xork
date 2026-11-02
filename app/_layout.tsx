@@ -12,7 +12,7 @@ import { useData } from '../src/useData';
 SplashScreen.preventAutoHideAsync();
 
 // Floating trays: a transparent modal with no router animation. The Sheet component fades the dim and slides the tray.
-const TRAYS = ['add-menu', 'settings', 'currency', 'payday', 'transaction/[id]', 'recurring/detail/[id]'];
+const TRAYS = ['add-menu', 'settings', 'currency', 'transaction/[id]', 'recurring/detail/[id]'];
 const TRAY_OPTIONS = { presentation: 'transparentModal', animation: 'none', contentStyle: { backgroundColor: 'transparent' } } as const;
 
 export default function RootLayout() {
@@ -71,6 +71,7 @@ function Routes() {
         <Stack.Screen name="categories" />
         <Stack.Screen name="category-activity" />
         <Stack.Screen name="appearance" />
+        <Stack.Screen name="payday" />
         {['add', 'account/[id]', 'category/[id]', 'recurring/[id]'].map((name) => (
           <Stack.Screen key={name} name={name} options={{ presentation: 'modal', contentStyle: { backgroundColor: sheet.bg } }} />
         ))}

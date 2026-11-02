@@ -1,23 +1,22 @@
 import { useRouter } from 'expo-router';
-import { Check, ChevronRight } from 'lucide-react-native';
+import { Check, ChevronLeft } from 'lucide-react-native';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { FadeScrollView } from '../src/components/FadeScrollView';
 import { PressableScale } from '../src/components/PressableScale';
 import { Button } from '../src/components/Button';
-import { PickerSheet } from '../src/components/PickerSheet';
-import { Sheet } from '../src/components/Sheet';
-import { SheetHeader } from '../src/components/SheetHeader';
 import { Text } from '../src/components/Text';
 import { getPayday, getSalaryTransactions, setPayday } from '../src/db';
 import { fullDate, ordinalDay } from '../src/dates';
 import { formatMoney } from '../src/money';
-import { sheet, spacing } from '../src/theme';
+import { fontSize, spacing, useColors } from '../src/theme';
 import type { Payday, TransactionRow } from '../src/types';
 import { useData } from '../src/useData';
 
-const DAY_OPTIONS = Array.from({ length: 31 }, (_, i) => ({ value: i + 1, label: ordinalDay(i + 1) }));
+const DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
 
+// Settings → Payday. Pick how a period starts: a day of the month, or a salary transaction.
 export default function PaydayScreen() {
   const saved = useData(getPayday);
   const salaries = useData(getSalaryTransactions);
@@ -26,13 +25,18 @@ export default function PaydayScreen() {
 }
 
 function PaydayForm({ saved, salaries }: { saved: Payday; salaries: TransactionRow[] }) {
+  const colors = useColors();
   const router = useRouter();
   const [mode, setMode] = useState(saved.mode);
   const [startDay, setStartDay] = useState(saved.mode === 'start' ? saved.startDay : 1);
   const [salaryId, setSalaryId] = useState(saved.mode === 'salary' ? saved.salaryId : null);
-  const [pickerOpen, setPickerOpen] = useState<'day' | 'salary' | null>(null);
   const [error, setError] = useState('');
   const chosen = salaries.find((s) => s.id === salaryId) ?? null;
+
+  function choose(next: Payday['mode']) {
+    setMode(next);
+    setError('');
+  }
 
   async function save() {
     if (mode === 'salary' && salaryId === null) return setError('Choose a salary transaction.');
@@ -45,91 +49,113 @@ function PaydayForm({ saved, salaries }: { saved: Payday; salaries: TransactionR
   }
 
   return (
-    <Sheet onClose={() => router.back()}>
-      <SheetHeader title="Payday" onClose={() => router.back()} />
-      <FadeScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-        <Option
-          title="Start date"
-          text="The calculation will be based on the start date of the month."
-          on={mode === 'start'}
-          onPress={() => { setMode('start'); setError(''); }}
-        />
-        <Option
-          title="Salary"
-          text="The calculation will be based on a salary transaction you pick."
-          on={mode === 'salary'}
-          onPress={() => { setMode('salary'); setError(''); }}
-        />
+    <SafeAreaView style={[styles.screen, { backgroundColor: colors.bg }]}>
+      <PressableScale accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} style={styles.back}>
+        <ChevronLeft color={colors.ink} size={26} />
+      </PressableScale>
+      <Text style={[styles.title, { color: colors.ink }]}>Payday</Text>
+      <View style={styles.pills}>
+        <Pill label="Start date" on={mode === 'start'} onPress={() => choose('start')} />
+        <Pill label="Salary" on={mode === 'salary'} onPress={() => choose('salary')} />
+      </View>
+      <FadeScrollView style={styles.flex} contentContainerStyle={styles.content}>
         {mode === 'start' ? (
-          <PressableScale accessibilityRole="button" onPress={() => setPickerOpen('day')} style={styles.field}>
-            <View style={styles.main}>
-              <Text style={styles.fieldTitle}>Month starts on</Text>
-              <Text style={styles.sub}>Normally this would be the date you take your salary.</Text>
+          <>
+            <Text style={[styles.intro, { color: colors.ink2 }]}>The calculation will be based on the start date of the month.</Text>
+            <View style={[styles.field, { backgroundColor: colors.fill }]}>
+              <Text style={[styles.fieldLabel, { color: colors.ink2 }]}>Month starts on</Text>
+              <Text style={[styles.fieldValue, { color: colors.ink }]}>{ordinalDay(startDay)}</Text>
+              <Text style={[styles.hint, { color: colors.ink2 }]}>Normally this would be the date you take your salary.</Text>
             </View>
-            <Text style={styles.value}>{ordinalDay(startDay)}</Text>
-            <ChevronRight color={sheet.ink3} size={20} />
-          </PressableScale>
+            <View style={styles.days}>
+              {DAYS.map((day) => (
+                <PressableScale
+                  key={day}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Month starts on the ${ordinalDay(day)}`}
+                  accessibilityState={{ selected: day === startDay }}
+                  onPress={() => { setStartDay(day); setError(''); }}
+                  style={[styles.day, { backgroundColor: day === startDay ? colors.ink : colors.fill }]}
+                >
+                  <Text style={[styles.dayText, { color: day === startDay ? colors.bg : colors.ink }]}>{day}</Text>
+                </PressableScale>
+              ))}
+            </View>
+          </>
         ) : (
-          <PressableScale accessibilityRole="button" onPress={() => setPickerOpen('salary')} style={styles.field}>
-            <View style={styles.main}>
-              <Text style={styles.fieldTitle}>Salary transaction</Text>
-              <Text style={styles.sub}>
-                {chosen ? `${fullDate(chosen.date)} · ${formatMoney(chosen.amount_minor)}` : 'No salary picked yet.'}
+          <>
+            <Text style={[styles.intro, { color: colors.ink2 }]}>The calculation will be based on a salary transaction you pick.</Text>
+            <View style={[styles.field, { backgroundColor: colors.fill }]}>
+              <Text style={[styles.fieldLabel, { color: colors.ink2 }]}>Salary transaction</Text>
+              <Text style={[styles.fieldValue, { color: colors.ink }]}>
+                {chosen ? `${fullDate(chosen.date)} · ${formatMoney(chosen.amount_minor)}` : 'None picked'}
               </Text>
-              <Text style={styles.hint}>Tap to select another income transaction to use for calculation.</Text>
+              <Text style={[styles.hint, { color: colors.ink2 }]}>Tap to select another income transaction to use for calculation.</Text>
             </View>
-            <ChevronRight color={sheet.ink3} size={20} />
-          </PressableScale>
+            {salaries.length === 0 && <Text style={[styles.hint, { color: colors.ink2 }]}>No salary transactions yet.</Text>}
+            {salaries.map((s) => {
+              const on = s.id === salaryId;
+              return (
+                <PressableScale
+                  key={s.id}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: on }}
+                  onPress={() => { setSalaryId(s.id); setError(''); }}
+                  style={styles.row}
+                >
+                  <View style={styles.rowMain}>
+                    <Text style={[styles.rowTitle, { color: colors.ink }]}>{fullDate(s.date)}</Text>
+                    <Text style={[styles.hint, { color: colors.ink2 }]}>{formatMoney(s.amount_minor)}</Text>
+                  </View>
+                  {on && <Check color={colors.pos} size={20} strokeWidth={2.6} />}
+                </PressableScale>
+              );
+            })}
+          </>
         )}
-        {error !== '' && <Text style={styles.error}>{error}</Text>}
+        {error !== '' && <Text style={[styles.error, { color: colors.neg }]}>{error}</Text>}
       </FadeScrollView>
       <View style={styles.footer}>
-        <Button title="Save" onPress={save} background={sheet.btnBg} color={sheet.btnFg} />
+        <Button title="Save" onPress={save} background={colors.btnBg} color={colors.btnFg} />
       </View>
-      {pickerOpen === 'day' && (
-        <PickerSheet
-          title="Month starts on"
-          options={DAY_OPTIONS}
-          current={startDay}
-          onPick={(day) => { setStartDay(day); setPickerOpen(null); }}
-          onClose={() => setPickerOpen(null)}
-        />
-      )}
-      {pickerOpen === 'salary' && (
-        <PickerSheet
-          title="Salary transaction"
-          options={salaries.map((s) => ({ value: s.id, label: fullDate(s.date), sub: formatMoney(s.amount_minor) }))}
-          current={salaryId}
-          onPick={(id) => { setSalaryId(id); setError(''); setPickerOpen(null); }}
-          onClose={() => setPickerOpen(null)}
-        />
-      )}
-    </Sheet>
+    </SafeAreaView>
   );
 }
 
-function Option({ title, text, on, onPress }: { title: string; text: string; on: boolean; onPress: () => void }) {
+function Pill({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+  const colors = useColors();
   return (
-    <PressableScale accessibilityRole="button" accessibilityState={{ selected: on }} onPress={onPress} style={styles.option}>
-      <View style={styles.main}>
-        <Text style={styles.fieldTitle}>{title}</Text>
-        <Text style={styles.sub}>{text}</Text>
-      </View>
-      {on && <Check color={sheet.pos} size={20} strokeWidth={2.6} />}
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityState={{ selected: on }}
+      onPress={onPress}
+      style={[styles.pill, { backgroundColor: on ? colors.ink : colors.fill }]}
+    >
+      <Text style={[styles.pillText, { color: on ? colors.bg : colors.ink2 }]}>{label}</Text>
     </PressableScale>
   );
 }
 
 const styles = StyleSheet.create({
-  scroll: { flexShrink: 1 },
-  content: { paddingBottom: spacing.lg },
-  option: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64, paddingVertical: 4 },
-  field: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, marginTop: 14, paddingVertical: 4 },
-  main: { flex: 1, gap: 2 },
-  fieldTitle: { color: sheet.ink, fontSize: 16.5, fontWeight: '600' },
-  sub: { color: sheet.ink2, fontSize: 14, lineHeight: 19 },
-  hint: { color: sheet.ink3, fontSize: 13, lineHeight: 18, marginTop: 4 },
-  value: { color: sheet.ink, fontSize: 16.5, fontWeight: '600' },
-  error: { color: sheet.neg, fontSize: 14.5, fontWeight: '600', marginTop: 14, textAlign: 'center' },
+  screen: { flex: 1, paddingHorizontal: spacing.xl },
+  flex: { flex: 1 },
+  back: { width: 44, height: 44, marginLeft: -10, marginTop: spacing.sm, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: fontSize.screen, fontWeight: '800' },
+  pills: { flexDirection: 'row', gap: 8, marginTop: spacing.lg },
+  pill: { minHeight: 44, paddingHorizontal: 18, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  pillText: { fontSize: 15, fontWeight: '600' },
+  content: { paddingTop: spacing.lg, paddingBottom: spacing.lg, gap: 14 },
+  intro: { fontSize: 15, lineHeight: 21 },
+  field: { borderRadius: 16, padding: 16, gap: 4 },
+  fieldLabel: { fontSize: 13.5, fontWeight: '600' },
+  fieldValue: { fontSize: 22, fontWeight: '700' },
+  hint: { fontSize: 13.5, lineHeight: 19 },
+  days: { flexDirection: 'row', flexWrap: 'wrap', rowGap: 8 },
+  day: { width: '14.28%', aspectRatio: 1, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  dayText: { fontSize: 15, fontWeight: '600' },
+  row: { flexDirection: 'row', alignItems: 'center', minHeight: 56 },
+  rowMain: { flex: 1 },
+  rowTitle: { fontSize: 16, fontWeight: '600' },
+  error: { fontSize: 14.5, fontWeight: '600', textAlign: 'center' },
   footer: { paddingTop: 10, paddingBottom: spacing.lg },
 });
