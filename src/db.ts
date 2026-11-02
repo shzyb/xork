@@ -360,7 +360,7 @@ const TX_FROM = `FROM transactions t
   LEFT JOIN categories c ON c.id = t.category_id
   LEFT JOIN recurring rc ON rc.id = t.recurring_id`;
 
-export const NO_FILTER: TransactionFilter = { search: '', type: 'all', month: null, categoryId: null, accountId: null };
+export const NO_FILTER: TransactionFilter = { search: '', type: 'all', month: null, year: null, categoryId: null, accountId: null };
 
 // The WHERE part shared by the Activity list and its totals. Search looks at note, category and account names.
 export function buildFilter(filter: TransactionFilter): { where: string; params: (string | number)[] } {
@@ -372,6 +372,11 @@ export function buildFilter(filter: TransactionFilter): { where: string; params:
   }
   if (filter.month) {
     const r = inRanges(keyRanges(filter.month, cal), 't.date');
+    clauses.push(r.sql);
+    params.push(...r.params);
+  }
+  if (filter.year) {
+    const r = inRanges(yearKeys(filter.year).flatMap((k) => keyRanges(k, cal)), 't.date');
     clauses.push(r.sql);
     params.push(...r.params);
   }
@@ -656,6 +661,10 @@ export async function deleteRecurring(id: number) {
 // Spending (or income) per category for a period, biggest first.
 export async function getTotalsByCategory(kind: 'expense' | 'income', month: string): Promise<CategorySpend[]> {
   return categoryTotals(kind, keyRanges(month, cal));
+}
+
+export async function getYearTotalsByCategory(kind: 'expense' | 'income', year: string): Promise<CategorySpend[]> {
+  return categoryTotals(kind, yearKeys(year).flatMap((k) => keyRanges(k, cal)));
 }
 
 async function categoryTotals(kind: 'expense' | 'income', ranges: DayRange[]): Promise<CategorySpend[]> {

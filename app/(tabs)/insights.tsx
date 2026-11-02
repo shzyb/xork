@@ -159,6 +159,7 @@ export default function Insights() {
                   out={yearData.summary.out_minor}
                   expanded={expanded}
                   onToggle={() => setExpanded((e) => !e)}
+                  onOpen={(id) => router.push({ pathname: '/category-activity', params: { id: String(id), year } })}
                 />
               </>
             )}

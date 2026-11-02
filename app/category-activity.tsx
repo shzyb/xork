@@ -8,7 +8,7 @@ import { CategoryIcon } from '../src/components/CategoryIcon';
 import { FadeScrollView } from '../src/components/FadeScrollView';
 import { MonthChips } from '../src/components/MonthChips';
 import { TransactionList } from '../src/components/TransactionList';
-import { getCategory, getEarliestMonth, getTotalsByCategory, getTransactions, NO_FILTER } from '../src/db';
+import { getCategory, getEarliestMonth, getTotalsByCategory, getTransactions, getYearTotalsByCategory, NO_FILTER } from '../src/db';
 import { monthName } from '../src/dates';
 import { budgetStatus } from '../src/insights';
 import { formatMoney } from '../src/money';
@@ -16,26 +16,28 @@ import { fontSize, spacing, useColors } from '../src/theme';
 import { useData } from '../src/useData';
 import { Text } from '../src/components/Text';
 
-// Opened from Insights: every transaction in one category, for the month that was on screen. The chips change month.
+// Opened from Insights: every transaction in one category, for the month or the year that was on screen.
+// In a month the chips change month; a year has no chips.
 export default function CategoryActivity() {
   const colors = useColors();
   const router = useRouter();
-  const params = useLocalSearchParams<{ id: string; month: string }>();
-  const [month, setMonth] = useState(params.month);
+  const params = useLocalSearchParams<{ id: string; month?: string; year?: string }>();
+  const [month, setMonth] = useState(params.month ?? '');
+  const year = params.year ?? null;
   const id = Number(params.id);
   const data = useData(async () => {
     const category = await getCategory(id);
     if (!category) return null;
-    const [rows, thisMonth, earliest] = await Promise.all([
-      getTransactions({ ...NO_FILTER, categoryId: id, month }, 1000),
-      getTotalsByCategory(category.kind, month),
+    const [rows, totals, earliest] = await Promise.all([
+      getTransactions(year ? { ...NO_FILTER, categoryId: id, year } : { ...NO_FILTER, categoryId: id, month }, 1000),
+      year ? getYearTotalsByCategory(category.kind, year) : getTotalsByCategory(category.kind, month),
       getEarliestMonth(),
     ]);
     return {
       category, rows, earliest,
-      mine: thisMonth.find((c) => c.id === id),
+      mine: totals.find((c) => c.id === id),
     };
-  }, [id, month]);
+  }, [id, month, year]);
 
   if (!data) return null;
   const { category, rows, earliest, mine } = data;
@@ -66,11 +68,11 @@ export default function CategoryActivity() {
           </View>
         )}
 
-        <MonthChips selected={month} earliest={earliest} onSelect={setMonth} />
+        {!year && <MonthChips selected={month} earliest={earliest} onSelect={setMonth} />}
 
         {rows.length === 0 ? (
           <Text style={{ color: colors.ink2, paddingVertical: spacing.lg }}>
-            No {category.name} transactions in {monthName(month)}.
+            No {category.name} transactions in {year ?? monthName(month)}.
           </Text>
         ) : (
           <TransactionList rows={rows} />

@@ -96,6 +96,7 @@ export type TransactionFilter = {
   search: string;
   type: TransactionType | 'all';
   month: string | null;
+  year: string | null; // a whole year (its twelve periods), from the Insights year view
   categoryId: number | null;
   accountId: number | null; // matches the account a transaction is from or, for a transfer, moved to
 };

@@ -839,6 +839,16 @@ describe('payday settings', () => {
   });
 });
 
+describe('buildFilter by year', () => {
+  it('covers the twelve periods of the year', async () => {
+    await openDb(fakeDb());
+    const { where, params } = buildFilter({ ...NO_FILTER, year: '2026' });
+    expect(where).toContain('t.date BETWEEN');
+    expect(params[0]).toBe('2026-01-01');
+    expect(params[params.length - 1]).toBe('2026-12-31');
+  });
+});
+
 describe('getYearInsights', () => {
   it('has twelve months and the year before, for the changes', async () => {
     await openDb(fakeDb({ getFirstAsync: jest.fn().mockResolvedValue({ in_minor: 100, out_minor: 40, user_version: 7 }) }));
